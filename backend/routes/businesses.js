@@ -194,9 +194,9 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.get('/draft', protect, async (req, res) => {
   try {
-    // Restrict access: Only business owner or admin can view draft
-    if (req.user.role !== 'owner' && req.user.role !== 'merchant' && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Access denied: Business owner role required' });
+    // Restrict access: Allow business owners, admins, and visitors/writers to view draft
+    if (req.user.role !== 'owner' && req.user.role !== 'merchant' && req.user.role !== 'admin' && req.user.role !== 'visitor') {
+      return res.status(403).json({ success: false, message: 'Access denied: Authorized role required' });
     }
 
     const listings = await Business.find({ ownerId: req.user._id }).sort({ createdAt: -1 });
@@ -226,9 +226,9 @@ router.get('/draft', protect, async (req, res) => {
 // @access  Private
 router.get('/my-business', protect, async (req, res) => {
   try {
-    // Restrict access: Only business owner or admin can view
-    if (req.user.role !== 'owner' && req.user.role !== 'merchant' && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Access denied: Business owner role required' });
+    // Restrict access: Allow business owners, admins, and visitors/writers to view
+    if (req.user.role !== 'owner' && req.user.role !== 'merchant' && req.user.role !== 'admin' && req.user.role !== 'visitor') {
+      return res.status(403).json({ success: false, message: 'Access denied: Authorized role required' });
     }
 
     // Merge/Clean duplicate entries for this owner
@@ -347,12 +347,20 @@ router.post('/', protect, async (req, res) => {
       }
     }
 
-    // Restrict access: Only business owner or admin can register a business
-    if (req.user.role !== 'owner' && req.user.role !== 'merchant' && req.user.role !== 'admin') {
+    // Restrict access: Allow business owners, admins, and visitors/writers to register a business
+    if (req.user.role !== 'owner' && req.user.role !== 'merchant' && req.user.role !== 'admin' && req.user.role !== 'visitor') {
       return res.status(403).json({
         success: false,
-        message: 'Registration denied: Business owner role required to register listings.',
+        message: 'Registration denied: Authorized role required to register listings.',
       });
+    }
+
+    // Automatically upgrade visitor's role to merchant upon registering their business
+    if (req.user.role === 'visitor') {
+      const User = require('../models/User');
+      await User.findByIdAndUpdate(req.user._id, { role: 'merchant' });
+      req.user.role = 'merchant';
+      console.log(`[ROLE UPGRADE] Upgraded user ${req.user._id} role from visitor to merchant upon registering business.`);
     }
 
     // Merge/Clean duplicates first to make sure there is at most one business listing

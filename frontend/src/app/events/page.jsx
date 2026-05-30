@@ -27,7 +27,7 @@ const mockEvents = [
     venue: 'Udumalpet Town, Tamil Nadu',
     organizer: 'FitLife Club Udumalpet',
     phone: '+91 98945 67890',
-    price: 20,
+    price: 99,
     coverImageUrl: 'https://images.unsplash.com/photo-1502224562085-639556652f33?w=500&q=80',
     paymentLink: 'https://tickets.udumalpetmarathon.in',
     duration: '1 Day'
@@ -58,7 +58,7 @@ const mockEvents = [
     venue: 'Udumalpet IT Park',
     organizer: 'Udumalpet Startup Hub',
     phone: '+91 90035 67890',
-    price: 20,
+    price: 99,
     coverImageUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?w=500&q=80',
     paymentLink: 'https://startupmeet.in/register',
     duration: '1 Day'
@@ -124,7 +124,7 @@ export default function EventsPage() {
 
   // Dynamic Pricing states
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
-  const [paymentPrice, setPaymentPrice] = useState(20); // Dynamic: 0 for active business subscribers, 20 for others
+  const [paymentPrice, setPaymentPrice] = useState(99); // Dynamic: 0 for active business subscribers, 99 for others
 
   // Dynamic Event Search Filters
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -173,12 +173,12 @@ export default function EventsPage() {
         setPaymentPrice(0);
       } else {
         setHasActiveSubscription(false);
-        setPaymentPrice(20);
+        setPaymentPrice(99);
       }
     } catch (err) {
       console.warn('Subscription check error, defaulting to paid standard charge.');
       setHasActiveSubscription(false);
-      setPaymentPrice(20);
+      setPaymentPrice(99);
     }
   };
 
@@ -847,13 +847,13 @@ export default function EventsPage() {
                   <Sparkles className="h-5 w-5 text-amber-500 fill-current shrink-0" />
                   <div>
                     <h5 className="font-extrabold text-emerald-950 leading-none">Free Business Subscription Active!</h5>
-                    <p className="text-[10px] text-emerald-700 font-semibold mt-1">Listing standard fee (₹20) is fully waived. You can promote events for free.</p>
+                    <p className="text-[10px] text-emerald-700 font-semibold mt-1">Listing standard fee (₹99) is fully waived. You can promote events for free.</p>
                   </div>
                 </div>
               ) : (
                 <div className="bg-slate-50 border border-slate-200 text-slate-600 rounded-xl p-3 text-xs font-semibold flex items-center gap-2">
                   <Tag className="h-4.5 w-4.5 text-[#027244] shrink-0" />
-                  <span>Standard listing charges: ₹20 per event listing.</span>
+                  <span>Standard listing charges: ₹99 per event listing.</span>
                 </div>
               )}
 
@@ -873,11 +873,11 @@ export default function EventsPage() {
                 </div>
                 <div className="flex justify-between border-b border-slate-100 pb-2.5 mt-2">
                   <span className="text-slate-400">Listing Standard Fee</span>
-                  <span>₹20.00</span>
+                  <span>₹99.00</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-100 pb-2.5">
                   <span className="text-slate-400">Waived Discount</span>
-                  <span>-₹{20 - paymentPrice}.00</span>
+                  <span>-₹{99 - paymentPrice}.00</span>
                 </div>
                 <div className="flex justify-between text-slate-800 font-black text-sm pt-1">
                   <span>Grand Total</span>
@@ -897,7 +897,7 @@ export default function EventsPage() {
                   onClick={handlePaymentProceed}
                   className="h-11 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer flex-grow"
                 >
-                  <span>{paymentPrice === 0 ? 'Proceed for Free' : 'Pay ₹20 & Continue'}</span>
+                  <span>{paymentPrice === 0 ? 'Proceed for Free' : 'Pay ₹99 & Continue'}</span>
                   <ChevronRight className="h-4.5 w-4.5" />
                 </button>
               </div>
@@ -1329,7 +1329,7 @@ export default function EventsPage() {
             <div className="flex flex-col gap-1.5 mt-1.5">
               <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Standard Listing Charges</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-[#027244] font-black text-2xl">₹20</span>
+                <span className="text-[#027244] font-black text-2xl">₹99</span>
                 <span className="text-[10px] text-slate-400 font-semibold">/ event listing</span>
               </div>
               <span className="text-[9px] text-[#027244] font-bold mt-1">✓ FREE for active business subscribers!</span>

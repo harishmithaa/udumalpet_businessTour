@@ -50,7 +50,7 @@ export default function Footer() {
           <ul className="flex flex-col gap-2.5 text-xs font-semibold text-slate-400">
             <li><Link to="/add-business" className="hover:text-emerald-500 transition-colors">List Your Business</Link></li>
             <li><Link to="/login?from=business" className="hover:text-emerald-500 transition-colors">Business Login</Link></li>
-            <li><Link to="/add-business?step=subscription" className="hover:text-emerald-500 transition-colors">Pricing & Plans</Link></li>
+            <li><Link to="/businesses?focus=pricing" className="hover:text-emerald-500 transition-colors">Pricing & Plans</Link></li>
             <li><Link to="/#how-it-works" className="hover:text-emerald-500 transition-colors">How It Works</Link></li>
             <li><Link to="/businesses?focus=guidelines" className="hover:text-emerald-500 transition-colors">Business Guidelines</Link></li>
           </ul>
@@ -60,8 +60,8 @@ export default function Footer() {
         <div className="flex flex-col gap-4">
           <h4 className="text-white font-bold text-sm uppercase tracking-wider">Support</h4>
           <ul className="flex flex-col gap-2.5 text-xs font-semibold text-slate-400">
-            <li><Link to="/#how-it-works" className="hover:text-emerald-500 transition-colors">Help Center</Link></li>
-            <li><Link to="/#how-it-works" className="hover:text-emerald-500 transition-colors">FAQs</Link></li>
+            <li><Link to="/businesses?focus=contact" className="hover:text-emerald-500 transition-colors">Help Center</Link></li>
+            <li><Link to="/#faq" className="hover:text-emerald-500 transition-colors">FAQs</Link></li>
             <li><Link to="/businesses?focus=terms" className="hover:text-emerald-500 transition-colors">Terms & Conditions</Link></li>
             <li><Link to="/businesses?focus=privacy" className="hover:text-emerald-500 transition-colors">Privacy Policy</Link></li>
             <li><Link to="/businesses?focus=refund" className="hover:text-emerald-500 transition-colors">Refund Policy</Link></li>

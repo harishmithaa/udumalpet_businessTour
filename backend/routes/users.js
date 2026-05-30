@@ -5,6 +5,75 @@ const User = require('../models/User');
 const Business = require('../models/Business');
 const { sendSuccess, sendError } = require('../utils/responseHelper');
 
+const Blog = require('../models/Blog');
+const Event = require('../models/Event');
+const mongoose = require('mongoose');
+
+// GET /api/users/public/:id - Get public profile data (user, businesses, blogs, events)
+router.get('/public/:id', async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+
+    // Support offline mock fallbacks
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      const mockUsers = {
+        'author_fallback_1': { fullName: 'Ananth Sundar', role: 'writer', createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        'author_fallback_2': { fullName: 'Senthil Kumar', role: 'writer', createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
+        'author_fallback_3': { fullName: 'Priya Ramesh', role: 'writer', createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) }
+      };
+      
+      const matchedUser = mockUsers[userId] || { fullName: 'Udumalpet Guide', role: 'visitor', createdAt: new Date() };
+      
+      return sendSuccess(res, 200, 'Public profile details retrieved (Mock Fallback)', {
+        user: {
+          _id: userId,
+          fullName: matchedUser.fullName,
+          role: matchedUser.role,
+          createdAt: matchedUser.createdAt,
+          status: 'Active'
+        },
+        blogs: [],
+        businesses: [],
+        events: []
+      });
+    }
+
+    const user = await User.findById(userId).select('fullName name email mobileNumber phone role profileImage createdAt status');
+    if (!user) {
+      return sendError(res, 404, 'User account not found');
+    }
+
+    if (user.status === 'Suspended') {
+      return sendError(res, 403, 'This user account is suspended');
+    }
+
+    // Fetch approved businesses, blogs, and events owned/authored by this user
+    const blogs = await Blog.find({ 
+      $or: [{ author: user._id }, { authorId: user._id }],
+      status: 'Approved' 
+    }).sort({ createdAt: -1 });
+
+    const businesses = await Business.find({ 
+      ownerId: user._id, 
+      status: 'Approved' 
+    }).sort({ createdAt: -1 });
+
+    const events = await Event.find({ 
+      $or: [{ ownerId: user._id }, { authorId: user._id }],
+      status: 'Approved' 
+    }).sort({ createdAt: -1 });
+
+    return sendSuccess(res, 200, 'Public profile details retrieved successfully', {
+      user,
+      blogs,
+      businesses,
+      events
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Protect all user management routes
 router.use(protect);
 

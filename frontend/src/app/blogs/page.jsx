@@ -164,8 +164,8 @@ export default function BlogsPage() {
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setImageError('Network error uploading image. Using fallback URL.');
-      setCoverImage(URL.createObjectURL(file));
+      setImageError('Network error uploading image. Using a premium placeholder instead.');
+      setCoverImage('https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80');
     } finally {
       setImageUploading(false);
     }

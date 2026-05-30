@@ -52,14 +52,13 @@ const SubscriptionSchema = new mongoose.Schema({
 });
 
 // Pre-save syncing for plan/planType and endDate/expiryDate compatibility
-SubscriptionSchema.pre('save', function(next) {
+SubscriptionSchema.pre('save', async function() {
   if (this.plan && !this.planType) this.planType = this.plan.toLowerCase();
   if (this.planType && !this.plan) {
     this.plan = this.planType.charAt(0).toUpperCase() + this.planType.slice(1);
   }
   if (this.endDate && !this.expiryDate) this.expiryDate = this.endDate;
   if (this.expiryDate && !this.endDate) this.endDate = this.expiryDate;
-  next();
 });
 
 module.exports = mongoose.model('Subscription', SubscriptionSchema);

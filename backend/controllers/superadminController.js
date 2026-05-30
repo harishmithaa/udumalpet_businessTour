@@ -508,7 +508,7 @@ const deleteUser = async (req, res, next) => {
 const getBlogs = async (req, res, next) => {
   try {
     const list = await Blog.find()
-      .populate('author', 'fullName email')
+      .populate('author', 'name fullName email phone mobileNumber role')
       .sort({ createdAt: -1 });
 
     return sendSuccess(res, 200, 'Blogs fetched', list);
@@ -519,7 +519,7 @@ const getBlogs = async (req, res, next) => {
 
 const updateBlog = async (req, res, next) => {
   try {
-    const { title, content, status, featured } = req.body;
+    const { title, content, status, featured, suggestions } = req.body;
     const blog = await Blog.findById(req.params.id);
     if (!blog) {
       return sendError(res, 404, 'Blog article not found');
@@ -529,6 +529,15 @@ const updateBlog = async (req, res, next) => {
     if (content) blog.content = content;
     if (status) blog.status = status;
     if (featured !== undefined) blog.featured = !!featured;
+    if (status === 'Needs Revision') {
+      blog.revisionSuggestions = suggestions || '';
+      blog.revisionHistory.push({
+        sender: req.user._id,
+        senderName: req.user.fullName || req.user.name || 'Super Admin',
+        senderRole: req.user.role || 'superadmin',
+        message: suggestions || ''
+      });
+    }
 
     await blog.save();
 
@@ -544,7 +553,9 @@ const updateBlog = async (req, res, next) => {
       await Notification.create({
         userId: blog.author,
         title: `Blog Moderation Update`,
-        message: `Your blog post "${blog.title}" has been moderated. Status: ${status}`,
+        message: status === 'Needs Revision'
+          ? `Your blog post "${blog.title}" requires revisions: "${suggestions}"`
+          : `Your blog post "${blog.title}" has been moderated. Status: ${status}`,
         type: 'approval_status'
       });
     }

@@ -109,7 +109,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-const { protect } = require('../middleware/auth');
+const { protect, admin } = require('../middleware/auth');
 const Business = require('../models/Business');
 
 // @desc    Check active business subscription for current user
@@ -144,6 +144,18 @@ router.get('/my-events', protect, async (req, res) => {
   }
 });
 
+// @desc    Get all events for admin review (any status)
+// @route   GET /api/events/admin/all
+// @access  Private/Admin
+router.get('/admin/all', protect, admin, async (req, res) => {
+  try {
+    const events = await Event.find().sort({ createdAt: -1 });
+    res.json({ success: true, count: events.length, data: events });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // @desc    Get single event detail
 // @route   GET /api/events/:id
 // @access  Public
@@ -170,6 +182,13 @@ router.post('/', protect, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
  
+    // Check if user has an active business subscription
+    const activeBusiness = await Business.findOne({ 
+      ownerId: req.user._id,
+      subscriptionStatus: 'active' 
+    });
+    const finalPrice = activeBusiness ? 0 : 99;
+
     const event = await Event.create({
       ownerId: req.user._id,
       title,
@@ -181,7 +200,7 @@ router.post('/', protect, async (req, res) => {
       venue,
       organizer,
       phone,
-      price: price !== undefined ? Number(price) : 20,
+      price: finalPrice,
       coverImageUrl: coverImageUrl || 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500&q=80',
       paymentLink: paymentLink || '',
       duration: duration || '',

@@ -35,14 +35,13 @@ const NotificationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-NotificationSchema.pre('save', function(next) {
+NotificationSchema.pre('save', async function() {
   if (this.isModified('isRead')) {
     this.readStatus = this.isRead;
   }
   if (this.isModified('readStatus')) {
     this.isRead = this.readStatus;
   }
-  next();
 });
 
 module.exports = mongoose.model('Notification', NotificationSchema);

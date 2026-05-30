@@ -72,25 +72,36 @@ const moderateBusiness = async (req, res, next) => {
  */
 const moderateBlog = async (req, res, next) => {
   try {
-    const { blogId, status } = req.body;
+    const { blogId, status, suggestions } = req.body;
 
     const blog = await Blog.findById(blogId);
     if (!blog) {
       return sendError(res, 404, 'Blog post not found');
     }
 
-    blog.status = status; // 'Approved', 'Rejected', 'Pending Approval'
+    blog.status = status; // 'Approved', 'Rejected', 'Pending Approval', 'Needs Revision'
+    if (status === 'Needs Revision') {
+      blog.revisionSuggestions = suggestions || '';
+      blog.revisionHistory.push({
+        sender: req.user._id,
+        senderName: req.user.fullName || req.user.name || 'Admin',
+        senderRole: req.user.role || 'admin',
+        message: suggestions || ''
+      });
+    }
     await blog.save();
 
     // Notify author
     await Notification.create({
       userId: blog.author,
       title: `Blog Moderation Update`,
-      message: `Your blog post "${blog.title}" has been reviewed and ${status.toLowerCase()} by moderation team.`,
+      message: status === 'Needs Revision'
+        ? `Your blog post "${blog.title}" requires revisions: "${suggestions}"`
+        : `Your blog post "${blog.title}" has been reviewed and ${status.toLowerCase()} by moderation team.`,
       type: 'approval_status'
     });
 
-    return sendSuccess(res, 200, `Blog article successfully ${status.toLowerCase()}`, blog);
+    return sendSuccess(res, 200, `Blog article successfully updated to ${status}`, blog);
   } catch (err) {
     next(err);
   }

@@ -656,6 +656,284 @@ function BusinessesList() {
   const isAboutView = focusParam === 'about';
   const isContactView = focusParam === 'contact';
 
+  const isTermsView = focusParam === 'terms';
+  const isPrivacyView = focusParam === 'privacy';
+  const isRefundView = focusParam === 'refund';
+  const isGuidelinesView = focusParam === 'guidelines';
+  const isPricingView = focusParam === 'pricing';
+
+  if (isTermsView || isPrivacyView || isRefundView || isGuidelinesView || isPricingView) {
+    const docTitle = isTermsView 
+      ? 'Terms & Conditions' 
+      : isPrivacyView 
+        ? 'Privacy Policy' 
+        : isRefundView 
+          ? 'Refund Policy' 
+          : isGuidelinesView
+            ? 'Business Guidelines'
+            : 'Pricing & Plans';
+
+    const docSub = isTermsView
+      ? 'Understand your rights and responsibilities when using Udumalpet Business Tour.'
+      : isPrivacyView
+        ? 'Learn how we collect, store, protect, and use your personal data.'
+        : isRefundView
+          ? 'Review our terms regarding payment processing, plans renewal, and refund requests.'
+          : isGuidelinesView
+            ? 'Read the rules, quality standards, and verification guidelines for listing businesses.'
+            : 'Explore our affordable subscription plans designed to maximize your local customer reach.';
+
+    return (
+      <div className="w-full flex flex-col items-center bg-[#F8FAFC]">
+        {/* Header Banner */}
+        <section 
+          className="w-full relative min-h-[260px] bg-slate-950 text-white py-10 px-4 md:px-8 border-b border-slate-800 bg-cover bg-center"
+          style={{ backgroundImage: "linear-gradient(to bottom, rgba(0, 28, 65, 0.85), rgba(0, 28, 65, 0.98)), url('/thirumoorthy_hills.png')" }}
+        >
+          <div className="relative max-w-7xl mx-auto flex flex-col items-center z-10 text-left">
+            <div className="flex items-center gap-1.5 text-xs text-slate-300 font-bold self-start mt-2">
+              <Link to="/" className="hover:text-emerald-450 transition-colors">Home</Link>
+              <span className="text-slate-505">&gt;</span>
+              <span className="text-slate-100">{docTitle}</span>
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white mt-4 self-start font-sans">
+              {docTitle}
+            </h1>
+            <p className="text-slate-350 text-xs font-semibold self-start mt-1.5 leading-relaxed max-w-2xl">
+              {docSub}
+            </p>
+          </div>
+        </section>
+
+        {/* Content sections */}
+        <section className="max-w-4xl w-full px-4 md:px-8 py-12 text-left">
+          <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-8 flex flex-col gap-6 font-sans">
+            <h3 className="font-extrabold text-[#001c41] text-base border-b border-slate-100 pb-3">
+              Official {docTitle} — Last Updated: May 30, 2026
+            </h3>
+            
+            {isTermsView && (
+              <div className="flex flex-col gap-4 text-xs font-semibold text-slate-600 leading-relaxed">
+                <p>Welcome to Udumalpet Business Tour (UBT). By accessing or using our directory platform, you agree to comply with and be bound by the following terms and conditions.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">1. Use of the Directory</h4>
+                <p>This directory is designed to connect local buyers with verified businesses in Udumalpet. You agree to use the platform only for lawful purposes. Any automated queries, scraping, or indexing of merchant details without prior written consent is strictly prohibited.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">2. Business Owner Responsibilities</h4>
+                <p>Merchant owners must ensure all registered information (business name, contact phone, whatsapp, cover image, and category) is accurate, up-to-date, and genuine. Uploading misleading names, copycat logos, or fraudulent ratings violates our platform guidelines and may lead to account suspension.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">3. User Ratings & Review Conduct</h4>
+                <p>Reviewers must provide honest, factual experiences. We do not tolerate spam reviews, promotional links, or abusive language. The administration reserves the right to moderate, flag, or delete any content that violates community standards.</p>
+              </div>
+            )}
+
+            {isPrivacyView && (
+              <div className="flex flex-col gap-4 text-xs font-semibold text-slate-600 leading-relaxed">
+                <p>At Udumalpet Business Tour, your privacy is our core priority. This Policy describes how we handle the personal information collected on our platform.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">1. Information We Collect</h4>
+                <p>We collect data (name, email, phone number, password) during registration. For merchants, we collect and publish business-related data (GST numbers, timings, category classifications, and logo files) to display on the public directory listings.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">2. How We Protect Your Data</h4>
+                <p>Your session tokens are stored securely in localStorage, and critical credentials like passwords are encrypted in our database. We do not sell or rent user contact details to third-party advertisers.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">3. Cookies & Session Storage</h4>
+                <p>We utilize standard browser cookies and local storage tokens (`ubt_token`, `ubt_user`) to keep you logged in and deliver custom dashboard states.</p>
+              </div>
+            )}
+
+            {isRefundView && (
+              <div className="flex flex-col gap-4 text-xs font-semibold text-slate-600 leading-relaxed">
+                <p>Our payment terms outline the billing cycles and refund policies for paid premium listings on Udumalpet Business Tour.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">1. Subscription Renewals</h4>
+                <p>Premium plans (Monthly and Yearly) are activated instantly upon successful payment completion. These subscriptions do not automatically auto-charge your credit card or bank account. You must manually renew upon expiry to keep listings active.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">2. Cancellation & Refunds</h4>
+                <p>Since premium listings are processed and activated instantly to increase visibility, all subscription payments are non-refundable. You can choose to cancel or let your subscription expire at any point without incurring cancellation penalties.</p>
+              </div>
+            )}
+
+            {isGuidelinesView && (
+              <div className="flex flex-col gap-4 text-xs font-semibold text-slate-600 leading-relaxed">
+                <p>These quality guidelines ensure all listings on Udumalpet Business Tour remain professional, helpful, and safe for the public.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">1. Listing Verification Standards</h4>
+                <p>All newly registered business profiles go through manual review. To get the "UDT Verified" badge, you must provide valid business registration (GST/licensing) and establish active call/WhatsApp connections.</p>
+                
+                <h4 className="font-extrabold text-slate-800 text-sm mt-2">2. Prohibited Content</h4>
+                <p>Do not post misleading prices, copycat listings, or copyright-infringing cover photos. Event promotions must represent legitimate public activities with real organizer contacts.</p>
+              </div>
+            )}
+
+            {isPricingView && (
+              <div className="flex flex-col gap-8 font-sans">
+                <p className="text-xs font-semibold text-slate-600 leading-relaxed">
+                  Grow your business and reach thousands of customers in and around Udumalpet. Select from our flexible, transparent subscription plans below.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
+                  {/* Basic Free Plan */}
+                  <div className="border border-slate-200 rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow bg-slate-50/50">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Basic</span>
+                        <h4 className="font-extrabold text-slate-800 text-lg">Free Listing</h4>
+                        <p className="text-[11px] font-semibold text-slate-400">Essential local presence</p>
+                      </div>
+                      
+                      <div className="flex items-baseline gap-1 mt-2">
+                        <span className="text-2xl font-black text-slate-800">₹0</span>
+                        <span className="text-[10px] font-bold text-slate-450">/ forever</span>
+                      </div>
+                      
+                      <ul className="flex flex-col gap-2.5 mt-4 text-[11.5px] font-semibold text-slate-550 border-t border-slate-100 pt-4">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span>Standard Directory Indexing</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span>Basic Business Hours</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span>Standard Vetting Queue</span>
+                        </li>
+                        <li className="flex items-center gap-2 text-slate-300 line-through">
+                          <span>Verified UDT Badge</span>
+                        </li>
+                        <li className="flex items-center gap-2 text-slate-350 line-through">
+                          <span>Priority Search Ranking</span>
+                        </li>
+                        <li className="flex items-center gap-2 text-slate-350 line-through">
+                          <span>Free Local Event Listing</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <Link to="/register?from=business" className="mt-8 py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-xs rounded-xl transition-all text-center">
+                      Get Started
+                    </Link>
+                  </div>
+
+                  {/* Monthly Premium Plan */}
+                  <div className="border-2 border-[#027244] rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative bg-white shadow-sm">
+                    <span className="absolute -top-3.5 right-6 bg-[#027244] text-white text-[9px] font-black uppercase px-3 py-1 rounded-full tracking-widest shadow-sm">Popular</span>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase text-[#027244] tracking-wider">Premium Growth</span>
+                        <h4 className="font-extrabold text-[#001c41] text-lg">Monthly Plan</h4>
+                        <p className="text-[11px] font-semibold text-slate-400">Maximize customer leads</p>
+                      </div>
+                      
+                      <div className="flex items-baseline gap-1 mt-2">
+                        <span className="text-2xl font-black text-slate-800">₹500</span>
+                        <span className="text-[10px] font-bold text-slate-450">/ 28 days</span>
+                      </div>
+                      
+                      <ul className="flex flex-col gap-2.5 mt-4 text-[11.5px] font-semibold text-slate-550 border-t border-slate-100 pt-4">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Priority Directory Ranking</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Direct Call & WhatsApp leads</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Photo gallery (multiple images)</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Google Review Sync</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Free local event posting</span>
+                        </li>
+                        <li className="flex items-center gap-2 text-slate-300 line-through">
+                          <span>Priority support SLA</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <Link to="/register?from=business" className="mt-8 py-2.5 px-4 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl transition-all shadow-md text-center">
+                      Join Premium
+                    </Link>
+                  </div>
+
+                  {/* Yearly Premium Plan */}
+                  <div className="border border-slate-200 rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow bg-gradient-to-b from-white to-emerald-50/10">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider">Ultimate Exposure</span>
+                        <h4 className="font-extrabold text-slate-800 text-lg">Yearly Plan</h4>
+                        <p className="text-[11px] font-semibold text-slate-400">Best value for established brands</p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1 mt-2">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-black text-slate-800">₹4,999</span>
+                          <span className="text-[10px] font-bold text-slate-450">/ 365 days</span>
+                        </div>
+                        <span className="text-[9px] font-extrabold text-[#027244] bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5 w-fit leading-none mt-0.5">Save over 15%</span>
+                      </div>
+                      
+                      <ul className="flex flex-col gap-2.5 mt-4 text-[11.5px] font-semibold text-slate-550 border-t border-slate-100 pt-4">
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>All Premium Monthly features</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Maximum Priority Ranking</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>UDT Verified Badge eligibility</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Dedicated Support desk SLA</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
+                          <span>Featured Home Banner priority</span>
+                        </li>
+                      </ul>
+                    </div>
+                    
+                    <Link to="/register?from=business" className="mt-8 py-2.5 px-4 bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl transition-all shadow-md text-center">
+                      Get Best Value
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center border-t border-slate-100 pt-6 mt-2">
+              <Link 
+                to="/businesses" 
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#027244] bg-slate-100 hover:bg-emerald-50/50 px-4 py-2.5 rounded-xl transition-colors cursor-pointer"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back to Business Directory
+              </Link>
+              <Link 
+                to="/" 
+                className="py-2.5 px-5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl transition-all shadow-md cursor-pointer"
+              >
+                Go to Homepage
+              </Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   if (isAboutView) {
     return <AboutUsView />;
   }
@@ -1256,23 +1534,8 @@ function BusinessesList() {
                               {!isSubscribed && (
                                 <div 
                                   onClick={(e) => { e.stopPropagation(); navigate(`/businesses/${biz._id}`); }}
-                                  className="absolute inset-0 bg-slate-900/10 backdrop-blur-xs flex items-center justify-center p-4 z-20 transition-all duration-300 hover:bg-slate-900/15 cursor-pointer"
-                                >
-                                  <div className="bg-white/85 backdrop-blur-md border border-white/40 shadow-lg rounded-2xl p-4 max-w-[240px] flex flex-col items-center text-center gap-2 transform transition-transform duration-305 hover:scale-102">
-                                    <div className="h-9 w-9 rounded-full bg-emerald-50 border border-emerald-100 text-[#027244] flex items-center justify-center shadow-inner">
-                                      <svg className="h-4.5 w-4.5 animate-pulse text-[#027244] fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                      </svg>
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                      <span className="font-extrabold text-[11px] text-[#001c41] tracking-tight">{biz.name}</span>
-                                      <span className="text-[8.5px] text-slate-550 font-black leading-normal uppercase tracking-wider">
-                                        Pending Subscription
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
+                                  className="absolute inset-0 bg-slate-900/10 backdrop-blur-xs z-20 transition-all duration-300 hover:bg-slate-900/15 cursor-pointer"
+                                />
                               )}
                             </div>
                           );
@@ -1798,23 +2061,8 @@ function BusinessesList() {
                     {!isSubscribed && (
                       <div 
                         onClick={(e) => { e.stopPropagation(); navigate(`/businesses/${biz._id}`); }}
-                        className="absolute inset-0 bg-slate-900/10 backdrop-blur-xs flex items-center justify-center p-4 z-20 transition-all duration-300 hover:bg-slate-900/15 cursor-pointer"
-                      >
-                        <div className="bg-white/85 backdrop-blur-md border border-white/40 shadow-lg rounded-2xl p-4 max-w-[240px] flex flex-col items-center text-center gap-2 transform transition-transform duration-305 hover:scale-102">
-                          <div className="h-9 w-9 rounded-full bg-emerald-50 border border-emerald-100 text-[#027244] flex items-center justify-center shadow-inner">
-                            <svg className="h-4.5 w-4.5 animate-pulse text-[#027244] fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </svg>
-                          </div>
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-extrabold text-[11px] text-[#001c41] tracking-tight">{biz.name}</span>
-                            <span className="text-[8.5px] text-slate-555 font-black leading-normal uppercase tracking-wider">
-                              Pending Subscription
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                        className="absolute inset-0 bg-slate-900/10 backdrop-blur-xs z-20 transition-all duration-300 hover:bg-slate-900/15 cursor-pointer"
+                      />
                     )}
                   </div>
                 );

@@ -61,6 +61,7 @@ export default function BlogDetail() {
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [commentText, setCommentText] = useState('');
+  const [guestName, setGuestName] = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
   const [likeLoading, setLikeLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -110,16 +111,25 @@ export default function BlogDetail() {
   };
 
   const handleLike = async () => {
-    if (!token) {
-      navigate(`/login?redirect=/blogs/${id}&from=blogs`);
-      return;
-    }
-
     setLikeLoading(true);
     try {
+      let guestId = localStorage.getItem('ubt_guest_id');
+      if (!guestId) {
+        guestId = 'guest_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+        localStorage.setItem('ubt_guest_id', guestId);
+      }
+
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`http://localhost:5000/api/blogs/${id}/like`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers,
+        body: JSON.stringify({ guestId })
       });
       const data = await res.json();
       if (data.success) {
@@ -131,10 +141,11 @@ export default function BlogDetail() {
     } catch (err) {
       // Mock toggle locally
       if (blog) {
-        const isLiked = blog.likes.includes(user._id || user.id);
+        const identifier = (user?._id || user?.id) || localStorage.getItem('ubt_guest_id') || 'guest_temp';
+        const isLiked = blog.likes.includes(identifier);
         const newLikes = isLiked 
-          ? blog.likes.filter(uid => uid !== (user._id || user.id))
-          : [...blog.likes, (user._id || user.id)];
+          ? blog.likes.filter(uid => uid !== identifier)
+          : [...blog.likes, identifier];
         setBlog(prev => ({
           ...prev,
           likes: newLikes
@@ -153,22 +164,26 @@ export default function BlogDetail() {
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    if (!token) {
-      navigate(`/login?redirect=/blogs/${id}&from=blogs`);
-      return;
-    }
-
     if (!commentText.trim()) return;
 
     setCommentLoading(true);
     try {
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const payload = { 
+        text: commentText,
+        userName: token ? undefined : (guestName.trim() || 'Anonymous Visitor')
+      };
+
       const res = await fetch(`http://localhost:5000/api/blogs/${id}/comment`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ text: commentText })
+        headers,
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       if (data.success) {
@@ -177,13 +192,14 @@ export default function BlogDetail() {
           comments: data.data
         }));
         setCommentText('');
+        setGuestName('');
       }
     } catch (err) {
       // Mock post locally
       const mockComment = {
         _id: 'mock_c_' + Math.random().toString(36).substr(2, 9),
-        user: user._id || user.id,
-        userName: user.fullName,
+        user: user ? (user._id || user.id) : undefined,
+        userName: user ? user.fullName : (guestName.trim() || 'Anonymous Visitor'),
         text: commentText,
         createdAt: new Date()
       };
@@ -192,6 +208,7 @@ export default function BlogDetail() {
         comments: [...prev.comments, mockComment]
       }));
       setCommentText('');
+      setGuestName('');
     } finally {
       setCommentLoading(false);
     }
@@ -250,7 +267,11 @@ export default function BlogDetail() {
     );
   }
 
-  const isLiked = user && blog.likes.includes(user._id || user.id);
+  const currentGuestId = localStorage.getItem('ubt_guest_id');
+  const isLiked = blog && (
+    (user && (blog.likes.includes(user._id) || blog.likes.includes(user.id))) ||
+    (!user && currentGuestId && blog.likes.includes(currentGuestId))
+  );
   const words = blog.content.split(' ').length;
   const readTime = Math.max(Math.ceil(words / 150), 1);
 
@@ -261,9 +282,25 @@ export default function BlogDetail() {
     if (!currentUserId) return false;
     const isCommentCreator = comment.user && comment.user.toString() === currentUserId.toString();
     const isBlogAuthor = blog.author && blog.author.toString() === currentUserId.toString();
-    const isAdmin = user.role === 'admin';
+    const isAdmin = ['admin', 'superadmin'].includes(user.role);
     return isCommentCreator || isBlogAuthor || isAdmin;
   };
+
+  // Dynamic back navigation route depending on user context
+  let backPath = "/blogs";
+  let backLabel = "Back to Blogs";
+  if (token && user) {
+    if (user.role === 'admin') {
+      backPath = "/admin";
+      backLabel = "Back to Admin Dashboard";
+    } else if (user.role === 'superadmin') {
+      backPath = "/superadmin";
+      backLabel = "Back to SuperAdmin Dashboard";
+    } else {
+      backPath = "/dashboard?tab=My Blogs";
+      backLabel = "Back to My Blogs";
+    }
+  }
 
   return (
     <div className="w-full flex flex-col items-center bg-[#F8FAFC] pb-16 font-sans">
@@ -273,10 +310,10 @@ export default function BlogDetail() {
         
         {/* Back Link */}
         <Link 
-          to="/blogs" 
+          to={backPath} 
           className="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-blue-600 transition-colors py-1 hover:-translate-x-0.5 transition-transform"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Blogs
+          <ArrowLeft className="h-4 w-4" /> {backLabel}
         </Link>
 
         {/* Cover Landscape */}
@@ -294,12 +331,16 @@ export default function BlogDetail() {
           
           {/* Header info */}
           <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400 border-b border-slate-100 pb-5">
-            <span className="flex items-center gap-1.5 text-slate-700">
-              <div className="h-6.5 w-6.5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-extrabold text-[9.5px] uppercase select-none border border-blue-100 shadow-2xs">
+            <Link 
+              to={`/profile/${blog.author || blog.authorId}`}
+              className="flex items-center gap-1.5 text-slate-700 hover:text-[#027244] transition-colors group cursor-pointer"
+            >
+              <div className="h-6.5 w-6.5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-extrabold text-[9.5px] uppercase select-none border border-blue-100 shadow-2xs group-hover:bg-[#027244]/10 group-hover:text-[#027244] group-hover:border-[#027244]/20 transition-all">
                 {blog.authorName.charAt(0)}
               </div>
-              <span>Written by {blog.authorName}</span>
-            </span>
+              <span className="font-extrabold">Written by {blog.authorName}</span>
+              <span className="text-[9.5px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-md group-hover:bg-[#E6F4EA] group-hover:text-[#027244] transition-all ml-1.5">View Profile</span>
+            </Link>
             <span>•</span>
             <span className="flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
@@ -417,23 +458,38 @@ export default function BlogDetail() {
             </div>
 
             {/* Comment Form */}
-            <form onSubmit={handleCommentSubmit} className="flex gap-3 border-t border-slate-100 pt-5 mt-2">
-              <input 
-                type="text" 
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder={token ? "Add a public comment..." : "Log in to join the discussion..."}
-                disabled={commentLoading}
-                required
-                className="w-full border border-slate-200/70 p-3 px-4 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 bg-slate-50/20"
-              />
-              <button 
-                type="submit"
-                disabled={commentLoading || !commentText.trim()}
-                className="bg-[#001c41] hover:bg-[#0b1b3d] disabled:opacity-40 text-white rounded-xl h-11 w-11 flex items-center justify-center shrink-0 cursor-pointer shadow-md transition-colors"
-              >
-                {commentLoading ? <RefreshCw className="h-4.5 w-4.5 animate-spin" /> : <Send className="h-4 w-4" />}
-              </button>
+            <form onSubmit={handleCommentSubmit} className="flex flex-col gap-3 border-t border-slate-100 pt-5 mt-2">
+              {!token && (
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="Your Name (Optional)"
+                    disabled={commentLoading}
+                    className="w-full sm:w-1/3 border border-slate-200/70 p-2 px-4 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 bg-slate-50/20"
+                  />
+                  <div className="text-slate-450 text-[10px] font-extrabold self-center">Commenting as Guest</div>
+                </div>
+              )}
+              <div className="flex gap-3">
+                <input 
+                  type="text" 
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Add a public comment..."
+                  disabled={commentLoading}
+                  required
+                  className="w-full border border-slate-200/70 p-3 px-4 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-600 bg-slate-50/20"
+                />
+                <button 
+                  type="submit"
+                  disabled={commentLoading || !commentText.trim()}
+                  className="bg-[#001c41] hover:bg-[#0b1b3d] disabled:opacity-40 text-white rounded-xl h-11 w-11 flex items-center justify-center shrink-0 cursor-pointer shadow-md transition-colors"
+                >
+                  {commentLoading ? <RefreshCw className="h-4.5 w-4.5 animate-spin" /> : <Send className="h-4 w-4" />}
+                </button>
+              </div>
             </form>
 
           </div>

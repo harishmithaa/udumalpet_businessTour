@@ -10,6 +10,14 @@ import {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+
+  const getStatusWeight = (status) => {
+    if (status === 'Pending Approval') return 0;
+    if (status === 'Needs Revision') return 1;
+    if (status === 'Approved') return 2;
+    if (status === 'Rejected') return 3;
+    return 4;
+  };
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   
@@ -32,6 +40,10 @@ export default function AdminDashboard() {
   // Slide-over Modal State
   const [selectedBiz, setSelectedBiz] = useState(null);
   const [showBizModal, setShowBizModal] = useState(false);
+  
+  // Blog Moderation Modal State
+  const [selectedBlogModal, setSelectedBlogModal] = useState(null);
+  const [suggestionText, setSuggestionText] = useState('');
   
   // Custom states for forms
   const [newNotice, setNewNotice] = useState({ title: '', message: '', type: 'announcement' });
@@ -233,7 +245,7 @@ export default function AdminDashboard() {
       }
       setToken(storedToken);
       setUser(uObj);
-      loadMockAdminData();
+      loadPlatformRealData();
       fetchQueries();
       fetchAppTestimonials();
     } catch (err) {
@@ -243,250 +255,119 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  const loadMockAdminData = () => {
+  const loadPlatformRealData = async () => {
     setLoading(true);
-    // Mock datasets precisely mapped to Udumalpet platform design language
-    const mockBiz = [
-      {
-        _id: 'biz_1',
-        name: 'R.K. Electricals',
-        ownerName: 'Haris R.',
-        category: 'Services',
-        type: 'Electrical Services',
-        phone: '+91 98945 43100',
-        email: 'rkelectricals@gmail.com',
-        website: 'www.rkelectricals.in',
-        address: 'Pollachi Road, Udumalpet, Tamil Nadu - 642126',
-        locality: 'Pollachi Road',
-        pincode: '642126',
-        status: 'Approved',
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000),
-        googlePlaceId: 'ChIJRKElectricalsUdt',
-        googleRating: 4.7,
-        googleReviewsCount: 84,
-        gstNumber: '33ABCDE1234F1Z5',
-        yearEstablished: 2012,
-        employeeCount: '10 - 20',
-        languagesKnown: 'Tamil, English',
-        serviceArea: 'Udumalpet, Pollachi, Palladam',
-        coverImageUrl: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=500&q=80',
-        timings: { Monday: '9:00 AM - 8:00 PM', Sunday: '9:00 AM - 1:00 PM' }
-      },
-      {
-        _id: 'biz_2',
-        name: 'Vibrant Bakery & Cafe',
-        ownerName: 'Anand Kumar',
-        category: 'Food & Drinks',
-        type: 'Bakery & Sweets',
-        phone: '+91 94432 99999',
-        email: 'vibrantbakery@gmail.com',
-        website: '',
-        address: 'Gandhi Nagar Main Road, Udumalpet - 642126',
-        locality: 'Gandhi Nagar',
-        pincode: '642126',
-        status: 'Pending Verification',
-        subscriptionStatus: 'none',
-        subscriptionExpiry: null,
-        googlePlaceId: 'ChIJVibrantBakeryUdt',
-        googleRating: 4.5,
-        googleReviewsCount: 22,
-        gstNumber: '',
-        yearEstablished: 2021,
-        employeeCount: '1 - 5',
-        languagesKnown: 'Tamil, English',
-        serviceArea: 'Udumalpet town limits',
-        coverImageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&q=80',
-        timings: { Monday: '8:00 AM - 9:00 PM', Sunday: 'Closed' }
-      },
-      {
-        _id: 'biz_3',
-        name: 'Green Valley Resorts',
-        ownerName: 'Subramanian K.',
-        category: 'Services',
-        type: 'Resorts & Hotels',
-        phone: '+91 98945 99999',
-        email: 'reservations@greenvalley.in',
-        website: 'www.greenvalleyresort.in',
-        address: 'Thirumoorthi Nagar, Dhali, Udumalpet - 642112',
-        locality: 'Dhali',
-        pincode: '642112',
-        status: 'Under Review',
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(new Date().getTime() + 85 * 24 * 60 * 60 * 1000),
-        googlePlaceId: 'ChIJGreenValleyUdt',
-        googleRating: 4.8,
-        googleReviewsCount: 98,
-        gstNumber: '33AABCG1234F1Z0',
-        yearEstablished: 2015,
-        employeeCount: '20 - 50',
-        languagesKnown: 'Tamil, English, Malayalam',
-        serviceArea: 'Thirumoorthy hills & surrounding areas',
-        coverImageUrl: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=500&q=80',
-        timings: { Monday: 'Open 24 Hours', Sunday: 'Open 24 Hours' }
-      },
-      {
-        _id: 'biz_4',
-        name: 'Sri Murugan Stores',
-        ownerName: 'Mano R.',
-        category: 'Shops',
-        type: 'Departmental Stores',
-        phone: '+91 94430 12345',
-        email: 'contact@muruganstores.com',
-        website: '',
-        address: 'Gandhi Nagar Main Road, Udumalpet - 642126',
-        locality: 'Gandhi Nagar',
-        pincode: '642126',
-        status: 'Approved',
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(new Date().getTime() + 5 * 24 * 60 * 60 * 1000),
-        googlePlaceId: 'ChIJSriMuruganStores10024',
-        googleRating: 4.6,
-        googleReviewsCount: 128,
-        gstNumber: '33AAACM1234F1Z1',
-        yearEstablished: 1998,
-        employeeCount: '20 - 50',
-        languagesKnown: 'Tamil, English',
-        serviceArea: 'Gandhi Nagar, Udumalpet Town',
-        coverImageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80',
-        timings: { Monday: '9:00 AM - 9:00 PM', Sunday: '9:00 AM - 1:00 PM' }
-      },
-      {
-        _id: 'biz_5',
-        name: 'Amaravathi Wind Farms office',
-        ownerName: 'Priya K.',
-        category: 'Services',
-        type: 'Windmill Maintenance',
-        phone: '+91 4252 223456',
-        email: 'info@amaravathiwind.com',
-        website: 'www.amaravathiwind.com',
-        address: 'Dharapuram Road, Udumalpet - 642126',
-        locality: 'Dharapuram Road',
-        pincode: '642126',
-        status: 'Approved',
-        subscriptionStatus: 'expired',
-        subscriptionExpiry: new Date(new Date().getTime() - 2 * 24 * 60 * 60 * 1000),
-        googlePlaceId: 'ChIJAmaravathiWindUdt',
-        googleRating: 4.2,
-        googleReviewsCount: 15,
-        gstNumber: '33AACCA1234F1Z9',
-        yearEstablished: 2008,
-        employeeCount: '50 - 100',
-        languagesKnown: 'Tamil, English',
-        serviceArea: 'Udumalpet division windmills grid',
-        coverImageUrl: 'https://images.unsplash.com/photo-1466611653911-95081537e5b7?w=500&q=80',
-        timings: { Monday: '9:00 AM - 6:00 PM', Sunday: 'Closed' }
+    try {
+      const storedToken = localStorage.getItem('ubt_token');
+      const headers = { 'Authorization': `Bearer ${storedToken}` };
+
+      // 1. Fetch businesses
+      const bizRes = await fetch('http://localhost:5000/api/admin/businesses', { headers });
+      const bizData = await bizRes.json();
+      let activeBiz = [];
+      if (bizData.success) {
+        activeBiz = bizData.data.map(b => ({
+          ...b,
+          ownerName: b.ownerId ? b.ownerId.fullName || b.ownerId.name || 'Merchant' : 'Merchant',
+          ownerEmail: b.ownerId ? b.ownerId.email : '',
+          googlePlaceId: b.googlePlaceId || '',
+          googleRating: b.googleRating || 0,
+          googleReviewsCount: b.googleReviewsCount || 0
+        }));
+        setBusinesses(activeBiz);
       }
-    ];
 
-    const mockBlogs = [
-      {
-        _id: 'blog_1',
-        title: 'A Local’s Ultimate Guide to Thirumoorthy Hills & Dam',
-        authorName: 'Ananth Sundar',
-        status: 'Pending Review',
-        featured: false,
-        createdAt: new Date(),
-        content: 'Thirumoorthy Hills, located about 20 km from Udumalpet, is a pristine tourism spot with waterfalls and dams...'
-      },
-      {
-        _id: 'blog_2',
-        title: 'Agricultural Windmills of Udumalpet: A Green Energy Revolution',
-        authorName: 'Radha Mohan',
-        status: 'Approved',
-        featured: true,
-        createdAt: new Date(new Date().getTime() - 3 * 24 * 60 * 60 * 1000),
-        content: 'Udumalpet is recognized across India as the wind farm hub of Tamil Nadu. Hundreds of towering windmills...'
+      // 2. Fetch blogs
+      const blogsRes = await fetch('http://localhost:5000/api/blogs/admin/all', { headers });
+      const blogsData = await blogsRes.json();
+      if (blogsData.success) {
+        setBlogs(blogsData.data);
       }
-    ];
 
-    const mockEvents = [
-      {
-        _id: 'evt_1',
-        title: 'Udumalai Marathon 2026',
-        category: 'Sports',
-        venue: 'Municipal Stadium, Udumalpet',
-        date: '2026-06-15',
-        organizer: 'UDT Sports Association',
-        status: 'Pending Review',
-        featured: false
-      },
-      {
-        _id: 'evt_2',
-        title: 'Annual Maari Amman Kovil Festival',
-        category: 'Festival',
-        venue: 'Town Temple Area',
-        date: '2026-07-02',
-        organizer: 'Temple Trust Boards',
-        status: 'Approved',
-        featured: true
+      // 3. Fetch events
+      const evRes = await fetch('http://localhost:5000/api/events/admin/all', { headers });
+      const evData = await evRes.json();
+      if (evData.success) {
+        setEvents(evData.data);
       }
-    ];
 
-    const mockReviews = [
-      {
-        _id: 'rev_1',
-        businessName: 'Vibrant Bakery & Cafe',
-        authorName: 'Ramesh K.',
-        rating: 1,
-        text: 'SPAM REVIEW: Earn Rs 5000 daily from home visit spamlink.com!',
-        status: 'flagged'
-      },
-      {
-        _id: 'rev_2',
-        businessName: 'R.K. Electricals',
-        authorName: 'Karthik S.',
-        rating: 5,
-        text: 'Excellent service! They came on time and fixed the inverter issue quickly. Very professional.',
-        status: 'approved'
-      }
-    ];
+      // Keep mock subscriptions and reviews for simple UI metrics
+      const mockReviews = [
+        {
+          _id: 'rev_1',
+          businessName: 'Vibrant Bakery & Cafe',
+          authorName: 'Ramesh K.',
+          rating: 1,
+          text: 'SPAM REVIEW: Earn Rs 5000 daily from home visit spamlink.com!',
+          status: 'flagged'
+        },
+        {
+          _id: 'rev_2',
+          businessName: 'R.K. Electricals',
+          authorName: 'Karthik S.',
+          rating: 5,
+          text: 'Excellent service! They came on time and fixed the inverter issue quickly. Very professional.',
+          status: 'approved'
+        }
+      ];
 
-    const mockSubs = [
-      {
-        _id: 'sub_1',
-        businessName: 'R.K. Electricals',
-        planType: 'Monthly',
-        amount: 499,
-        paymentStatus: 'Paid',
-        expiryDate: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
-      },
-      {
-        _id: 'sub_2',
-        businessName: 'Green Valley Resorts',
-        planType: 'Yearly',
-        amount: 4999,
-        paymentStatus: 'Paid',
-        expiryDate: new Date(new Date().getTime() + 85 * 24 * 60 * 60 * 1000)
-      }
-    ];
+      const mockSubs = [
+        {
+          _id: 'sub_1',
+          businessName: 'R.K. Electricals',
+          planType: 'Monthly',
+          amount: 499,
+          paymentStatus: 'Paid',
+          expiryDate: new Date(new Date().getTime() + 15 * 24 * 60 * 60 * 1000)
+        }
+      ];
 
-    setBusinesses(mockBiz);
-    setBlogs(mockBlogs);
-    setEvents(mockEvents);
-    setReviews(mockReviews);
-    setSubscriptions(mockSubs);
-    
-    // Auto-calculate stats
-    setReportsData({
-      total: mockBiz.length,
-      pending: mockBiz.filter(b => b.status === 'Pending Verification').length,
-      active: mockBiz.filter(b => b.subscriptionStatus === 'active' && b.status === 'Approved').length,
-      expired: mockBiz.filter(b => b.subscriptionStatus === 'expired').length
-    });
+      setReviews(mockReviews);
+      setSubscriptions(mockSubs);
 
-    setLoading(false);
+      // Auto-calculate stats
+      setReportsData({
+        total: activeBiz.length,
+        pending: activeBiz.filter(b => b.status === 'Pending Verification' || b.status === 'Under Review').length,
+        active: activeBiz.filter(b => b.subscriptionStatus === 'active' && b.status === 'Approved').length,
+        expired: activeBiz.filter(b => b.subscriptionStatus === 'expired').length
+      });
+
+    } catch (err) {
+      console.error('Error hydrating admin platform datasets:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAction = (bizId, type) => {
-    setBusinesses(prev => prev.map(b => {
-      if (b._id === bizId) {
-        return { ...b, status: type === 'approve' ? 'Approved' : (type === 'reject' ? 'Rejected' : 'Suspended') };
+  const handleAction = async (bizId, type) => {
+    let nextStatus = 'Pending Verification';
+    if (type === 'approve') nextStatus = 'Approved';
+    if (type === 'reject') nextStatus = 'Rejected';
+    if (type === 'suspend') nextStatus = 'Suspended';
+    
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/businesses/${bizId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Business successfully marked as ${nextStatus}!`);
+        loadPlatformRealData();
+      } else {
+        alert(data.message || 'Failed to update business status.');
       }
-      return b;
-    }));
-    if (selectedBiz && selectedBiz._id === bizId) {
-      setSelectedBiz(prev => ({ ...prev, status: type === 'approve' ? 'Approved' : (type === 'reject' ? 'Rejected' : 'Suspended') }));
+    } catch (err) {
+      // Fallback mock update locally
+      setBusinesses(prev => prev.map(b => b._id === bizId ? { ...b, status: nextStatus } : b));
+      if (selectedBiz && selectedBiz._id === bizId) {
+        setSelectedBiz(prev => ({ ...prev, status: nextStatus }));
+      }
     }
   };
 
@@ -504,12 +385,73 @@ export default function AdminDashboard() {
     alert('Plan manually activated successfully for 30 days!');
   };
 
-  const handleBlogAction = (blogId, status) => {
-    setBlogs(prev => prev.map(b => b._id === blogId ? { ...b, status } : b));
+  const handleBlogAction = async (blogId, status, suggestions = '') => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/blogs/moderate`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token || localStorage.getItem('ubt_token')}`
+        },
+        body: JSON.stringify({ blogId, status, suggestions })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Blog status successfully set to ${status}!`);
+        loadPlatformRealData();
+      } else {
+        alert(data.message || 'Failed to update blog status.');
+      }
+    } catch (err) {
+      // Fallback mock update locally
+      setBlogs(prev => prev.map(b => b._id === blogId ? { ...b, status, revisionSuggestions: suggestions } : b));
+    }
   };
 
-  const handleEventAction = (eventId, status) => {
-    setEvents(prev => prev.map(e => e._id === eventId ? { ...e, status } : e));
+  const handleBlogDelete = async (blogId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this blog post? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/blogs/${blogId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token || localStorage.getItem('ubt_token')}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Blog post successfully deleted!');
+        loadPlatformRealData();
+      } else {
+        alert(data.message || 'Failed to delete blog.');
+      }
+    } catch (err) {
+      alert('Error deleting blog post.');
+    }
+  };
+
+  const handleEventAction = async (eventId, status) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/events/moderate`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ eventId, status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Event status successfully set to ${status}!`);
+        loadPlatformRealData();
+      } else {
+        alert(data.message || 'Failed to update event status.');
+      }
+    } catch (err) {
+      // Fallback mock update locally
+      setEvents(prev => prev.map(e => e._id === eventId ? { ...e, status } : e));
+    }
   };
 
   const handleReviewAction = (revId, action) => {
@@ -754,7 +696,7 @@ export default function AdminDashboard() {
                           <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
                             auditSubTab === 'Blogs' ? 'bg-white text-[#027244]' : 'bg-slate-200 text-slate-600'
                           }`}>
-                            {blogs.filter(b => b.status === 'Pending Review').length}
+                            {blogs.filter(b => b.status === 'Pending Approval').length}
                           </span>
                         </button>
                         <button
@@ -906,7 +848,7 @@ export default function AdminDashboard() {
                               <div className="flex flex-col text-left font-sans">
                                 <span className="font-extrabold text-[#001c41] text-xs sm:text-[13px] leading-snug">{b.title}</span>
                                 <span className="text-[9.5px] text-slate-400 font-bold mt-1 block">
-                                  Author: {b.authorName} • Date: {b.createdAt.toLocaleDateString()}
+                                  Author: {b.authorName} • Date: {new Date(b.createdAt).toLocaleDateString()}
                                 </span>
                                 <a
                                   href={`/blogs/${b._id}`}
@@ -1220,7 +1162,6 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
-
               {/* TAB: BLOGS MODERATION */}
               {activeTab === 'Blogs' && (
                 <div className="flex flex-col gap-6 text-left">
@@ -1229,40 +1170,52 @@ export default function AdminDashboard() {
                     <span className="text-[10px] text-slate-450 font-semibold mt-0.5">Audit community blogs, feature written items, or filter spam</span>
                   </div>
 
-                  <div className="flex flex-col gap-4.5">
-                    {blogs.map(b => (
-                      <div key={b._id} className="bg-white border border-slate-200 rounded-[20px] p-5 shadow-2xs flex flex-col justify-between gap-4">
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex flex-col text-left">
-                            <span className="font-extrabold text-[#001c41] text-sm leading-snug">{b.title}</span>
-                            <span className="text-[9.5px] text-slate-400 font-bold mt-1 block">Author: {b.authorName} • Date: {b.createdAt.toLocaleDateString()}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[...blogs]
+                      .sort((a, b) => getStatusWeight(a.status) - getStatusWeight(b.status) || new Date(b.createdAt) - new Date(a.createdAt))
+                      .map(b => (
+                      <div 
+                        key={b._id} 
+                        onClick={() => { setSelectedBlogModal(b); setSuggestionText(b.revisionSuggestions || ''); }}
+                        className="bg-white border border-slate-200 hover:border-slate-350 hover:shadow-md rounded-[24px] p-5 shadow-2xs transition-all flex flex-col justify-between gap-4 cursor-pointer text-left group"
+                      >
+                        <div className="flex gap-4">
+                          {b.coverImage && (
+                            <div className="h-16 w-20 rounded-xl overflow-hidden border border-slate-100 shrink-0 select-none">
+                              <img src={b.coverImage} className="w-full h-full object-cover" alt="Blog Cover" />
+                            </div>
+                          )}
+                          <div className="flex flex-col min-w-0 text-left">
+                            <span className="font-extrabold text-[#001c41] text-xs sm:text-[13px] leading-snug truncate group-hover:text-[#027244] transition-colors">{b.title}</span>
+                            <span className="text-[9.5px] text-slate-405 font-bold mt-1">Author: {b.authorName} • {new Date(b.createdAt).toLocaleDateString()}</span>
                           </div>
+                        </div>
+
+                        <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-1">
                           <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
-                            b.status === 'Approved' ? 'bg-emerald-50 border-emerald-250 text-emerald-700' : 'bg-amber-50 border-amber-250 text-amber-600'
+                            b.status === 'Approved' 
+                              ? 'bg-emerald-50 border-emerald-250 text-emerald-700' 
+                              : b.status === 'Pending Approval' || b.status === 'Needs Revision'
+                                ? 'bg-amber-50 border-amber-200 text-amber-700 animate-pulse'
+                                : b.status === 'Rejected'
+                                  ? 'bg-rose-50 border-rose-200 text-rose-650'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500'
                           }`}>
                             {b.status}
                           </span>
-                        </div>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-3xl text-justify">{b.content}</p>
-                        
-                        <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
-                          <button 
-                            onClick={() => handleBlogAction(b._id, 'Rejected')}
-                            disabled={b.status === 'Rejected'}
-                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-650 font-extrabold text-[10.5px] rounded-xl cursor-pointer disabled:opacity-40"
-                          >
-                            Reject
-                          </button>
-                          <button 
-                            onClick={() => handleBlogAction(b._id, 'Approved')}
-                            disabled={b.status === 'Approved'}
-                            className="px-4 py-1.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10.5px] rounded-xl cursor-pointer disabled:opacity-40 shadow-sm shadow-emerald-800/10"
-                          >
-                            Approve & Publish
-                          </button>
+                          <span className="text-[10.5px] font-extrabold text-[#027244] flex items-center gap-1 group-hover:underline">
+                            Touch to Audit & Moderate →
+                          </span>
                         </div>
                       </div>
                     ))}
+                    {blogs.length === 0 && (
+                      <div className="col-span-2 bg-white border border-slate-200 rounded-3xl p-16 text-center text-slate-400 flex flex-col items-center gap-3">
+                        <BookOpen className="h-10 w-10 text-emerald-600 animate-pulse" />
+                        <span className="text-sm font-bold text-slate-800 font-sans">No Blogs Yet</span>
+                        <p className="text-xs text-slate-400 font-semibold leading-relaxed max-w-xs">There are no blog posts currently available in the moderation system.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1886,6 +1839,181 @@ export default function AdminDashboard() {
               >
                 {replySubmitting ? 'Sending...' : 'Send Reply'}
               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+      {/* 5. BLOG MODERATION DETAILED POPUP MODAL */}
+      {selectedBlogModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white border border-slate-200 shadow-2xl rounded-[28px] overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-200 flex items-center justify-between shrink-0">
+              <div className="flex flex-col text-left">
+                <h3 className="font-extrabold text-slate-800 text-base font-sans">Blog Moderation Desk</h3>
+                <span className="text-[10px] text-slate-450 font-semibold mt-0.5">Review full article content, draft suggestions or approve status.</span>
+              </div>
+              <button 
+                onClick={() => { setSelectedBlogModal(null); setSuggestionText(''); }}
+                className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-50 text-slate-550 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex flex-col gap-6 text-left font-sans">
+              
+              {/* Blog Title & Metadata */}
+              <div className="flex flex-col gap-2">
+                <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">
+                  Submitted on {new Date(selectedBlogModal.createdAt).toLocaleString()} • Status: <span className={`font-extrabold ${
+                    selectedBlogModal.status === 'Approved'
+                      ? 'text-emerald-650'
+                      : selectedBlogModal.status === 'Pending Approval' || selectedBlogModal.status === 'Needs Revision'
+                        ? 'text-amber-600'
+                        : selectedBlogModal.status === 'Rejected'
+                          ? 'text-rose-600'
+                          : 'text-slate-500'
+                  }`}>{selectedBlogModal.status}</span>
+                </span>
+                <h2 className="font-extrabold text-xl text-[#001c41] leading-tight font-sans">{selectedBlogModal.title}</h2>
+                
+                {selectedBlogModal.author && (
+                  <div className="bg-slate-50 border border-slate-200/80 p-3 rounded-2xl flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-slate-600 font-semibold">
+                    <span>✍️ Author: <strong className="text-slate-800">{selectedBlogModal.authorName}</strong></span>
+                    <span>📧 {selectedBlogModal.author.email || 'N/A'}</span>
+                    <span>📞 {selectedBlogModal.author.mobileNumber || selectedBlogModal.author.phone || 'N/A'}</span>
+                    <span>Role: <strong className="text-emerald-700 uppercase">{selectedBlogModal.author.role || 'Writer'}</strong></span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cover Image */}
+              {selectedBlogModal.coverImage && (
+                <div className="w-full h-64 rounded-2xl overflow-hidden border border-slate-100 shrink-0 select-none shadow-3xs">
+                  <img src={selectedBlogModal.coverImage} className="w-full h-full object-cover" alt="Full Blog Cover" />
+                </div>
+              )}
+
+              {/* Article Content */}
+              <div className="flex flex-col gap-2">
+                <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest leading-none">Article content</span>
+                <p className="text-xs text-slate-655 leading-relaxed font-semibold bg-slate-50/40 border border-slate-100 p-4.5 rounded-2xl whitespace-pre-wrap text-justify">
+                  {selectedBlogModal.content}
+                </p>
+              </div>
+
+              {/* Suggestions Panel */}
+              <div className="border-t border-slate-150 pt-5 flex flex-col gap-3">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest leading-none flex items-center gap-1.5">
+                    💡 Revision Suggestions & Chat History
+                  </span>
+                  <span className="text-[9.5px] text-slate-400 font-semibold mt-1">Discuss corrections or request changes with the writer.</span>
+                </div>
+
+                {/* Revision Chat History Stream */}
+                {selectedBlogModal.revisionHistory && selectedBlogModal.revisionHistory.length > 0 && (
+                  <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto border border-slate-150 rounded-2xl p-4.5 bg-slate-50/50">
+                    {selectedBlogModal.revisionHistory.map((item, idx) => {
+                      const isAdmin = item.senderRole === 'admin' || item.senderRole === 'superadmin';
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`flex flex-col max-w-[85%] rounded-2xl p-3 border text-xs leading-relaxed ${
+                            isAdmin 
+                              ? 'bg-amber-50 border-amber-100 self-end text-amber-900 text-right' 
+                              : 'bg-emerald-50/50 border-emerald-250/20 self-start text-[#001c41] text-left'
+                          }`}
+                        >
+                          <div className={`flex items-center gap-3.5 mb-1 ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                            <span className="font-extrabold text-[8.5px] uppercase tracking-wider text-slate-450">
+                              {item.senderName} ({isAdmin ? 'Admin' : 'Writer'})
+                            </span>
+                            <span className="text-[8.5px] text-slate-405 font-bold">
+                              {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="font-semibold whitespace-pre-wrap leading-snug">{item.message}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <textarea
+                  rows={3}
+                  placeholder="Type changes, additions, or reply to writer..."
+                  value={suggestionText}
+                  onChange={(e) => setSuggestionText(e.target.value)}
+                  className="w-full border border-slate-200 p-3.5 rounded-2xl text-xs font-semibold text-slate-700 bg-slate-50/10 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-50 resize-none leading-relaxed"
+                />
+                
+                <div className="flex justify-end">
+                  <button 
+                    onClick={() => {
+                      if (!suggestionText.trim()) {
+                        alert("Please type suggestions before requesting revision.");
+                        return;
+                      }
+                      handleBlogAction(selectedBlogModal._id, 'Needs Revision', suggestionText);
+                      setSuggestionText('');
+                      setSelectedBlogModal(null);
+                    }}
+                    className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl cursor-pointer flex items-center gap-1 shadow-xs transition-colors"
+                  >
+                    Send Suggestions to Writer (Needs Revision)
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-3 shrink-0 justify-between items-center">
+              <button 
+                onClick={() => {
+                  if (confirm("Are you sure you want to permanently delete this blog post? This action cannot be undone.")) {
+                    handleBlogDelete(selectedBlogModal._id);
+                    setSelectedBlogModal(null);
+                  }
+                }}
+                className="px-4 py-2.5 bg-red-550/10 border border-red-550/20 hover:bg-red-550/20 text-red-650 font-extrabold text-xs rounded-xl cursor-pointer transition-colors"
+              >
+                Delete Post
+              </button>
+
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { setSelectedBlogModal(null); setSuggestionText(''); }}
+                  className="px-4.5 py-2.5 border border-slate-200 text-slate-700 font-extrabold text-xs rounded-xl cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    handleBlogAction(selectedBlogModal._id, 'Rejected');
+                    setSelectedBlogModal(null);
+                  }}
+                  disabled={selectedBlogModal.status === 'Rejected'}
+                  className="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-40 transition-colors"
+                >
+                  Reject & Hide
+                </button>
+                <button 
+                  onClick={() => {
+                    handleBlogAction(selectedBlogModal._id, 'Approved');
+                    setSelectedBlogModal(null);
+                  }}
+                  disabled={selectedBlogModal.status === 'Approved'}
+                  className="px-5 py-2.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-40 transition-all shadow shadow-emerald-800/10"
+                >
+                  Approve & Publish
+                </button>
+              </div>
             </div>
 
           </div>

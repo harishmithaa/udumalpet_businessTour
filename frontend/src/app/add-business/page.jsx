@@ -572,6 +572,21 @@ export default function AddBusiness() {
       if (data.success) {
         localStorage.removeItem('ubt_draft_business');
         localStorage.removeItem('ubt_edit_draft');
+
+        // Sync local storage user cached session to merchant role
+        const cachedUser = localStorage.getItem('ubt_user');
+        if (cachedUser) {
+          try {
+            const parsed = JSON.parse(cachedUser);
+            if (parsed.role === 'visitor') {
+              parsed.role = 'merchant';
+              localStorage.setItem('ubt_user', JSON.stringify(parsed));
+            }
+          } catch (e) {
+            console.error('Failed to sync local user role update:', e);
+          }
+        }
+
         if (isEditing) {
           navigate('/dashboard?message=profile_updated');
         } else {

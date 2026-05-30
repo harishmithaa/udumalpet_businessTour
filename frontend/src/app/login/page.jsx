@@ -325,31 +325,6 @@ export default function Login() {
       return;
     }
 
-    if (emailOrPhone === 'admin@gmail.com' && password === '123456') {
-      const mockAdminUser = {
-        _id: 'mock_admin_1',
-        fullName: 'UBT Administrator',
-        email: 'admin@gmail.com',
-        role: 'admin'
-      };
-      localStorage.setItem('ubt_token', 'mock_admin_token');
-      localStorage.setItem('ubt_user', JSON.stringify(mockAdminUser));
-      navigate('/admin');
-      return;
-    }
-
-    if (emailOrPhone === 'superadmin@gmail.com' && password === '123456') {
-      const mockSuperAdminUser = {
-        _id: 'mock_superadmin_1',
-        fullName: 'UBT Super Administrator',
-        email: 'superadmin@gmail.com',
-        role: 'superadmin'
-      };
-      localStorage.setItem('ubt_token', 'mock_superadmin_token');
-      localStorage.setItem('ubt_user', JSON.stringify(mockSuperAdminUser));
-      navigate('/superadmin');
-      return;
-    }
 
     setLoading(true);
     setError('');

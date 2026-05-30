@@ -8,7 +8,9 @@ const errorHandler = require('./middleware/errorMiddleware');
 const app = express();
 
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false
+}));
 app.use(cors({
   origin: '*', // Allows broad connection while in development, can be configured specifically in production
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -37,8 +39,10 @@ if (process.env.NODE_ENV !== 'production') {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+const path = require('path');
+
 // Static uploads folder fallback
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route Mappings
 app.use('/api/auth', require('./routes/auth'));

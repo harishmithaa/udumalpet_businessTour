@@ -59,6 +59,10 @@ export default function SuperAdminDashboard() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [showEditEventModal, setShowEditEventModal] = useState(false);
 
+  // Blog Moderation Modal State (for popup audit desk)
+  const [selectedBlogModal, setSelectedBlogModal] = useState(null);
+  const [suggestionText, setSuggestionText] = useState('');
+
   // Reviews moderation states
   const [suspendedUsers, setSuspendedUsers] = useState([]);
 
@@ -781,7 +785,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleBlogAction = async (blogId, status) => {
+  const handleBlogAction = async (blogId, status, suggestions = '') => {
     try {
       const res = await fetch(`http://localhost:5000/api/superadmin/blogs/${blogId}`, {
         method: 'PUT',
@@ -789,13 +793,36 @@ export default function SuperAdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('ubt_token')}` 
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, suggestions })
       });
       if (res.ok) {
         loadPlatformRealData();
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleBlogDelete = async (blogId) => {
+    if (!window.confirm('Are you sure you want to permanently delete this blog post? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:5000/api/blogs/${blogId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token || localStorage.getItem('ubt_token')}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert('Blog post successfully deleted!');
+        loadPlatformRealData();
+      } else {
+        alert(data.message || 'Failed to delete blog.');
+      }
+    } catch (err) {
+      alert('Error deleting blog post.');
     }
   };
 
@@ -1078,13 +1105,21 @@ export default function SuperAdminDashboard() {
     return true;
   });
 
+  const getBlogStatusWeight = (status) => {
+    if (status === 'Pending Approval') return 0;
+    if (status === 'Needs Revision') return 1;
+    if (status === 'Approved') return 2;
+    if (status === 'Rejected') return 3;
+    return 4;
+  };
+
   const filteredBlogs = blogs.filter(b => {
     const matchesSearch = b.title.toLowerCase().includes(searchQuery.toLowerCase()) || b.authorName?.toLowerCase().includes(searchQuery.toLowerCase()) || b.author?.toLowerCase().includes(searchQuery.toLowerCase());
     if (!matchesSearch) return false;
     if (blogStatusFilter === 'Approved') return b.status === 'Approved';
-    if (blogStatusFilter === 'Pending') return b.status === 'Pending Review' || b.status === 'Pending Verification';
+    if (blogStatusFilter === 'Pending') return b.status === 'Pending Review' || b.status === 'Pending Verification' || b.status === 'Pending Approval';
     return true;
-  });
+  }).sort((a, b) => getBlogStatusWeight(a.status) - getBlogStatusWeight(b.status) || new Date(b.createdAt) - new Date(a.createdAt));
 
   const filteredEvents = events.filter(e => {
     const matchesSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || e.organizer.toLowerCase().includes(searchQuery.toLowerCase());
@@ -1137,6 +1172,12 @@ export default function SuperAdminDashboard() {
         { id: 'Platform Settings', label: 'Settings', icon: <Settings className="h-4.5 w-4.5" /> },
         { id: 'Platform Settings', label: 'Pages & Content', icon: <Layers className="h-4.5 w-4.5" /> },
         { id: 'System Logs', label: 'System Logs', icon: <Terminal className="h-4.5 w-4.5" /> }
+      ]
+    },
+    {
+      group: '',
+      items: [
+        { id: 'Logout', label: 'Logout', icon: <LogOut className="h-4.5 w-4.5" /> }
       ]
     }
   ];
@@ -1680,7 +1721,7 @@ export default function SuperAdminDashboard() {
                           },
                           { 
                             label: 'Blog Posts', 
-                            count: blogs.filter(b => b.status === 'Pending Review' || b.status === 'Pending Verification').length, 
+                            count: blogs.filter(b => b.status === 'Pending Review' || b.status === 'Pending Verification' || b.status === 'Pending Approval').length, 
                             icon: <BookOpen className="h-3.5 w-3.5" />, 
                             desc: 'Blog submissions', 
                             color: 'text-pink-400 bg-pink-500/10', 
@@ -3358,94 +3399,54 @@ export default function SuperAdminDashboard() {
                     ))}
                   </div>
 
-                  <div className="flex flex-col gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {filteredBlogs.map(b => (
                       <div 
                         key={b._id} 
-                        className={`border rounded-[28px] p-5 flex flex-col gap-4 font-sans ${
-                          themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                        onClick={() => { setSelectedBlogModal(b); setSuggestionText(b.revisionSuggestions || ''); }}
+                        className={`border rounded-[24px] p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between gap-4 cursor-pointer text-left group ${
+                          themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white hover:border-slate-700' : 'bg-white border-slate-200 text-[#001c41] hover:border-slate-350'
                         }`}
                       >
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex flex-col text-left font-sans">
-                            <div className="flex items-center gap-2">
-                              <span className={`font-extrabold text-xs sm:text-[13px] leading-snug ${themeMode === 'dark' ? 'text-white' : 'text-[#001c41]'}`}>{b.title}</span>
-                              {b.featured && (
-                                <span className="bg-amber-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-lg flex items-center gap-0.5 select-none shrink-0">
-                                  <Sparkles className="h-2 w-2 fill-current" /> Featured
-                                </span>
-                              )}
+                        <div className="flex gap-4">
+                          {b.coverImage && (
+                            <div className="h-16 w-20 rounded-xl overflow-hidden border border-slate-100 dark:border-slate-800 shrink-0 select-none">
+                              <img src={b.coverImage} className="w-full h-full object-cover" alt="Blog Cover" />
                             </div>
-                            <span className="text-[9.5px] text-slate-400 font-bold mt-1 block">
-                              Author: {b.authorName} • Date: {new Date(b.createdAt).toLocaleDateString()}
-                            </span>
+                          )}
+                          <div className="flex flex-col min-w-0 text-left">
+                            <span className="font-extrabold text-xs sm:text-[13px] leading-snug truncate group-hover:text-[#027244] transition-colors">{b.title}</span>
+                            <span className="text-[9.5px] text-slate-400 font-bold mt-1">Author: {b.authorName} • {new Date(b.createdAt).toLocaleDateString()}</span>
                           </div>
+                        </div>
+
+                        <div className="flex justify-between items-center border-t border-slate-100 dark:border-slate-800/80 pt-3 mt-1">
                           <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
-                            b.status === 'Approved' ? 'bg-[#027244]/10 border-[#027244]/20 text-[#027244]' : 'bg-amber-500/10 border-amber-500/20 text-amber-550 animate-pulse'
+                            b.status === 'Approved' 
+                              ? 'bg-emerald-50 border-emerald-250 text-emerald-700 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400' 
+                              : b.status === 'Pending Approval' || b.status === 'Needs Revision'
+                                ? 'bg-amber-50 border-amber-200 text-amber-700 animate-pulse dark:bg-amber-950/20 dark:border-amber-800 dark:text-amber-400'
+                                : b.status === 'Rejected'
+                                  ? 'bg-rose-50 border-rose-200 text-rose-605 dark:bg-rose-950/20 dark:border-rose-800 dark:text-rose-400'
+                                  : 'bg-slate-50 border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-750 dark:text-slate-400'
                           }`}>
                             {b.status}
                           </span>
-                        </div>
-                        <p className={`text-xs font-semibold leading-relaxed max-w-3xl text-justify font-sans ${
-                          themeMode === 'dark' ? 'text-slate-300' : 'text-slate-550'
-                        }`}>{b.content}</p>
-                        
-                        <div className={`flex justify-between items-center border-t pt-3.5 gap-2 ${
-                          themeMode === 'dark' ? 'border-slate-800' : 'border-slate-100'
-                        }`}>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => {
-                                setBlogs(prev => prev.map(item => item._id === b._id ? { ...item, featured: !item.featured } : item));
-                              }}
-                              className={`px-3 py-1.5 border rounded-xl font-extrabold text-[10px] cursor-pointer transition-colors ${
-                                b.featured
-                                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-500'
-                                  : themeMode === 'dark' ? 'border-slate-800 text-slate-400 hover:bg-slate-800/40' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                              }`}
-                            >
-                              {b.featured ? 'Un-Feature' : 'Feature Blog'}
-                            </button>
-                            <button 
-                              onClick={() => { setEditingBlog(b); setShowEditBlogModal(true); }}
-                              className={`px-3 py-1.5 border rounded-xl font-extrabold text-[10px] cursor-pointer transition-colors ${
-                                themeMode === 'dark' ? 'border-slate-800 text-slate-350 hover:bg-slate-800/40' : 'border-slate-200 text-slate-600 hover:bg-slate-550'
-                              }`}
-                            >
-                              Edit Content
-                            </button>
-                            <button 
-                              onClick={() => {
-                                if (window.confirm("Permanently delete this blog post?")) {
-                                  setBlogs(prev => prev.filter(item => item._id !== b._id));
-                                  alert("Blog post deleted.");
-                                }
-                              }}
-                              className="px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-500 rounded-xl font-extrabold text-[10px] cursor-pointer transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </div>
-
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => handleBlogAction(b._id, 'Rejected')}
-                              disabled={b.status === 'Rejected'}
-                              className="px-3.5 py-1.5 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-500 font-extrabold text-[10.5px] rounded-xl cursor-pointer disabled:opacity-40 transition-colors"
-                            >
-                              Reject
-                            </button>
-                            <button 
-                              onClick={() => handleBlogAction(b._id, 'Approved')}
-                              disabled={b.status === 'Approved'}
-                              className="px-4.5 py-1.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10.5px] rounded-xl cursor-pointer disabled:opacity-40 transition-colors shadow shadow-emerald-800/10"
-                            >
-                              Approve & Publish
-                            </button>
-                          </div>
+                          <span className="text-[10.5px] font-extrabold text-[#027244] flex items-center gap-1 group-hover:underline">
+                            Touch to Audit & Moderate →
+                          </span>
                         </div>
                       </div>
                     ))}
+                    {filteredBlogs.length === 0 && (
+                      <div className={`col-span-2 border rounded-3xl p-16 text-center text-slate-450 flex flex-col items-center gap-3 ${
+                        themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-200'
+                      }`}>
+                        <BookOpen className="h-10 w-10 text-emerald-600 animate-pulse" />
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200 font-sans">No Blogs Found</span>
+                        <p className="text-xs text-slate-400 font-semibold leading-relaxed max-w-xs">There are no blog posts currently available in the moderation system.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -6245,6 +6246,212 @@ export default function SuperAdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 13. BLOG MODERATION DETAILED POPUP MODAL */}
+      {selectedBlogModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-fadeIn">
+          <div className={`w-full max-w-2xl border shadow-2xl rounded-[28px] overflow-hidden flex flex-col max-h-[90vh] ${
+            themeMode === 'dark' ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+          }`}>
+            
+            {/* Modal Header */}
+            <div className={`p-6 border-b flex items-center justify-between shrink-0 ${
+              themeMode === 'dark' ? 'border-slate-800' : 'border-slate-200'
+            }`}>
+              <div className="flex flex-col text-left">
+                <h3 className="font-extrabold text-base font-sans">Blog Moderation Desk</h3>
+                <span className="text-[10px] text-slate-400 font-semibold mt-0.5">Review full article content, draft suggestions or approve status.</span>
+              </div>
+              <button 
+                onClick={() => { setSelectedBlogModal(null); setSuggestionText(''); }}
+                className={`h-8 w-8 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
+                  themeMode === 'dark' ? 'border-slate-800 hover:bg-slate-850 text-slate-400' : 'border-slate-200 hover:bg-slate-550 text-slate-550'
+                }`}
+              >
+                <X className="h-4.5 w-4.5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto flex flex-col gap-6 text-left font-sans">
+              
+              {/* Blog Title & Metadata */}
+              <div className="flex flex-col gap-2">
+                <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">
+                  Submitted on {new Date(selectedBlogModal.createdAt).toLocaleString()} • Status: <span className={`font-extrabold ${
+                    selectedBlogModal.status === 'Approved' 
+                      ? 'text-emerald-650 dark:text-emerald-400' 
+                      : selectedBlogModal.status === 'Pending Approval' || selectedBlogModal.status === 'Needs Revision'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : selectedBlogModal.status === 'Rejected'
+                          ? 'text-rose-600 dark:text-rose-455'
+                          : 'text-slate-500 dark:text-slate-400'
+                  }`}>{selectedBlogModal.status}</span>
+                </span>
+                <h2 className={`font-extrabold text-xl leading-tight font-sans ${themeMode === 'dark' ? 'text-white' : 'text-[#001c41]'}`}>{selectedBlogModal.title}</h2>
+                
+                {selectedBlogModal.author && (
+                  <div className={`border p-3 rounded-2xl flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-semibold ${
+                    themeMode === 'dark' ? 'bg-slate-950/40 border-slate-800 text-slate-300' : 'bg-slate-50 border-slate-200/80 text-slate-600'
+                  }`}>
+                    <span>✍️ Author: <strong className={themeMode === 'dark' ? 'text-slate-200' : 'text-slate-800'}>{selectedBlogModal.authorName}</strong></span>
+                    <span>📧 {selectedBlogModal.author.email || 'N/A'}</span>
+                    <span>📞 {selectedBlogModal.author.mobileNumber || selectedBlogModal.author.phone || 'N/A'}</span>
+                    <span>Role: <strong className="text-emerald-500 uppercase">{selectedBlogModal.author.role || 'Writer'}</strong></span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cover Image */}
+              {selectedBlogModal.coverImage && (
+                <div className="w-full h-64 rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 shrink-0 select-none shadow-3xs">
+                  <img src={selectedBlogModal.coverImage} className="w-full h-full object-cover" alt="Full Blog Cover" />
+                </div>
+              )}
+
+              {/* Article Content */}
+              <div className="flex flex-col gap-2">
+                <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-widest leading-none">Article content</span>
+                <p className={`text-xs leading-relaxed font-semibold border p-4.5 rounded-2xl whitespace-pre-wrap text-justify ${
+                  themeMode === 'dark' ? 'bg-slate-950/20 border-slate-800 text-slate-250' : 'bg-slate-50/40 border-slate-100 text-slate-655'
+                }`}>
+                  {selectedBlogModal.content}
+                </p>
+              </div>
+
+              {/* Suggestions Panel */}
+              <div className={`border-t pt-5 flex flex-col gap-3 ${
+                themeMode === 'dark' ? 'border-slate-800' : 'border-slate-150'
+              }`}>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none flex items-center gap-1.5">
+                    💡 Revision Suggestions & Chat History
+                  </span>
+                  <span className="text-[9.5px] text-slate-400 font-semibold mt-1">Discuss corrections or request changes with the writer.</span>
+                </div>
+
+                {/* Revision Chat History Stream */}
+                {selectedBlogModal.revisionHistory && selectedBlogModal.revisionHistory.length > 0 && (
+                  <div className={`flex flex-col gap-2.5 max-h-48 overflow-y-auto border rounded-2xl p-4.5 ${
+                    themeMode === 'dark' 
+                      ? 'bg-slate-950/40 border-slate-800' 
+                      : 'bg-slate-50/50 border-slate-150'
+                  }`}>
+                    {selectedBlogModal.revisionHistory.map((item, idx) => {
+                      const isAdmin = item.senderRole === 'admin' || item.senderRole === 'superadmin';
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`flex flex-col max-w-[85%] rounded-2xl p-3 border text-xs leading-relaxed ${
+                            isAdmin 
+                              ? (themeMode === 'dark' 
+                                  ? 'bg-amber-950/25 border-amber-900/40 self-end text-amber-250 text-right' 
+                                  : 'bg-amber-55/15 border-amber-100 self-end text-amber-900 text-right') 
+                              : (themeMode === 'dark' 
+                                  ? 'bg-emerald-950/25 border-emerald-900/30 self-start text-emerald-250 text-left' 
+                                  : 'bg-emerald-50/50 border-emerald-250/20 self-start text-[#001c41] text-left')
+                          }`}
+                        >
+                          <div className={`flex items-center gap-3.5 mb-1 ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                            <span className="font-extrabold text-[8.5px] uppercase tracking-wider opacity-60">
+                              {item.senderName} ({isAdmin ? 'Admin' : 'Writer'})
+                            </span>
+                            <span className="text-[8.5px] opacity-40 font-bold">
+                              {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="font-semibold whitespace-pre-wrap leading-snug">{item.message}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <textarea
+                  rows={3}
+                  placeholder="Type changes, additions, or reply to writer..."
+                  value={suggestionText}
+                  onChange={(e) => setSuggestionText(e.target.value)}
+                  className={`w-full border p-3.5 rounded-2xl text-xs font-semibold focus:outline-none resize-none leading-relaxed ${
+                    themeMode === 'dark' 
+                      ? 'bg-slate-950/20 border-slate-800 text-slate-200 focus:border-amber-500' 
+                      : 'bg-slate-50/10 border-slate-200 text-slate-700 focus:border-amber-500'
+                  }`}
+                />
+                
+                <div className="flex justify-end">
+                  <button 
+                    onClick={() => {
+                      if (!suggestionText.trim()) {
+                        alert("Please type suggestions before requesting revision.");
+                        return;
+                      }
+                      handleBlogAction(selectedBlogModal._id, 'Needs Revision', suggestionText);
+                      setSuggestionText('');
+                      setSelectedBlogModal(null);
+                    }}
+                    className="px-5 py-2.5 bg-amber-550 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl cursor-pointer flex items-center gap-1 shadow-xs transition-colors"
+                  >
+                    Send Suggestions to Writer (Needs Revision)
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className={`p-6 border-t flex gap-3 shrink-0 justify-between items-center ${
+              themeMode === 'dark' ? 'border-slate-800 bg-slate-900/50' : 'border-slate-200 bg-slate-50'
+            }`}>
+              <button 
+                onClick={() => {
+                  if (confirm("Are you sure you want to permanently delete this blog post? This action cannot be undone.")) {
+                    handleBlogDelete(selectedBlogModal._id);
+                    setSelectedBlogModal(null);
+                  }
+                }}
+                className="px-4 py-2.5 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-500 font-extrabold text-xs rounded-xl cursor-pointer transition-colors"
+              >
+                Delete Post
+              </button>
+
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => { setSelectedBlogModal(null); setSuggestionText(''); }}
+                  className={`px-4.5 py-2.5 border font-extrabold text-xs rounded-xl cursor-pointer transition-colors ${
+                    themeMode === 'dark' ? 'border-slate-800 hover:bg-slate-800 text-slate-300' : 'border-slate-200 hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => {
+                    handleBlogAction(selectedBlogModal._id, 'Rejected');
+                    setSelectedBlogModal(null);
+                  }}
+                  disabled={selectedBlogModal.status === 'Rejected'}
+                  className={`px-4.5 py-2.5 border font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-40 transition-colors ${
+                    themeMode === 'dark' ? 'border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-850' : 'border-slate-200 bg-slate-100 text-slate-750 hover:bg-slate-200'
+                  }`}
+                >
+                  Reject & Hide
+                </button>
+                <button 
+                  onClick={() => {
+                    handleBlogAction(selectedBlogModal._id, 'Approved');
+                    setSelectedBlogModal(null);
+                  }}
+                  disabled={selectedBlogModal.status === 'Approved'}
+                  className="px-5 py-2.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-40 transition-all shadow shadow-emerald-800/10"
+                >
+                  Approve & Publish
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}

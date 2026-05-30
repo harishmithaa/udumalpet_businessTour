@@ -42,10 +42,9 @@ const ReviewSchema = new mongoose.Schema({
 });
 
 // Sync text and reviewText for full backward and frontend compatibility
-ReviewSchema.pre('save', function(next) {
+ReviewSchema.pre('save', async function() {
   if (this.text && !this.reviewText) this.reviewText = this.text;
   if (this.reviewText && !this.text) this.text = this.reviewText;
-  next();
 });
 
 module.exports = mongoose.model('Review', ReviewSchema);

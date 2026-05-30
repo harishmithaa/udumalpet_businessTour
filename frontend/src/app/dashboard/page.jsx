@@ -5,7 +5,7 @@ import {
   RefreshCw, Star, CreditCard, ChevronRight, ChevronLeft, ArrowLeft, Activity, PhoneCall, 
   MessageSquare, Plus, CheckCircle, Info, Bell, ExternalLink, Globe,
   Copy, Check, Upload, HelpCircle, Briefcase, Mail, Settings, Menu, X, Trash2, Search,
-  FileEdit, BookOpen, Heart, Eye, Calendar, Clock, MapPin
+  FileEdit, BookOpen, Heart, Eye, Calendar, Clock, MapPin, LogOut
 } from 'lucide-react';
 
 function DashboardContent() {
@@ -52,6 +52,7 @@ function DashboardContent() {
   const [blogsLoading, setBlogsLoading] = useState(false);
   const [activeBlogComments, setActiveBlogComments] = useState(null); // stores blog ID currently viewing comments for
   const [showWriteBlogModal, setShowWriteBlogModal] = useState(false);
+  const [editingBlogId, setEditingBlogId] = useState(null);
   const [blogTitle, setBlogTitle] = useState('');
   const [blogCover, setBlogCover] = useState('');
   const [blogContent, setBlogContent] = useState('');
@@ -60,6 +61,8 @@ function DashboardContent() {
   const [blogError, setBlogError] = useState('');
   const [blogImageUploading, setBlogImageUploading] = useState(false);
   const [blogImageError, setBlogImageError] = useState('');
+  const [replyTexts, setReplyTexts] = useState({});
+  const [blogSubmitNote, setBlogSubmitNote] = useState('');
  
   // Events Dashboard States
   const [userEvents, setUserEvents] = useState([]);
@@ -87,6 +90,12 @@ function DashboardContent() {
   // Navigation Sidebar States
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('ubt_token');
+    localStorage.removeItem('ubt_user');
+    navigate('/login');
+  };
 
   // Quick Photo upload states
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -227,6 +236,11 @@ function DashboardContent() {
       navigate('/login');
     }
 
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+
     if (searchParams.get('message') === 'listing_created') {
       setSuccessBanner('Your business has been successfully submitted and is currently "Pending Verification". Upgrade to Premium below to activate instantly!');
     } else if (searchParams.get('message') === 'profile_updated') {
@@ -289,7 +303,9 @@ function DashboardContent() {
           setProfileCompletion(Math.min(score, 100));
         } else {
           setBusiness(null);
-          setActiveTab('My Blogs');
+          if (!searchParams.get('tab')) {
+            setActiveTab('My Business');
+          }
         }
       } else {
         throw new Error('Fallback required');
@@ -353,11 +369,12 @@ function DashboardContent() {
   };
 
   const fetchUserBlogs = async () => {
-    if (!token) return;
+    const activeToken = token || localStorage.getItem('ubt_token');
+    if (!activeToken) return;
     setBlogsLoading(true);
     try {
       const res = await fetch('http://localhost:5000/api/blogs/my-blogs', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${activeToken}` }
       });
       const data = await res.json();
       if (data.success) {
@@ -434,6 +451,27 @@ function DashboardContent() {
     }
   };
 
+  const handleEditBlogClick = (blog) => {
+    setEditingBlogId(blog._id);
+    setBlogTitle(blog.title || '');
+    setBlogCover(blog.coverImage || '');
+    setBlogContent(blog.content || '');
+    setBlogSuccess('');
+    setBlogError('');
+    setShowWriteBlogModal(true);
+  };
+
+  const handleCloseWriteBlogModal = () => {
+    setShowWriteBlogModal(false);
+    setEditingBlogId(null);
+    setBlogTitle('');
+    setBlogCover('');
+    setBlogContent('');
+    setBlogSuccess('');
+    setBlogError('');
+    setBlogSubmitNote('');
+  };
+
   const handleBlogImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -467,8 +505,8 @@ function DashboardContent() {
       }
     } catch (err) {
       console.error('Upload error:', err);
-      setBlogImageError('Network error uploading image. Using fallback URL.');
-      setBlogCover(URL.createObjectURL(file));
+      setBlogImageError('Network error uploading image. Using a premium placeholder instead.');
+      setBlogCover('https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80');
     } finally {
       setBlogImageUploading(false);
     }
@@ -487,24 +525,34 @@ function DashboardContent() {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/blogs', {
-        method: 'POST',
+      const url = editingBlogId 
+        ? `http://localhost:5000/api/blogs/${editingBlogId}`
+        : 'http://localhost:5000/api/blogs';
+      const method = editingBlogId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token || localStorage.getItem('ubt_token')}`
         },
         body: JSON.stringify({
           title: blogTitle,
           content: blogContent,
-          coverImage: blogCover || undefined
+          coverImage: blogCover || undefined,
+          submissionNote: editingBlogId ? (blogSubmitNote || 'Article re-submitted with corrections.') : undefined
         })
       });
       const data = await res.json();
       if (data.success) {
-        setBlogSuccess('Your blog post has been submitted and is pending review by administrators!');
+        setBlogSuccess(editingBlogId 
+          ? 'Your blog post has been successfully updated and re-submitted for admin review!'
+          : 'Your blog post has been submitted and is pending review by administrators!');
         setBlogTitle('');
         setBlogCover('');
         setBlogContent('');
+        setBlogSubmitNote('');
+        setEditingBlogId(null);
         fetchUserBlogs();
         setTimeout(() => {
           setShowWriteBlogModal(false);
@@ -515,30 +563,69 @@ function DashboardContent() {
       }
     } catch (err) {
       // Mock submit locally
-      const mockPost = {
-        _id: 'mock_dashboard_' + Math.random().toString(36).substr(2, 9),
-        title: blogTitle,
-        content: blogContent,
-        coverImage: blogCover || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80',
-        authorName: user?.fullName || 'UBT Writer',
-        status: 'Pending Approval',
-        showLikes: true,
-        showComments: true,
-        likes: [],
-        comments: [],
-        createdAt: new Date()
-      };
-      setUserBlogs(prev => [mockPost, ...prev]);
-      setBlogSuccess('Mock Mode: Blog post successfully submitted to the pending approval review queue!');
+      if (editingBlogId) {
+        setUserBlogs(prev => prev.map(b => b._id === editingBlogId ? { 
+          ...b, 
+          title: blogTitle, 
+          content: blogContent, 
+          coverImage: blogCover || b.coverImage, 
+          status: 'Pending Approval',
+          revisionSuggestions: ''
+        } : b));
+        setBlogSuccess('Mock Mode: Blog post successfully updated and re-submitted!');
+      } else {
+        const mockPost = {
+          _id: 'mock_dashboard_' + Math.random().toString(36).substr(2, 9),
+          title: blogTitle,
+          content: blogContent,
+          coverImage: blogCover || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80',
+          authorName: user?.fullName || 'UBT Writer',
+          status: 'Pending Approval',
+          showLikes: true,
+          showComments: true,
+          likes: [],
+          comments: [],
+          createdAt: new Date()
+        };
+        setUserBlogs(prev => [mockPost, ...prev]);
+        setBlogSuccess('Mock Mode: Blog post successfully submitted to the pending approval review queue!');
+      }
       setBlogTitle('');
       setBlogCover('');
       setBlogContent('');
+      setBlogSubmitNote('');
+      setEditingBlogId(null);
       setTimeout(() => {
         setShowWriteBlogModal(false);
         setBlogSuccess('');
       }, 5000);
     } finally {
       setBlogWriteLoading(false);
+    }
+  };
+
+  const handleSendRevisionComment = async (blogId) => {
+    const messageText = replyTexts[blogId];
+    if (!messageText || !messageText.trim()) return;
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/blogs/${blogId}/revision-comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || localStorage.getItem('ubt_token')}`
+        },
+        body: JSON.stringify({ message: messageText })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReplyTexts(prev => ({ ...prev, [blogId]: '' }));
+        fetchUserBlogs();
+      } else {
+        alert(data.message || 'Failed to send comment.');
+      }
+    } catch (err) {
+      alert('Error sending revision comment.');
     }
   };
 
@@ -598,7 +685,7 @@ function DashboardContent() {
     }
 
     try {
-      const price = business && business.subscriptionStatus === 'active' ? 0 : 20;
+      const price = business && business.subscriptionStatus === 'active' ? 0 : 99;
 
       const res = await fetch('http://localhost:5000/api/events', {
         method: 'POST',
@@ -624,7 +711,7 @@ function DashboardContent() {
       });
       const data = await res.json();
       if (data.success) {
-        setEventSuccess(`Event successfully listed! ${price === 0 ? 'Free Listing applied (Active Premium Subscription detected).' : 'Standard charge of ₹20 listed.'}`);
+        setEventSuccess(`Event successfully listed! ${price === 0 ? 'Free Listing applied (Active Premium Subscription detected).' : 'Standard charge of ₹99 listed.'}`);
         setEventTitle('');
         setEventDescription('');
         setEventDate('');
@@ -645,7 +732,7 @@ function DashboardContent() {
         setEventError(data.message || 'Failed to submit event.');
       }
     } catch (err) {
-      const price = business && business.subscriptionStatus === 'active' ? 0 : 20;
+      const price = business && business.subscriptionStatus === 'active' ? 0 : 99;
       const mockEvt = {
         _id: 'mock_evt_' + Math.random().toString(36).substr(2, 9),
         title: eventTitle,
@@ -663,7 +750,7 @@ function DashboardContent() {
         price: price
       };
       setUserEvents(prev => [mockEvt, ...prev]);
-      setEventSuccess(`Mock Mode: Event successfully listed! ${price === 0 ? 'Free Listing applied (Active Premium Subscription detected).' : 'Standard charge of ₹20 listed.'}`);
+      setEventSuccess(`Mock Mode: Event successfully listed! ${price === 0 ? 'Free Listing applied (Active Premium Subscription detected).' : 'Standard charge of ₹99 listed.'}`);
       
       setEventTitle('');
       setEventDescription('');
@@ -1109,12 +1196,13 @@ function DashboardContent() {
       { label: 'Subscription & Billing', icon: <CreditCard className="h-4 w-4" />, onClick: () => setShowRenewModal(true) },
       { label: 'Offers & Promotions', icon: <Sparkles className="h-4 w-4" /> }
     ] : [
-      { label: 'Dashboard', icon: <Briefcase className="h-4 w-4" /> }
+      { label: 'My Business', icon: <Briefcase className="h-4 w-4" /> }
     ]),
     { label: 'Events', icon: <Calendar className="h-4 w-4" /> },
     { label: 'My Blogs', icon: <FileEdit className="h-4 w-4" /> },
     { label: 'Settings', icon: <Settings className="h-4 w-4" /> },
     { label: 'Help & Support', icon: <HelpCircle className="h-4 w-4" /> },
+    { label: 'Logout', icon: <LogOut className="h-4 w-4" />, onClick: handleLogout },
   ];
 
   return (
@@ -1185,11 +1273,19 @@ function DashboardContent() {
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[11.5px] font-extrabold transition-all hover:bg-slate-800/40 hover:text-white cursor-pointer ${
                 activeTab === link.label && !link.onClick
                   ? 'bg-[#027244] text-white shadow-md shadow-emerald-900/20' 
-                  : 'text-slate-400 hover:bg-slate-800/30'
+                  : link.label === 'Logout'
+                    ? 'text-rose-400 hover:bg-rose-950/20 hover:text-rose-350'
+                    : 'text-slate-400 hover:bg-slate-800/30'
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className={activeTab === link.label && !link.onClick ? 'text-emerald-300' : 'text-slate-500 group-hover:text-slate-300'}>
+                <span className={
+                  activeTab === link.label && !link.onClick 
+                    ? 'text-emerald-300' 
+                    : link.label === 'Logout'
+                      ? 'text-rose-455 group-hover:text-rose-350'
+                      : 'text-slate-500 group-hover:text-slate-300'
+                }>
                   {link.icon}
                 </span>
                 <span>{link.label}</span>
@@ -1204,21 +1300,23 @@ function DashboardContent() {
         </nav>
 
         {/* Upgrade Plan Callout Widget */}
-        <div className="m-4.5 p-4 bg-slate-900/40 border border-slate-850 rounded-2xl flex flex-col gap-2 relative overflow-hidden shadow-sm">
-          <div className="absolute -right-8 -top-8 w-16 h-16 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
-          <h5 className="text-[11px] font-extrabold text-amber-400 flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 fill-current" /> Upgrade Your Plan
-          </h5>
-          <p className="text-[10px] text-slate-400 font-bold leading-normal">
-            Get more visibility, leads and grow your business faster.
-          </p>
-          <button 
-            onClick={() => setShowRenewModal(true)}
-            className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-extrabold rounded-xl transition-all shadow-md shadow-emerald-950/20 cursor-pointer mt-1"
-          >
-            Upgrade Now
-          </button>
-        </div>
+        {business && (
+          <div className="m-4.5 p-4 bg-slate-900/40 border border-slate-850 rounded-2xl flex flex-col gap-2 relative overflow-hidden shadow-sm">
+            <div className="absolute -right-8 -top-8 w-16 h-16 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
+            <h5 className="text-[11px] font-extrabold text-amber-400 flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 fill-current" /> Upgrade Your Plan
+            </h5>
+            <p className="text-[10px] text-slate-400 font-bold leading-normal">
+              Get more visibility, leads and grow your business faster.
+            </p>
+            <button 
+              onClick={() => setShowRenewModal(true)}
+              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-extrabold rounded-xl transition-all shadow-md shadow-emerald-950/20 cursor-pointer mt-1"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        )}
 
         {/* Need Help Helpline Card */}
         <div className="px-4.5 pb-6 border-t border-slate-800 pt-4 flex flex-col gap-1.5 shrink-0 bg-slate-950/20">
@@ -1870,22 +1968,22 @@ function DashboardContent() {
           {/* ========================================================================= */}
           {/* TAB: DASHBOARD NOT LISTED YET (INLINE BUSINESS OWNER CTA) */}
           {/* ========================================================================= */}
-          {activeTab === 'Dashboard' && !business && (
+          {activeTab === 'My Business' && !business && (
             <div className="max-w-md w-full bg-white border border-slate-200 shadow-xl rounded-[28px] p-8 text-center flex flex-col items-center gap-6 mx-auto my-12 animate-fadeIn">
               <div className="h-15 w-15 bg-emerald-50 text-[#027244] rounded-2xl flex items-center justify-center border border-emerald-100 animate-pulse">
-                <Plus className="h-7 w-7" />
+                <Briefcase className="h-7 w-7" />
               </div>
-              <div className="flex flex-col gap-1.5">
-                <h3 className="font-extrabold text-slate-800 text-base leading-tight">No Business Profile Registered</h3>
+              <div className="flex flex-col gap-1.5 items-center">
+                <h3 className="font-extrabold text-slate-800 text-base leading-tight">Still no business registered!</h3>
                 <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                  Hello, {user?.fullName}! You have not registered any business listing on Udumalpet Business Tour (UBT) yet. Add your business today to get discovered!
+                  Hello, {user?.fullName || 'Writer'}! You have not registered any business listing on Udumalpet Business Tour (UBT) yet. Register now to list your business and unlock customer leads.
                 </p>
               </div>
               <button 
                 onClick={() => navigate('/add-business')}
                 className="w-full py-3.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow-md transition-all shadow-emerald-700/10 cursor-pointer"
               >
-                List Your Business Now
+                Register Business Now
               </button>
             </div>
           )}
@@ -1917,21 +2015,21 @@ function DashboardContent() {
                   <span className="text-xs font-bold">Retrieving your listed events...</span>
                 </div>
               ) : userEvents.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-450 flex flex-col items-center gap-4 shadow-sm max-w-md mx-auto my-6">
-                  <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
-                    <Calendar className="h-6 w-6" />
+                <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-450 flex flex-col items-center gap-4 shadow-sm max-w-md mx-auto my-6 animate-fadeIn">
+                  <div className="h-15 w-15 bg-emerald-50 text-[#027244] rounded-2xl flex items-center justify-center border border-emerald-100 animate-pulse">
+                    <Calendar className="h-7 w-7" />
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <h4 className="font-extrabold text-slate-755 text-sm">No Events Listed</h4>
-                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                      Announce local business expos, match events, seasonal discounts, or training meets to gather customers!
+                  <div className="flex flex-col gap-1.5 text-center items-center">
+                    <h4 className="font-extrabold text-slate-800 text-base leading-tight">Still no events listed!</h4>
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                      Hello, {user?.fullName || 'Writer'}! Announce local business expos, seasonal discounts, or training meets. Register events now to showcase them in the website.
                     </p>
                   </div>
                   <button 
                     onClick={() => setShowCreateEventModal(true)}
-                    className="py-2.5 px-6 bg-[#027244] hover:bg-[#005934] text-white font-bold text-xs rounded-xl shadow transition-all cursor-pointer"
+                    className="w-full py-3.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow-md transition-all shadow-emerald-700/10 cursor-pointer"
                   >
-                    List Your First Event
+                    List Event Now
                   </button>
                 </div>
               ) : (
@@ -2675,7 +2773,6 @@ function DashboardContent() {
                               />
                             </div>
                             <div className="flex flex-col min-w-0 text-left">
-                              
                               {/* Status Badge */}
                               <div className="flex items-center gap-2">
                                 <span className={`px-2 py-0.5 rounded text-[8.5px] font-extrabold uppercase tracking-wide border ${
@@ -2683,7 +2780,9 @@ function DashboardContent() {
                                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                                     : blog.status === 'Rejected'
                                       ? 'bg-red-50 border-red-200 text-red-650'
-                                      : 'bg-amber-50 border-amber-200 text-amber-600 animate-pulse'
+                                      : blog.status === 'Needs Revision'
+                                        ? 'bg-amber-50 border-amber-300 text-amber-800 font-black animate-pulse'
+                                        : 'bg-slate-50 border-slate-200 text-slate-500 animate-pulse'
                                 }`}>
                                   {blog.status}
                                 </span>
@@ -2695,6 +2794,75 @@ function DashboardContent() {
                               <h4 className="font-extrabold text-sm text-[#001c41] mt-1.5 leading-snug truncate">
                                 {blog.title}
                               </h4>
+
+                              {((blog.status === 'Needs Revision') || (blog.status === 'Pending Approval' && blog.revisionHistory && blog.revisionHistory.length > 0)) && (
+                                <div className={`mt-2.5 border rounded-2xl p-4 text-[11px] font-semibold leading-relaxed text-left flex flex-col gap-3 animate-fadeIn w-full ${
+                                  blog.status === 'Needs Revision' 
+                                    ? 'bg-amber-50/70 border-amber-200/60 text-amber-900' 
+                                    : 'bg-emerald-50/20 border-emerald-200/30 text-emerald-900'
+                                }`}>
+                                  <div className="flex items-start gap-1.5 border-b border-slate-205/30 pb-2">
+                                    <AlertTriangle className={`h-4 w-4 shrink-0 mt-0.5 ${blog.status === 'Needs Revision' ? 'text-amber-600' : 'text-[#027244]'}`} />
+                                    <span className={`font-extrabold uppercase tracking-wider text-[9.5px] ${blog.status === 'Needs Revision' ? 'text-amber-950' : 'text-emerald-950'}`}>
+                                      {blog.status === 'Needs Revision' ? '⚠️ Revision Chat & Discussion' : '💬 Active Vetting - Revision Chat History'}
+                                    </span>
+                                  </div>
+
+                                  {/* Chat bubble list */}
+                                  {blog.revisionHistory && blog.revisionHistory.length > 0 ? (
+                                    <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1 bg-white/40 border border-slate-200/30 p-2.5 rounded-xl">
+                                      {blog.revisionHistory.map((item, idx) => {
+                                        const isAdmin = item.senderRole === 'admin' || item.senderRole === 'superadmin';
+                                        return (
+                                          <div 
+                                            key={idx} 
+                                            className={`flex flex-col max-w-[85%] rounded-2xl p-2.5 border text-[10.5px] ${
+                                              isAdmin 
+                                                ? 'bg-amber-100/50 border-amber-200/40 self-start text-left text-amber-950' 
+                                                : 'bg-emerald-50/50 border-emerald-250/20 self-end text-right text-[#001c41]'
+                                            }`}
+                                          >
+                                            <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider mb-0.5">
+                                              {item.senderName} ({isAdmin ? 'Admin' : 'You'})
+                                            </span>
+                                            <p className="font-semibold whitespace-pre-wrap leading-snug">{item.message}</p>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <div className="bg-white/40 border border-amber-200/30 p-2.5 rounded-xl text-[10.5px]">
+                                      <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider mb-0.5">Moderator suggestion</span>
+                                      <p className="font-semibold whitespace-pre-wrap leading-snug">{blog.revisionSuggestions}</p>
+                                    </div>
+                                  )}
+
+                                  {/* Reply chat input */}
+                                  <div className="flex gap-2 mt-0.5">
+                                    <input
+                                      type="text"
+                                      placeholder="Explain changes or reply..."
+                                      className="flex-1 bg-white border border-slate-200/80 rounded-xl px-3 py-2 text-[10.5px] font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-100"
+                                      value={replyTexts[blog._id] || ''}
+                                      onChange={(e) => setReplyTexts(prev => ({ ...prev, [blog._id]: e.target.value }))}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleSendRevisionComment(blog._id);
+                                        }
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => handleSendRevisionComment(blog._id)}
+                                      className={`px-3 py-2 text-white font-extrabold text-[10px] rounded-xl cursor-pointer transition-colors shadow-2xs ${
+                                        blog.status === 'Needs Revision' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-[#027244] hover:bg-[#005934]'
+                                      }`}
+                                    >
+                                      Send
+                                    </button>
+                                  </div>
+
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -2741,6 +2909,13 @@ function DashboardContent() {
                             </Link>
 
                             <div className="flex items-center gap-1.5">
+                              <button 
+                                onClick={() => handleEditBlogClick(blog)}
+                                title="Edit / Correct Post"
+                                className="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-[#027244] font-extrabold text-[9.5px] rounded-lg transition-all cursor-pointer flex items-center gap-0.5 border border-emerald-100/10 shadow-2xs"
+                              >
+                                <Edit3 className="h-3 w-3" /> Edit / Correct
+                              </button>
                               <button 
                                 onClick={() => handleBlogDelete(blog._id)}
                                 title="Delete Blog"
@@ -3902,11 +4077,17 @@ function DashboardContent() {
             
             <div className="flex justify-between items-start border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-extrabold text-slate-800 text-base">Write a Blog Post</h3>
-                <p className="text-slate-450 text-[10px] font-semibold mt-1">Publish local insights, travel tips, culinary reviews, or farming advice.</p>
+                <h3 className="font-extrabold text-slate-800 text-base">
+                  {editingBlogId ? 'Edit & Correct Blog Post' : 'Write a Blog Post'}
+                </h3>
+                <p className="text-slate-450 text-[10px] font-semibold mt-1">
+                  {editingBlogId 
+                    ? 'Refine title, update media cover or body text and re-submit for admin audit.'
+                    : 'Publish local insights, travel tips, culinary reviews, or farming advice.'}
+                </p>
               </div>
               <button 
-                onClick={() => setShowWriteBlogModal(false)} 
+                onClick={handleCloseWriteBlogModal} 
                 className="text-slate-400 hover:text-slate-600 font-extrabold p-1 cursor-pointer"
               >
                 <X className="h-4.5 w-4.5" />
@@ -3921,7 +4102,7 @@ function DashboardContent() {
                   <p className="text-xs text-slate-600 leading-relaxed font-semibold">{blogSuccess}</p>
                 </div>
                 <button 
-                  onClick={() => setShowWriteBlogModal(false)}
+                  onClick={handleCloseWriteBlogModal}
                   className="mt-2 py-2 px-6 bg-emerald-600 text-white font-extrabold text-xs rounded-xl shadow-md cursor-pointer"
                 >
                   Close Wizard
@@ -4017,7 +4198,7 @@ function DashboardContent() {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-1">
+                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Blog Content</label>
                   <textarea 
                     rows={6}
@@ -4029,10 +4210,23 @@ function DashboardContent() {
                   />
                 </div>
 
+                {editingBlogId && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Message to Moderator (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={blogSubmitNote}
+                      onChange={(e) => setBlogSubmitNote(e.target.value)}
+                      placeholder="Explain your changes to the review team (e.g. Fixed typo in first paragraph)"
+                      className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
+                    />
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-3 mt-1 border-t border-slate-100 pt-4">
                   <button 
                     type="button"
-                    onClick={() => setShowWriteBlogModal(false)}
+                    onClick={handleCloseWriteBlogModal}
                     className="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-755 font-extrabold text-[10.5px] rounded-xl cursor-pointer"
                   >
                     Cancel
@@ -4043,7 +4237,7 @@ function DashboardContent() {
                     className="py-2.5 px-6 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10.5px] rounded-xl cursor-pointer shadow-md shadow-emerald-800/10 flex items-center gap-2 disabled:opacity-60"
                   >
                     {(blogWriteLoading || blogImageUploading) && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
-                    <span>Submit Blog Post</span>
+                    <span>{editingBlogId ? 'Save & Re-submit' : 'Submit Blog Post'}</span>
                   </button>
                 </div>
 
@@ -4079,12 +4273,12 @@ function DashboardContent() {
             {business && business.subscriptionStatus === 'active' ? (
               <div className="bg-emerald-50 border border-emerald-250 rounded-2xl p-4 text-[10.5px] text-[#027244] font-semibold flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>Active Premium Subscription detected! You can list this event for 100% Free (no standard ₹20 charge).</span>
+                <span>Active Premium Subscription detected! You can list this event for 100% Free (no standard ₹99 charge).</span>
               </div>
-            ) : (
+              ) : (
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-[10.5px] text-amber-800 font-semibold flex items-center gap-2 animate-pulse">
                 <Info className="h-4 w-4 text-amber-600 shrink-0" />
-                <span>No active premium subscription detected. A standard ₹20 publishing fee applies to launch this event.</span>
+                <span>No active premium subscription detected. A standard ₹99 publishing fee applies to launch this event.</span>
               </div>
             )}
 

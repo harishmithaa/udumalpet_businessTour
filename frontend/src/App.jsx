@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -14,9 +15,26 @@ import EventsPage from './app/events/page';
 import BlogsPage from './app/blogs/page';
 import BlogDetail from './app/blogs/[id]/page';
 import AboutPage from './app/about/page';
+import UserProfile from './app/profile/page';
 
 function AppContent() {
   const location = useLocation();
+  
+  useEffect(() => {
+    if (location.hash) {
+      const id = location.hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        const timer = setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [location.pathname, location.hash]);
+
   const hideNavAndFooter = location.pathname.startsWith('/dashboard') || 
                            location.pathname.startsWith('/admin') || 
                            location.pathname.startsWith('/superadmin');
@@ -39,6 +57,7 @@ function AppContent() {
           <Route path="/blogs" element={<BlogsPage />} />
           <Route path="/blogs/:id" element={<BlogDetail />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/profile/:id" element={<UserProfile />} />
         </Routes>
       </main>
       {!hideNavAndFooter && <Footer />}

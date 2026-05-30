@@ -8,7 +8,7 @@ const CommentSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false
   },
   userName: {
     type: String,
@@ -65,9 +65,38 @@ const BlogSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Pending Approval', 'Approved', 'Rejected'],
+    enum: ['Pending Approval', 'Approved', 'Rejected', 'Needs Revision'],
     default: 'Pending Approval'
   },
+  revisionSuggestions: {
+    type: String,
+    default: ''
+  },
+  revisionHistory: [
+    {
+      sender: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+      },
+      senderName: {
+        type: String,
+        required: true
+      },
+      senderRole: {
+        type: String,
+        required: true
+      },
+      message: {
+        type: String,
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
   featured: {
     type: Boolean,
     default: false,
@@ -82,8 +111,7 @@ const BlogSchema = new mongoose.Schema({
   },
   likes: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+      type: String
     }
   ],
   comments: [CommentSchema],
@@ -92,7 +120,7 @@ const BlogSchema = new mongoose.Schema({
 });
 
 // Auto-sync backward compatibility fields and slug generation
-BlogSchema.pre('save', function(next) {
+BlogSchema.pre('save', async function() {
   if (this.author && !this.authorId) this.authorId = this.author;
   if (this.authorId && !this.author) this.author = this.authorId;
   
@@ -105,7 +133,6 @@ BlogSchema.pre('save', function(next) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
   }
-  next();
 });
 
 module.exports = mongoose.model('Blog', BlogSchema);

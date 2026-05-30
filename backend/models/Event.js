@@ -84,7 +84,7 @@ const EventSchema = new mongoose.Schema({
 });
 
 // Auto-sync backward compatibility fields
-EventSchema.pre('save', function(next) {
+EventSchema.pre('save', async function() {
   if (this.ownerId && !this.authorId) this.authorId = this.ownerId;
   if (this.authorId && !this.ownerId) this.ownerId = this.authorId;
   
@@ -96,8 +96,6 @@ EventSchema.pre('save', function(next) {
   
   if (this.venue && !this.location) this.location = this.venue;
   if (this.location && !this.venue) this.venue = this.location;
-  
-  next();
 });
 
 module.exports = mongoose.model('Event', EventSchema);

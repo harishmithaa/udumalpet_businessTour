@@ -73,6 +73,7 @@ export default function Home() {
   const [locationTerm, setLocationTerm] = useState('');
   const [categoryTerm, setCategoryTerm] = useState('All Categories');
   const [featuredBusinesses, setFeaturedBusinesses] = useState(mockFeatured);
+  const [activeFaq, setActiveFaq] = useState(null);
 
   // Testimonials state
   const fallbackTestimonials = [
@@ -743,23 +744,8 @@ export default function Home() {
                 {!isSubscribed && (
                   <div 
                     onClick={(e) => { e.stopPropagation(); navigate(`/businesses/${biz._id}`); }}
-                    className="absolute inset-0 bg-slate-900/10 backdrop-blur-xs flex items-center justify-center p-4 z-20 transition-all duration-300 hover:bg-slate-900/15 cursor-pointer"
-                  >
-                    <div className="bg-white/85 backdrop-blur-md border border-white/40 shadow-lg rounded-2xl p-4 max-w-[240px] flex flex-col items-center text-center gap-2 transform transition-transform duration-305 hover:scale-102">
-                      <div className="h-9 w-9 rounded-full bg-emerald-50 border border-emerald-100 text-[#027244] flex items-center justify-center shadow-inner">
-                        <svg className="h-4.5 w-4.5 animate-pulse text-[#027244] fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-extrabold text-[11px] text-[#001c41] tracking-tight">{biz.name}</span>
-                        <span className="text-[8.5px] text-slate-550 font-black leading-normal uppercase tracking-wider">
-                          Pending Subscription
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                    className="absolute inset-0 bg-slate-900/10 backdrop-blur-xs z-20 transition-all duration-300 hover:bg-slate-900/15 cursor-pointer"
+                  />
                 )}
               </div>
             );
@@ -788,7 +774,7 @@ export default function Home() {
       </section>
 
       {/* 6. How It Works Section (Connected with dashed lines) */}
-      <section className="max-w-7xl w-full px-4 md:px-8 py-16 flex flex-col items-center gap-12">
+      <section id="how-it-works" className="max-w-7xl w-full px-4 md:px-8 py-16 flex flex-col items-center gap-12">
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">How It Works</h2>
           <p className="text-xs text-slate-400 font-semibold mt-2">Connecting local buyers with verified businesses in four easy steps</p>
@@ -1019,6 +1005,60 @@ export default function Home() {
               Share Your Thoughts About UBT
             </button>
           </div>
+        </div>
+      </section>
+
+      {/* 8. FAQ Section */}
+      <section id="faq" className="max-w-4xl w-full px-4 md:px-8 py-16 flex flex-col items-center gap-10">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">Frequently Asked Questions</h2>
+          <p className="text-xs text-slate-400 font-semibold mt-2">Find quick answers to common queries about Udumalpet Business Tour</p>
+        </div>
+
+        <div className="w-full flex flex-col gap-3 text-left">
+          {[
+            {
+              q: 'How do I register and list my business on UBT?',
+              a: 'You can register easily by clicking the "List Your Business" button in the header or footer, creating an owner/merchant account, and filling in your business profile details like name, category, timing, address, and contact numbers.'
+            },
+            {
+              q: 'Is it free to list my business, and what are the premium benefits?',
+              a: 'A basic listing is submitted for verification. To unlock premium priority placement, receive direct customer leads via WhatsApp, show gallery media, and post unlimited free events, you can upgrade to our Monthly or Yearly Premium Plans starting at very affordable rates.'
+            },
+            {
+              q: 'How do I get a verified badge for my business listing?',
+              a: 'Our administration team audits all listings. Once you provide valid verification details (like address proof or GST registration) and active contact credentials, the team issues the "UDT Verified" badge on your profile, boosting customer trust.'
+            },
+            {
+              q: 'How much does it cost to promote an event on UBT?',
+              a: 'For active Premium Business subscribers, listing and promoting local events (sports, expos, temple festivals, meets) is 100% free! For non-subscribers or general accounts, a standard listing charge of ₹99 applies per event.'
+            },
+            {
+              q: 'Can I write blog articles or write reviews for local vendors?',
+              a: 'Yes! Anyone registered on UBT can post guiding articles/blogs about tourist attractions or hidden culinary spots in Udumalpet. You can also write star reviews and comments directly on any verified merchant profile.'
+            }
+          ].map((faq, idx) => (
+            <div key={idx} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs transition-all duration-300">
+              <button
+                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                className="w-full px-6 py-4.5 flex justify-between items-center text-xs font-black text-slate-700 hover:text-[#027244] cursor-pointer text-left focus:outline-none"
+              >
+                <span>{faq.q}</span>
+                <span className={`text-base font-bold transition-transform duration-305 ${activeFaq === idx ? 'rotate-180 text-[#027244]' : 'text-slate-400'}`}>
+                  ▼
+                </span>
+              </button>
+              <div 
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  activeFaq === idx ? 'max-h-40 border-t border-slate-100' : 'max-h-0'
+                }`}
+              >
+                <p className="px-6 py-4 text-[11px] text-slate-550 leading-relaxed font-semibold">
+                  {faq.a}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
