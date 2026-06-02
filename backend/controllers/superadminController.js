@@ -272,6 +272,11 @@ const updateBusinessStatus = async (req, res, next) => {
     business.verificationStatus = verification;
     await business.save({ validateBeforeSave: false });
 
+    if (status === 'Approved') {
+      const { checkAndCompleteReferralByBusiness } = require('../utils/referralHelper');
+      await checkAndCompleteReferralByBusiness(business._id);
+    }
+
     // Log admin action
     await AdminAction.create({
       adminId: req.user._id,

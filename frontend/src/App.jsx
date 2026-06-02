@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -16,9 +16,17 @@ import BlogsPage from './app/blogs/page';
 import BlogDetail from './app/blogs/[id]/page';
 import AboutPage from './app/about/page';
 import UserProfile from './app/profile/page';
+import ReferralModal from './components/ReferralModal';
 
 function AppContent() {
   const location = useLocation();
+  const [isReferralModalOpen, setIsReferralModalOpen] = useState(false);
+  
+  useEffect(() => {
+    const handleOpenModal = () => setIsReferralModalOpen(true);
+    window.addEventListener('open-referral-modal', handleOpenModal);
+    return () => window.removeEventListener('open-referral-modal', handleOpenModal);
+  }, []);
   
   useEffect(() => {
     if (location.hash) {
@@ -61,6 +69,7 @@ function AppContent() {
         </Routes>
       </main>
       {!hideNavAndFooter && <Footer />}
+      <ReferralModal isOpen={isReferralModalOpen} onClose={() => setIsReferralModalOpen(false)} />
     </div>
   );
 }

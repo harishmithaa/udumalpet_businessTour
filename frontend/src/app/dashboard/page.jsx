@@ -4,7 +4,7 @@ import {
   ShieldCheck, Sparkles, AlertTriangle, AlertCircle, Edit3, Image as ImageIcon, 
   RefreshCw, Star, CreditCard, ChevronRight, ChevronLeft, ArrowLeft, Activity, PhoneCall, 
   MessageSquare, Plus, CheckCircle, Info, Bell, ExternalLink, Globe,
-  Copy, Check, Upload, HelpCircle, Briefcase, Mail, Settings, Menu, X, Trash2, Search, Lock,
+  Copy, Check, Gift, Upload, HelpCircle, Briefcase, Mail, Settings, Menu, X, Trash2, Search, Lock,
   FileEdit, BookOpen, Heart, Eye, Calendar, Clock, MapPin, LogOut
 } from 'lucide-react';
 
@@ -32,6 +32,65 @@ function DashboardContent() {
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('Monthly');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  
+  // Referral states
+  const [referralStats, setReferralStats] = useState(null);
+  const [referralsLoading, setReferralsLoading] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [applyReferralPoints, setApplyReferralPoints] = useState(false);
+  const [redeemPointsAmount, setRedeemPointsAmount] = useState(0);
+
+  const handleApplyReferralPointsToggle = (checked) => {
+    setApplyReferralPoints(checked);
+    if (checked) {
+      const maxRed = referralStats ? Math.min(
+        referralStats.referralPoints || 0,
+        selectedPlan === 'Monthly' ? 690 : 6900
+      ) : 0;
+      setRedeemPointsAmount(maxRed);
+    } else {
+      setRedeemPointsAmount(0);
+    }
+  };
+
+  const handlePlanSelect = (plan) => {
+    setSelectedPlan(plan);
+    if (applyReferralPoints) {
+      const maxRed = referralStats ? Math.min(
+        referralStats.referralPoints || 0,
+        plan === 'Monthly' ? 690 : 6900
+      ) : 0;
+      setRedeemPointsAmount(prev => Math.min(prev, maxRed));
+    }
+  };
+
+  const handleRedeemPointsChange = (e) => {
+    const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+    const maxRed = referralStats ? Math.min(
+      referralStats.referralPoints || 0,
+      selectedPlan === 'Monthly' ? 690 : 6900
+    ) : 0;
+    
+    if (e.target.value === '') {
+      setRedeemPointsAmount('');
+      return;
+    }
+    
+    if (isNaN(val) || val < 0) {
+      setRedeemPointsAmount(0);
+    } else if (val > maxRed) {
+      setRedeemPointsAmount(maxRed);
+    } else {
+      setRedeemPointsAmount(val);
+    }
+  };
+
+  const getDiscountedPrice = (originalPrice) => {
+    if (!applyReferralPoints) return originalPrice;
+    const discount = Number(redeemPointsAmount || 0) * 0.10;
+    const finalPrice = Math.max(0, originalPrice - discount);
+    return finalPrice % 1 === 0 ? finalPrice : finalPrice.toFixed(2);
+  };
   
   const [paymentPlans, setPaymentPlans] = useState([
     { type: 'Monthly', price: '₹500', duration: '28 days', details: 'Perfect for standard listing updates.' },
@@ -72,6 +131,8 @@ function DashboardContent() {
   const [blogImageError, setBlogImageError] = useState('');
   const [replyTexts, setReplyTexts] = useState({});
   const [blogSubmitNote, setBlogSubmitNote] = useState('');
+  const [blogCategory, setBlogCategory] = useState('Business Tips');
+  const [blogCategoryOther, setBlogCategoryOther] = useState('');
  
   // Events Dashboard States
   const [userEvents, setUserEvents] = useState([]);
@@ -482,6 +543,32 @@ function DashboardContent() {
     setBlogTitle(blog.title || '');
     setBlogCover(blog.coverImage || '');
     setBlogContent(blog.content || '');
+    
+    // Set categories state
+    if (blog.category) {
+      const STANDARD_CATEGORIES = [
+        'Business Tips',
+        'Local Guide',
+        'Lifestyle',
+        'Events',
+        'Technology',
+        'Health & Wellness',
+        'Education',
+        'Travel',
+        'Food & Culture'
+      ];
+      if (STANDARD_CATEGORIES.includes(blog.category)) {
+        setBlogCategory(blog.category);
+        setBlogCategoryOther('');
+      } else {
+        setBlogCategory('Other');
+        setBlogCategoryOther(blog.category);
+      }
+    } else {
+      setBlogCategory('Business Tips');
+      setBlogCategoryOther('');
+    }
+
     setBlogSuccess('');
     setBlogError('');
     setShowWriteBlogModal(true);
@@ -493,6 +580,8 @@ function DashboardContent() {
     setBlogTitle('');
     setBlogCover('');
     setBlogContent('');
+    setBlogCategory('Business Tips');
+    setBlogCategoryOther('');
     setBlogSuccess('');
     setBlogError('');
     setBlogSubmitNote('');
@@ -550,6 +639,14 @@ function DashboardContent() {
       return;
     }
 
+    const finalCategory = blogCategory === 'Other' ? blogCategoryOther.trim() : blogCategory;
+
+    if (!finalCategory) {
+      setBlogError('Please specify a category.');
+      setBlogWriteLoading(false);
+      return;
+    }
+
     try {
       const url = editingBlogId 
         ? `http://localhost:5000/api/blogs/${editingBlogId}`
@@ -566,6 +663,7 @@ function DashboardContent() {
           title: blogTitle,
           content: blogContent,
           coverImage: blogCover || undefined,
+          category: finalCategory,
           submissionNote: editingBlogId ? (blogSubmitNote || 'Article re-submitted with corrections.') : undefined
         })
       });
@@ -577,6 +675,8 @@ function DashboardContent() {
         setBlogTitle('');
         setBlogCover('');
         setBlogContent('');
+        setBlogCategory('Business Tips');
+        setBlogCategoryOther('');
         setBlogSubmitNote('');
         setEditingBlogId(null);
         fetchUserBlogs();
@@ -595,6 +695,7 @@ function DashboardContent() {
           title: blogTitle, 
           content: blogContent, 
           coverImage: blogCover || b.coverImage, 
+          category: finalCategory,
           status: 'Pending Approval',
           revisionSuggestions: ''
         } : b));
@@ -606,6 +707,7 @@ function DashboardContent() {
           content: blogContent,
           coverImage: blogCover || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80',
           authorName: user?.fullName || 'UBT Writer',
+          category: finalCategory,
           status: 'Pending Approval',
           showLikes: true,
           showComments: true,
@@ -619,6 +721,8 @@ function DashboardContent() {
       setBlogTitle('');
       setBlogCover('');
       setBlogContent('');
+      setBlogCategory('Business Tips');
+      setBlogCategoryOther('');
       setBlogSubmitNote('');
       setEditingBlogId(null);
       setTimeout(() => {
@@ -800,6 +904,32 @@ function DashboardContent() {
       setEventSubmitLoading(false);
     }
   };
+
+  const fetchReferralStats = async () => {
+    setReferralsLoading(true);
+    try {
+      const activeToken = token || localStorage.getItem('ubt_token');
+      const res = await fetch('http://localhost:5000/api/referrals/my-stats', {
+        headers: {
+          Authorization: `Bearer ${activeToken}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReferralStats(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch referral stats:', err);
+    } finally {
+      setReferralsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token && activeTab === 'Referral & Rewards') {
+      fetchReferralStats();
+    }
+  }, [token, activeTab]);
 
   useEffect(() => {
     if (token && activeTab === 'Events') {
@@ -1352,12 +1482,45 @@ function DashboardContent() {
         body: JSON.stringify({
           businessId: business._id,
           planType: planToUse,
+          applyReferralPoints: applyReferralPoints,
+          redeemPointsAmount: Number(redeemPointsAmount || 0)
         }),
       });
       const orderData = await orderRes.json();
       
       if (!orderData.success) {
         setError('Failed to initialize Razorpay checkout.');
+        return;
+      }
+
+      // If points fully cover payment (amount is 0)
+      if (orderData.amount === 0) {
+        const verifyRes = await fetch('http://localhost:5000/api/payments/verify-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            businessId: business._id,
+            planType: planToUse,
+            razorpayOrderId: orderData.orderId,
+            razorpayPaymentId: 'pay_points_redeemed_' + Date.now(),
+            razorpaySignature: '',
+            applyReferralPoints: true,
+            redeemPointsAmount: Number(redeemPointsAmount || 0)
+          }),
+        });
+        const verifyData = await verifyRes.json();
+        if (verifyData.success) {
+          setBusiness(verifyData.business);
+          setPaymentSuccess(true);
+          setShowRenewModal(false);
+          fetchReferralStats();
+          setTimeout(() => setPaymentSuccess(false), 4000);
+        } else {
+          setError(verifyData.message || 'Points redemption failed.');
+        }
         return;
       }
 
@@ -1395,6 +1558,8 @@ function DashboardContent() {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
+              applyReferralPoints: applyReferralPoints,
+              redeemPointsAmount: Number(redeemPointsAmount || 0)
             }),
           });
           const verifyData = await verifyRes.json();
@@ -1402,6 +1567,7 @@ function DashboardContent() {
             setBusiness(verifyData.business);
             setPaymentSuccess(true);
             setShowRenewModal(false);
+            fetchReferralStats();
             setTimeout(() => setPaymentSuccess(false), 4000);
           } else {
             setError('Payment verification failed.');
@@ -1437,6 +1603,8 @@ function DashboardContent() {
             razorpayOrderId: mockOrderId,
             razorpayPaymentId: mockPaymentId,
             razorpaySignature: '',
+            applyReferralPoints: applyReferralPoints,
+            redeemPointsAmount: Number(redeemPointsAmount || 0)
           }),
         });
         const verifyData = await verifyRes.json();
@@ -1444,6 +1612,7 @@ function DashboardContent() {
           setBusiness(verifyData.business);
           setPaymentSuccess(true);
           setShowRenewModal(false);
+          fetchReferralStats();
           setTimeout(() => setPaymentSuccess(false), 4000);
         } else {
           setError(verifyData.message || 'Sandbox payment verification failed.');
@@ -1498,7 +1667,8 @@ function DashboardContent() {
       { label: 'Reviews & Reputation', icon: <Star className="h-4 w-4" /> },
       { label: 'Leads & Enquiries', icon: <Mail className="h-4 w-4" />, badge: 18 },
       { label: 'Subscription & Billing', icon: <CreditCard className="h-4 w-4" />, onClick: () => setShowRenewModal(true) },
-      { label: 'Offers & Promotions', icon: <Sparkles className="h-4 w-4" /> }
+      { label: 'Offers & Promotions', icon: <Sparkles className="h-4 w-4" /> },
+      { label: 'Referral & Rewards', icon: <Gift className="h-4 w-4" /> }
     ] : [
       { label: 'My Business', icon: <Briefcase className="h-4 w-4" /> }
     ]),
@@ -3702,6 +3872,253 @@ function DashboardContent() {
               </a>
             </div>
           )}
+
+          {/* ========================================================================= */}
+          {/* TAB: REFERRAL & REWARDS MODULE */}
+          {/* ========================================================================= */}
+          {activeTab === 'Referral & Rewards' && (
+            <div className="flex flex-col gap-8 animate-fadeIn text-left font-sans text-[#001c41]">
+              
+              {/* Hero Banner Banner */}
+              <div className="bg-gradient-to-r from-[#001c41] to-[#027244] rounded-[32px] p-8 text-white relative overflow-hidden shadow flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
+                <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
+                <div className="flex flex-col gap-2.5 max-w-xl z-10 text-left">
+                  <span className="bg-white/10 border border-white/20 text-emerald-300 font-extrabold text-[10px] uppercase tracking-wider px-3 py-1 rounded-full w-fit">
+                    UBT Referral & Rewards Program
+                  </span>
+                  <h2 className="text-3xl md:text-4xl font-black tracking-tight leading-tight">
+                    Refer. Earn. Save.
+                  </h2>
+                  <p className="text-xs md:text-sm text-slate-200 font-medium leading-relaxed mt-1">
+                    Refer new businesses to UBT and earn referral points. Redeem your points and get discounts on your subscription renewal.
+                  </p>
+                </div>
+                
+                {/* Rewards Balance Badge */}
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-5 flex flex-col items-center justify-center shrink-0 min-w-[210px] z-10 shadow-md">
+                  <Gift className="h-7 w-7 text-amber-300 animate-pulse mb-1.5" />
+                  <span className="text-[9px] uppercase font-black text-slate-300 tracking-wider">Available Points Balance</span>
+                  <span className="text-2xl font-black mt-1 text-white">{referralStats?.referralPoints || 0} POINTS</span>
+                  <span className="text-[11px] font-bold text-emerald-300 mt-1">₹{referralStats?.referralCredits || 0} Credit Value</span>
+                </div>
+              </div>
+
+              {/* Stats & Invite Sharing Controls */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Share referral code */}
+                <div className="lg:col-span-2 bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col gap-4 text-left">
+                  <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Your Unique Referral Link</h3>
+                  <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                    Share your invite link with other local merchants in Udumalpet. When they register, make their subscription payment, and get approved, you'll earn 100 points!
+                  </p>
+
+                  <div className="flex gap-2.5 items-center mt-2">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={referralStats?.referralLink || ''} 
+                      className="flex-grow border border-slate-200 px-4 py-3 rounded-xl text-xs font-extrabold text-slate-700 bg-slate-50 focus:outline-none"
+                    />
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(referralStats?.referralLink || '');
+                        setCopiedLink(true);
+                        setTimeout(() => setCopiedLink(false), 2000);
+                      }}
+                      className="px-4 py-3 bg-[#027244] hover:bg-[#005934] text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      {copiedLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      <span>{copiedLink ? 'Copied' : 'Copy Link'}</span>
+                    </button>
+                  </div>
+
+                  {/* Social quick share links */}
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className="text-[11px] text-slate-400 font-extrabold uppercase tracking-wide">Quick Share:</span>
+                    <a 
+                      href={`https://api.whatsapp.com/send?text=${encodeURIComponent("Grow your business! Register on Udumalpet Business Trust (UBT) and get listed in the premium local directory. Use my link to register: " + (referralStats?.referralLink || ""))}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-emerald-250 bg-emerald-50/50 hover:bg-emerald-55/20 rounded-lg text-xs font-black text-emerald-600 transition-colors"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Share on WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Rewards Summary panel */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col justify-between text-left gap-4">
+                  <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Referral Analytics</h3>
+                  
+                  <div className="flex flex-col gap-2 mt-1">
+                    <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                      <span className="text-xs font-semibold text-slate-500">Total Referrals</span>
+                      <span className="text-xs font-extrabold text-slate-800">{referralStats?.referrals?.length || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                      <span className="text-xs font-semibold text-slate-500">Successful Claims</span>
+                      <span className="text-xs font-extrabold text-[#027244]">
+                        {referralStats?.referrals?.filter(r => r.status === 'completed').length || 0}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-xs font-semibold text-slate-500">Pending Approvals</span>
+                      <span className="text-xs font-extrabold text-amber-600">
+                        {referralStats?.referrals?.filter(r => r.status === 'pending').length || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setShowRenewModal(true)}
+                    className="w-full py-3 bg-[#001c41] hover:bg-[#002d62] text-white text-xs font-extrabold rounded-xl transition-all shadow-sm cursor-pointer active:scale-98"
+                  >
+                    Redeem Available Credit
+                  </button>
+                </div>
+              </div>
+
+              {/* Steps & Point Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* How it works */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col gap-5 text-left">
+                  <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">How It Works</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
+                    {[
+                      { step: '01', title: 'Get Referral Link', desc: 'Login to your dashboard and get your unique referral link or code.' },
+                      { step: '02', title: 'Share With Others', desc: 'Share your link with your friends, family or any business owner around you.' },
+                      { step: '03', title: 'They Join UBT', desc: 'When they register and subscribe to any paid plan, the referral is successful.' },
+                      { step: '04', title: 'You Earn Points', desc: 'You earn referral points (100 Points = ₹10 Credit) which you can redeem.' }
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex gap-3 items-start">
+                        <span className="h-7 w-7 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center font-extrabold text-emerald-600 text-xs shrink-0 select-none">
+                          {item.step}
+                        </span>
+                        <div className="flex flex-col gap-0.5 text-left">
+                          <h4 className="font-extrabold text-slate-800 text-xs">{item.title}</h4>
+                          <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-0.5">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Conversion Grid */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col gap-4 text-left">
+                  <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Earn More, Save More</h3>
+                  <div className="overflow-hidden border border-slate-100 rounded-xl mt-1">
+                    <table className="w-full border-collapse text-xs font-semibold text-slate-600">
+                      <thead className="bg-slate-50 border-b border-slate-100 text-[9.5px] uppercase font-black text-slate-400">
+                        <tr>
+                          <th className="p-3 text-left">Successful Referrals</th>
+                          <th className="p-3 text-left">Points Earned</th>
+                          <th className="p-3 text-left">Credit Value</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {[
+                          { refs: '1 Business', pts: '100 Points', val: '₹10 Credit' },
+                          { refs: '5 Businesses', pts: '500 Points', val: '₹50 Credit' },
+                          { refs: '10 Businesses', pts: '1000 Points', val: '₹100 Credit' },
+                          { refs: '20 Businesses', pts: '2000 Points', val: '₹200 Credit' },
+                          { refs: '50 Businesses', pts: '5000 Points', val: '₹500 Credit' }
+                        ].map((row, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="p-3 font-extrabold text-slate-800">{row.refs}</td>
+                            <td className="p-3 text-slate-500 font-semibold">{row.pts}</td>
+                            <td className="p-3 text-[#027244] font-black">{row.val}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Referral logs history */}
+              <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col gap-4 text-left">
+                <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Referrals Log</h3>
+                
+                {referralsLoading ? (
+                  <div className="py-8 text-center text-slate-450 flex flex-col items-center justify-center gap-2">
+                    <RefreshCw className="h-6 w-6 animate-spin text-emerald-600" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Syncing referrals log...</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                    <table className="w-full border-collapse text-left text-xs font-semibold text-slate-650">
+                      <thead className="bg-slate-50 border-b border-slate-200 uppercase text-[9px] font-black text-slate-400 tracking-wider">
+                        <tr>
+                          <th className="p-4">Referred Merchant</th>
+                          <th className="p-4">Business Listing</th>
+                          <th className="p-4">Registered Date</th>
+                          <th className="p-4">Rules Status</th>
+                          <th className="p-4">Points Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {referralStats?.referrals?.map(r => {
+                          const isCompleted = r.status === 'completed';
+                          const isRejected = r.status === 'rejected';
+                          const bizName = r.referredBusinessId?.name || 'Incomplete Draft';
+                          const bizStatus = r.referredBusinessId?.status || 'Pending Vetting';
+                          const subStatus = r.referredBusinessId?.subscriptionStatus || 'none';
+                          
+                          return (
+                            <tr key={r._id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4 flex flex-col text-left">
+                                <span className="font-extrabold text-slate-800 text-xs sm:text-[13px]">{r.referredUserId?.fullName || r.referredUserId?.name || 'Referred Merchant'}</span>
+                                <span className="text-[10px] text-slate-400 font-semibold mt-0.5">{r.referredUserId?.email || r.referredUserId?.phone}</span>
+                              </td>
+                              <td className="p-4 font-bold text-slate-700">{bizName}</td>
+                              <td className="p-4 text-slate-500 font-bold">
+                                {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex flex-col gap-1 text-[10.5px]">
+                                  <div className="flex items-center gap-1">
+                                    <span>{r.referredBusinessId ? "✅ Business Registered" : "❌ Business Pending"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span>{subStatus === 'active' ? "✅ Paid Subscription" : "❌ Subscription Pending"}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span>{bizStatus === 'Approved' ? "✅ Approved by Admin" : "❌ Approval Pending"}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <span className={`px-2.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
+                                  isCompleted
+                                    ? 'bg-emerald-50 border-emerald-250 text-emerald-700'
+                                    : isRejected
+                                      ? 'bg-red-50 border-red-200 text-red-650'
+                                      : 'bg-amber-50 border-amber-250 text-amber-600'
+                                }`}>
+                                  {isCompleted ? `+${r.points} Points` : isRejected ? '0 (Rejected)' : '0 (Pending)'}
+                                </span>
+                                {isRejected && r.rejectionReason && (
+                                  <span className="text-[9px] text-red-500 font-semibold block mt-1.5 leading-normal max-w-xs">{r.rejectionReason}</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {(!referralStats?.referrals || referralStats.referrals.length === 0) && (
+                          <tr>
+                            <td colSpan="5" className="p-8 text-center text-slate-400 text-xs font-bold leading-normal">
+                              You haven't referred any businesses yet. Share your invite link above to start earning!
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -3775,12 +4192,75 @@ function DashboardContent() {
               </div>
             ) : (
               <>
-                {/* Toggle selector */}
-                <div className="flex justify-center mt-2">
+            {referralStats && referralStats.referralPoints > 0 && (
+              <div className="bg-emerald-50/50 border border-emerald-100/80 rounded-2xl p-4.5 flex flex-col gap-3.5 max-w-md mx-auto w-full shadow-2xs mt-2 mb-2 transition-all">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-emerald-100/50 border border-emerald-250/30 rounded-xl flex items-center justify-center text-emerald-600 shadow-2xs">
+                      <Gift className="h-5 w-5" />
+                    </div>
+                    <div className="flex flex-col text-left font-sans">
+                      <span className="text-xs font-extrabold text-slate-800">Redeem Referral Points</span>
+                      <span className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                        Available: {referralStats.referralPoints} points (₹{referralStats.referralCredits})
+                      </span>
+                    </div>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    checked={applyReferralPoints} 
+                    onChange={(e) => handleApplyReferralPointsToggle(e.target.checked)}
+                    className="h-5 w-5 border-slate-300 rounded-md text-emerald-600 focus:ring-emerald-500 cursor-pointer transition-colors"
+                  />
+                </div>
+
+                {applyReferralPoints && (
+                  <div className="pt-3 border-t border-dashed border-emerald-100 flex flex-col gap-2.5 animate-fadeIn">
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-400">Points to Redeem</label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-extrabold text-[#027244]">₹{(Number(redeemPointsAmount || 0) * 0.10).toFixed(2)}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold">discount</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="relative flex-grow">
+                        <input
+                          type="number"
+                          min="0"
+                          max={referralStats ? Math.min(referralStats.referralPoints, selectedPlan === 'Monthly' ? 690 : 6900) : 0}
+                          value={redeemPointsAmount}
+                          onChange={handleRedeemPointsChange}
+                          className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs font-extrabold text-slate-800 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-500/30 transition-all shadow-inner"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const maxRed = referralStats ? Math.min(referralStats.referralPoints, selectedPlan === 'Monthly' ? 690 : 6900) : 0;
+                            setRedeemPointsAmount(maxRed);
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-250/40 text-[#027244] text-[9.5px] font-black px-2 py-1 rounded-lg uppercase tracking-wide transition-colors cursor-pointer"
+                        >
+                          Max
+                        </button>
+                      </div>
+                    </div>
+
+                    <span className="text-[9.5px] text-slate-400 font-semibold leading-relaxed text-left block">
+                      You can redeem up to {referralStats ? Math.min(referralStats.referralPoints, selectedPlan === 'Monthly' ? 690 : 6900) : 0} points for this plan. (1 point = ₹0.10)
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Toggle selector */}
+            <div className="flex justify-center mt-2">
               <div className="bg-slate-100 border border-slate-200 p-1 rounded-full flex items-center gap-1 w-fit shadow-inner">
                 <button
                   type="button"
-                  onClick={() => setSelectedPlan('Monthly')}
+                  onClick={() => handlePlanSelect('Monthly')}
                   className={`py-2 px-6 rounded-full text-xs font-black transition-all cursor-pointer ${
                     selectedPlan === 'Monthly'
                       ? 'bg-[#027244] text-white shadow-sm'
@@ -3791,7 +4271,7 @@ function DashboardContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedPlan('Yearly')}
+                  onClick={() => handlePlanSelect('Yearly')}
                   className={`py-2 px-6 rounded-full text-xs font-black transition-all cursor-pointer ${
                     selectedPlan === 'Yearly'
                       ? 'bg-[#027244] text-white shadow-sm'
@@ -3808,7 +4288,7 @@ function DashboardContent() {
               
               {/* CARD 1: Monthly Membership */}
               <div 
-                onClick={() => setSelectedPlan('Monthly')}
+                onClick={() => handlePlanSelect('Monthly')}
                 className={`bg-white border rounded-[24px] p-6 flex flex-col justify-between items-center text-center shadow-sm relative transition-all duration-300 cursor-pointer ${
                   selectedPlan === 'Monthly'
                     ? 'border-[#027244] ring-2 ring-emerald-100 bg-emerald-50/5'
@@ -3824,7 +4304,9 @@ function DashboardContent() {
                   <div className="flex flex-col gap-1">
                     <h3 className="font-extrabold text-slate-800 text-base">Monthly Membership</h3>
                     <div className="flex items-baseline justify-center gap-1.5 mt-1">
-                      <span className="text-3xl font-extrabold text-[#001c41]">₹69</span>
+                      <span className="text-3xl font-extrabold text-[#001c41]">
+                        ₹{getDiscountedPrice(69)}
+                      </span>
                       <span className="text-xs text-slate-400 font-semibold">/ Month</span>
                     </div>
                     <p className="text-[11px] text-slate-400 font-semibold mt-1">Perfect for trying the platform.</p>
@@ -3861,7 +4343,7 @@ function DashboardContent() {
 
               {/* CARD 2: Annual Membership */}
               <div 
-                onClick={() => setSelectedPlan('Yearly')}
+                onClick={() => handlePlanSelect('Yearly')}
                 className={`bg-white border-2 rounded-[24px] p-6 flex flex-col justify-between items-center text-center shadow-md relative transition-all duration-300 cursor-pointer ${
                   selectedPlan === 'Yearly'
                     ? 'border-[#027244] ring-2 ring-emerald-100 bg-emerald-50/5'
@@ -3889,7 +4371,9 @@ function DashboardContent() {
                   <div className="flex flex-col gap-1">
                     <h3 className="font-extrabold text-slate-800 text-base">Annual Membership</h3>
                     <div className="flex items-baseline justify-center gap-1.5 mt-1">
-                      <span className="text-3xl font-extrabold text-[#001c41]">₹690</span>
+                      <span className="text-3xl font-extrabold text-[#001c41]">
+                        ₹{getDiscountedPrice(690)}
+                      </span>
                       <span className="text-xs text-slate-400 font-semibold">/ Year</span>
                     </div>
                     {/* strike-through original & save text */}
@@ -4484,6 +4968,90 @@ function DashboardContent() {
                     className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
                   />
                 </div>
+
+                {/* Category Selection Dropdown */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Category</label>
+                  <select
+                    value={blogCategory}
+                    onChange={(e) => {
+                      setBlogCategory(e.target.value);
+                      if (e.target.value !== 'Other') {
+                        setBlogCategoryOther('');
+                      }
+                    }}
+                    className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20 cursor-pointer"
+                  >
+                    {[
+                      'Business Tips',
+                      'Local Guide',
+                      'Lifestyle',
+                      'Events',
+                      'Technology',
+                      'Health & Wellness',
+                      'Education',
+                      'Travel',
+                      'Food & Culture'
+                    ].map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="Other">Other (Type custom category...)</option>
+                  </select>
+                </div>
+
+                {blogCategory === 'Other' && (
+                  <div className="flex flex-col gap-1 animate-fadeIn">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Custom Category Name</label>
+                    <input 
+                      type="text" 
+                      value={blogCategoryOther}
+                      onChange={(e) => setBlogCategoryOther(e.target.value)}
+                      placeholder="e.g. Traditional Farming"
+                      required
+                      maxLength={30}
+                      className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
+                    />
+                    
+                    {/* Auto-suggest if it matches existing */}
+                    {(() => {
+                      const trimmed = blogCategoryOther.trim();
+                      if (!trimmed) return null;
+                      const STANDARD_CATEGORIES = [
+                        'Business Tips',
+                        'Local Guide',
+                        'Lifestyle',
+                        'Events',
+                        'Technology',
+                        'Health & Wellness',
+                        'Education',
+                        'Travel',
+                        'Food & Culture'
+                      ];
+                      const matched = STANDARD_CATEGORIES.find(c => c.toLowerCase() === trimmed.toLowerCase());
+                      if (matched) {
+                        return (
+                          <div className="bg-amber-50 border border-amber-250 text-slate-700 text-[10px] font-bold p-3 rounded-xl flex items-center justify-between gap-3 mt-1.5 animate-fadeIn">
+                            <div className="flex items-center gap-1.5">
+                              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+                              <span>It looks like you typed <strong>"{matched}"</strong>, which already exists.</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBlogCategory(matched);
+                                setBlogCategoryOther('');
+                              }}
+                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded font-black text-[9px] cursor-pointer"
+                            >
+                              Choose "{matched}"
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Cover Image</label>

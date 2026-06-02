@@ -46,10 +46,19 @@ export default function Register() {
     setLoading(true);
     setError('');
     try {
+      const refCode = searchParams.get('ref') || '';
       const res = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: fullName, fullName, phone: mobileNumber, mobileNumber, email, password }),
+        body: JSON.stringify({ 
+          name: fullName, 
+          fullName, 
+          phone: mobileNumber, 
+          mobileNumber, 
+          email, 
+          password,
+          referralCode: refCode || undefined
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -473,6 +482,12 @@ export default function Register() {
               <div className="bg-red-50 border border-red-200 text-red-650 rounded-xl p-3 text-xs font-semibold flex items-start gap-2 animate-shake">
                 <AlertCircle className="h-4 w-4 shrink-0 text-red-500 mt-0.5" />
                 <span>{error}</span>
+              </div>
+            )}
+            {searchParams.get('ref') && !infoMessage && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-3 text-xs font-semibold flex items-start gap-2">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
+                <span>You were referred! Complete registration and subscribe to earn credit discounts.</span>
               </div>
             )}
             {infoMessage && (

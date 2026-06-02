@@ -78,6 +78,156 @@ const mockEvents = [
     coverImageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&q=80',
     paymentLink: '',
     duration: '4 Hours'
+  },
+  {
+    _id: 'evt_5',
+    title: 'Udumalpet Badminton Championship 2025',
+    category: 'Sports',
+    description: 'Annual indoor singles & doubles championship for all age categories.',
+    date: new Date('2025-08-12T09:00:00'),
+    time: 'Tuesday, 9:00 AM',
+    venue: 'Netaji Indoor Stadium, Udumalpet',
+    organizer: 'Udumalpet Sports Academy',
+    phone: '+91 99432 10987',
+    price: 99,
+    coverImageUrl: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&q=80',
+    paymentLink: '',
+    duration: '2 Days'
+  },
+  {
+    _id: 'evt_6',
+    title: 'Kaniyur Football League 2025',
+    category: 'Sports',
+    description: 'Exciting regional 7-a-side football tournament featuring top local teams.',
+    date: new Date('2025-09-18T15:30:00'),
+    time: 'Thursday, 3:30 PM',
+    venue: 'Kaniyur Grounds, Udumalpet',
+    organizer: 'Kaniyur Sports Club',
+    phone: '+91 98765 43210',
+    price: 0,
+    coverImageUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=500&q=80',
+    paymentLink: '',
+    duration: '3 Days'
+  },
+  {
+    _id: 'evt_7',
+    title: 'Pongal Thiruvizha Celebration',
+    category: 'Festival',
+    description: 'Traditional cultural dance, sports, pongal cooking contest, and village games.',
+    date: new Date('2026-01-14T08:00:00'),
+    endDate: new Date('2026-01-17T20:00:00'),
+    time: 'Daily, 8:00 AM onwards',
+    venue: 'Udumalpet Village Grounds',
+    organizer: 'Tamil Cultural Association',
+    phone: '+91 94433 55667',
+    price: 0,
+    coverImageUrl: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=500&q=80',
+    paymentLink: '',
+    duration: '4 Days'
+  },
+  {
+    _id: 'evt_8',
+    title: 'Mariamman Temple Car Festival',
+    category: 'Festival',
+    description: 'Magnificent chariot procession with traditional drums, lighting, and offerings.',
+    date: new Date('2026-04-22T06:00:00'),
+    time: 'Wednesday, 6:00 AM',
+    venue: 'Mariamman Temple Street, Udumalpet',
+    organizer: 'Temple Festival Committee',
+    phone: '+91 95000 98765',
+    price: 0,
+    coverImageUrl: 'https://images.unsplash.com/photo-1545128485-c400e7702796?w=500&q=80',
+    paymentLink: '',
+    duration: '1 Day'
+  },
+  {
+    _id: 'evt_9',
+    title: 'Deepavali Light & Food Festival',
+    category: 'Festival',
+    description: 'Fabulous lights showcase, local sweets exhibition, and firecracker evening show.',
+    date: new Date('2025-11-01T17:00:00'),
+    time: 'Saturday, 5:00 PM',
+    venue: 'Municipality Ground, Udumalpet',
+    organizer: 'Retailers Welfare League',
+    phone: '+91 90420 11223',
+    price: 0,
+    coverImageUrl: 'https://images.unsplash.com/photo-1605847429054-9fa29c5a17ed?w=500&q=80',
+    paymentLink: '',
+    duration: '1 Evening'
+  },
+  {
+    _id: 'evt_10',
+    title: 'Udumalpet Agri & Poultry Expo',
+    category: 'Business',
+    description: 'B2B fair showcasing high-yielding farming machinery, seeds, and poultry tech.',
+    date: new Date('2025-10-15T09:30:00'),
+    endDate: new Date('2025-10-17T18:00:00'),
+    time: 'Daily, 9:30 AM',
+    venue: 'Venkateswara Hall, Udumalpet',
+    organizer: 'Coimbatore Farmers Forum',
+    phone: '+91 93600 22334',
+    price: 99,
+    coverImageUrl: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?w=500&q=80',
+    paymentLink: 'https://tickets.udumalpetagriexpo.in',
+    duration: '3 Days'
+  },
+  {
+    _id: 'evt_11',
+    title: 'Voice of Udumalpet Melody Night',
+    category: 'Music',
+    description: 'A grand light music concert performing retro and modern Tamil movie hits.',
+    date: new Date('2025-08-20T18:00:00'),
+    time: 'Wednesday, 6:00 PM',
+    venue: 'Royal Palace Mahal, Udumalpet',
+    organizer: 'Udumal Musicians Trust',
+    phone: '+91 99944 88822',
+    price: 99,
+    coverImageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=500&q=80',
+    paymentLink: '',
+    duration: '4 Hours'
+  },
+  {
+    _id: 'evt_12',
+    title: 'Higher Education & Career Expo',
+    category: 'Education',
+    description: 'Meet 50+ leading engineering, arts, and medical colleges for instant guidance.',
+    date: new Date('2025-07-10T10:00:00'),
+    time: 'Thursday, 10:00 AM',
+    venue: 'KMR Hall, Udumalpet',
+    organizer: 'Rotary Club of Udumalpet',
+    phone: '+91 98650 33445',
+    price: 0,
+    coverImageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&q=80',
+    paymentLink: '',
+    duration: '1 Day'
+  },
+  {
+    _id: 'evt_13',
+    title: 'Free Cardiac & Eye Care Camp',
+    category: 'Health',
+    description: 'Expert diagnostics, BP/Sugar screening, and free consultations with specialists.',
+    date: new Date('2025-09-05T08:30:00'),
+    time: 'Friday, 8:30 AM',
+    venue: 'Government High School, Udumalpet',
+    organizer: 'Ganga Hospitals & Lions Club',
+    phone: '+91 94420 88990',
+    price: 0,
+    coverImageUrl: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=500&q=80',
+    duration: '1 Day'
+  },
+  {
+    _id: 'evt_14',
+    title: 'Flower Show & Garden Competition',
+    category: 'Others',
+    description: 'Spectacular floral displays, rare bonsai models, and nursery seeds marketplace.',
+    date: new Date('2026-01-05T09:00:00'),
+    time: 'Monday, 9:00 AM',
+    venue: 'Mullai Nursery Farms, Udumalpet',
+    organizer: 'Udumal Horti League',
+    phone: '+91 91760 44332',
+    price: 0,
+    coverImageUrl: 'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=500&q=80',
+    duration: '1 Day'
   }
 ];
 
@@ -155,6 +305,11 @@ export default function EventsPage() {
   const [commentLoading, setCommentLoading] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [activeCommentsEvent, setActiveCommentsEvent] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(3);
+
+  useEffect(() => {
+    setVisibleCount(3);
+  }, [searchKeyword, filterCategory, filterDate, activeTab]);
 
   useEffect(() => {
     // Check local storage for auth
@@ -206,8 +361,15 @@ export default function EventsPage() {
       const res = await fetch('http://localhost:5000/api/events');
       const data = await res.json();
       if (data.success) {
-        setEvents(data.data);
-        calculateCounts(data.data);
+        // Combine fetched events with mockup mock events so the user always has a rich directory to view!
+        const fetchedIds = new Set((data.data || []).map(item => item._id));
+        const nonDuplicateMock = mockEvents.filter(mock => !fetchedIds.has(mock._id));
+        const combined = [...(data.data || []), ...nonDuplicateMock];
+        setEvents(combined);
+        calculateCounts(combined);
+      } else {
+        setEvents(mockEvents);
+        calculateCounts(mockEvents);
       }
     } catch (err) {
       console.warn('API Offline, using realistic mock events fallbacks');
@@ -1330,8 +1492,7 @@ export default function EventsPage() {
             onSubmit={(e) => e.preventDefault()} 
             className="mt-8 w-full bg-white border border-slate-200 shadow-xl rounded-2xl p-2 flex flex-col md:flex-row gap-2 max-w-5xl text-slate-700"
           >
-            <div className="flex-1 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
-              <Search className="h-4.5 w-4.5 text-slate-500 shrink-0" />
+            <div className="flex-1 flex items-center justify-between gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
               <input
                 type="text"
                 placeholder="Search events..."
@@ -1339,30 +1500,38 @@ export default function EventsPage() {
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 className="w-full bg-transparent text-xs font-semibold text-slate-700 placeholder-slate-455 focus:outline-none"
               />
+              <Search className="h-4.5 w-4.5 text-slate-400 shrink-0" />
             </div>
 
-            <div className="md:w-48 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
-              <Calendar className="h-4.5 w-4.5 text-slate-500 shrink-0" />
+            <div className="md:w-48 flex items-center justify-between gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
               <input
-                type="date"
+                type={filterDate ? "date" : "text"}
+                placeholder="Select Date"
                 value={filterDate}
+                onFocus={(e) => (e.target.type = "date")}
+                onBlur={(e) => { if (!filterDate) e.target.type = "text"; }}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full bg-transparent text-xs font-bold text-slate-600 focus:outline-none cursor-pointer"
+                className="w-full bg-transparent text-xs font-bold text-slate-650 focus:outline-none cursor-pointer placeholder-slate-455"
               />
+              <Calendar className="h-4.5 w-4.5 text-slate-400 shrink-0 pointer-events-none" />
             </div>
 
-            <div className="md:w-48 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
-              <Grid className="h-4.5 w-4.5 text-slate-500 shrink-0" />
+            <div className="md:w-48 flex items-center justify-between gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
-                className="w-full bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                className="w-full bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer appearance-none pr-8 bg-transparent"
               >
                 <option value="All Categories">All Categories</option>
                 {availableCategories.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
             </div>
 
             <button 
@@ -1402,21 +1571,28 @@ export default function EventsPage() {
               <span className="font-extrabold text-[#001c41] text-sm">
                 {activeTab === 'upcoming' ? 'Upcoming Events' : 'Past Events'}
               </span>
-              <span className="bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+              <span className="bg-emerald-50 text-[#027244] text-[10px] font-black px-2.5 py-0.5 rounded-full border border-emerald-100 shadow-xs">
                 {filteredEvents.length} Event{filteredEvents.length !== 1 ? 's' : ''}
               </span>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-650 relative">
               <span>Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="py-1 px-2 border border-slate-200 bg-white rounded-lg cursor-pointer focus:outline-none"
-              >
-                <option>Date (Soonest)</option>
-                <option>Date (Latest)</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="py-1 px-3.5 pr-8 border border-slate-200 bg-white rounded-lg cursor-pointer focus:outline-none font-bold text-slate-700 appearance-none bg-transparent"
+                >
+                  <option>Date (Soonest)</option>
+                  <option>Date (Latest)</option>
+                </select>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1442,74 +1618,61 @@ export default function EventsPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-5">
-              {filteredEvents.map((evt) => {
+              {filteredEvents.slice(0, visibleCount).map((evt) => {
                 const eventDate = new Date(evt.date);
                 const isMultiDay = evt.endDate && new Date(evt.endDate).getTime() !== eventDate.getTime();
                 
                 return (
                   <div 
                     key={evt._id}
-                    className="card-premium group rounded-3xl overflow-hidden flex flex-col md:flex-row cursor-pointer"
+                    className="bg-white border border-slate-100 shadow-sm rounded-3xl overflow-hidden flex flex-col md:flex-row p-4 gap-6 transition-all duration-300 hover:shadow-md hover:border-slate-200/80"
                   >
-                    {/* Cover Image Banner */}
-                    <div className="shrink-0 overflow-hidden relative h-48 md:w-56">
+                    {/* Cover Image Container */}
+                    <div className="shrink-0 overflow-hidden relative h-40 w-full md:w-52 rounded-2xl bg-slate-50 border border-slate-100">
                       <div 
-                        className="h-full w-full bg-cover bg-center transition-transform duration-750 ease-out-expo group-hover:scale-106"
+                        className="h-full w-full bg-cover bg-center"
                         style={{ backgroundImage: `url('${evt.coverImageUrl || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500&q=80"}')` }}
                       />
                     </div>
 
-                    {/* Description panels */}
-                    <div className="p-5.5 flex-1 flex flex-col justify-between gap-4 text-left">
+                    {/* Middle-Left Content Panel */}
+                    <div className="flex-1 flex flex-col justify-between gap-3 text-left">
                       <div className="flex flex-col gap-2">
                         
                         {/* Category tag */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex gap-2 items-center">
-                            <span className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 border rounded-md ${getBadgeStyles(evt.category)}`}>
-                              {getBadgeStyles(evt.category) ? getCategoryIcon(evt.category) : ''} {evt.category}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 border rounded-md ${getBadgeStyles(evt.category)}`}>
+                            {getCategoryIcon(evt.category)} {evt.category}
+                          </span>
+                          {evt.duration && (
+                            <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-slate-550">
+                              ⏱ {evt.duration}
                             </span>
-                            {/* Duration Badge */}
-                            {evt.duration && (
-                              <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-slate-550">
-                                ⏱ {evt.duration}
-                              </span>
-                            )}
-                            {/* Expired Badge */}
-                            {new Date(evt.endDate || evt.date) < new Date() && (
-                              <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-red-50 border border-red-200 rounded-md text-red-700">
-                                Expired
-                              </span>
-                            )}
-                          </div>
-                          
-                          {/* Bookmark */}
-                          <button className="text-slate-400 hover:text-[#027244] transition-colors cursor-pointer bg-transparent border-none">
-                            <Bookmark className="h-4.5 w-4.5" />
-                          </button>
-                        </div>
-
-                        {/* Title & Ticket CTA Button */}
-                        <div className="flex justify-between items-start gap-4">
-                          <h3 className="font-black text-lg text-[#001c41] mt-0.5 leading-snug flex-1">
-                            {evt.title}
-                          </h3>
-                          
-                          {/* Payment Registration Tickets Link Button */}
+                          )}
+                          {new Date(evt.endDate || evt.date) < new Date() && (
+                            <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-red-50 border border-red-200 rounded-md text-red-700">
+                              Expired
+                            </span>
+                          )}
                           {evt.paymentLink && (
                             <a 
                               href={evt.paymentLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10.5px] py-1.5 px-3.5 rounded-lg flex items-center gap-1 transition-all shadow shrink-0 leading-none"
+                              className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 border border-emerald-250 text-[#027244] hover:bg-emerald-100 rounded-md flex items-center gap-1 transition-colors leading-none"
                             >
-                              <span>Register / Buy Tickets</span>
-                              <ExternalLink className="h-3 w-3" />
+                              <span>Tickets</span>
+                              <ExternalLink className="h-2.5 w-2.5" />
                             </a>
                           )}
                         </div>
 
-                        {/* Venue Locality */}
+                        {/* Title */}
+                        <h3 className="font-extrabold text-base text-[#001c41] leading-snug">
+                          {evt.title}
+                        </h3>
+
+                        {/* Venue locality */}
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-0.5">
                           <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                           <span>{evt.venue}</span>
@@ -1520,40 +1683,8 @@ export default function EventsPage() {
                         </p>
                       </div>
 
-                      {/* Specs Row */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-600">
-                        <div className="flex items-start gap-2">
-                          <Calendar className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                          <div className="flex flex-col">
-                            <span className="font-extrabold text-[#001c41]">
-                              {eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              {isMultiDay && ` - ${new Date(evt.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                            </span>
-                            <span className="text-[9.5px] text-slate-400 leading-normal mt-0.5">
-                              {evt.time}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-2">
-                          <User className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                          <div className="flex flex-col">
-                            <span className="font-extrabold text-[#001c41]">{evt.organizer}</span>
-                            <span className="text-[9.5px] text-slate-400 leading-normal mt-0.5">Event Host</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-2">
-                          <Phone className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                          <div className="flex flex-col">
-                            <span className="font-extrabold text-[#001c41]">{evt.phone}</span>
-                            <span className="text-[9.5px] text-slate-400 leading-normal mt-0.5">Call for queries</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Likes & Comments Interactive Bar */}
-                      <div className="flex gap-4 border-t border-slate-100 pt-3 mt-1 text-xs font-black text-slate-500">
+                      {/* Interactive Likes & Comments Bar */}
+                      <div className="flex gap-4 border-t border-slate-100 pt-3 mt-1 text-[11px] font-black text-slate-455">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleToggleLike(evt._id); }}
                           className={`flex items-center gap-1 bg-transparent border-none cursor-pointer hover:text-red-550 transition-colors ${
@@ -1565,19 +1696,17 @@ export default function EventsPage() {
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); openEventCommentsModal(evt); }}
-                          className="flex items-center gap-1 bg-transparent border-none cursor-pointer hover:text-[#027244] text-slate-450 transition-colors"
+                          className="flex items-center gap-1 bg-transparent border-none cursor-pointer hover:text-[#027244] text-slate-455 transition-colors"
                         >
                           <MessageSquare className="h-4 w-4" />
                           <span>{evt.comments ? evt.comments.length : 0} Comments</span>
                         </button>
-                        
-                        {/* Host Profile Link */}
                         {evt.businessId && (
                           <div className="ml-auto">
                             <Link 
                               to={`/businesses/${evt.businessId._id || evt.businessId}`}
                               onClick={(e) => e.stopPropagation()}
-                              className="text-[#027244] hover:text-[#005934] hover:underline flex items-center gap-1 leading-none"
+                              className="text-[#027244] hover:text-[#005934] hover:underline flex items-center gap-1 leading-none font-bold"
                             >
                               <User className="h-3.5 w-3.5" />
                               <span>View Profile</span>
@@ -1587,6 +1716,66 @@ export default function EventsPage() {
                       </div>
 
                     </div>
+
+                    {/* Middle-Right Specs Section */}
+                    <div className="w-full md:w-64 shrink-0 flex flex-col justify-center gap-3.5 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 text-xs font-semibold text-slate-650 text-left">
+                      
+                      <div className="flex items-start gap-2.5">
+                        <Calendar className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800 font-sans">
+                            {eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {isMultiDay && ` - ${new Date(evt.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
+                            {evt.time}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5">
+                        <User className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800">{evt.organizer}</span>
+                          <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
+                            Event Host
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5">
+                        <Phone className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-800">{evt.phone}</span>
+                          <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
+                            Call for queries
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Right Action Section */}
+                    <div className="w-full md:w-36 shrink-0 flex flex-col items-stretch md:items-end justify-center gap-3 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                      
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); openEventCommentsModal(evt); }}
+                        className="w-full border border-emerald-600 hover:bg-emerald-50 text-[#027244] font-extrabold text-xs py-2 px-4 rounded-xl transition-all text-center cursor-pointer shadow-xs"
+                      >
+                        View Details
+                      </button>
+
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleToggleLike(evt._id); }}
+                        className={`self-center md:self-end p-2 border hover:bg-slate-50 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                          isLikedByUser(evt) ? 'text-[#027244] border-emerald-200 bg-emerald-50/50' : 'text-slate-400 border-slate-200'
+                        }`}
+                      >
+                        <Bookmark className={`h-4.5 w-4.5 ${isLikedByUser(evt) ? 'fill-current' : ''}`} />
+                      </button>
+
+                    </div>
+
                   </div>
                 );
               })}
@@ -1594,9 +1783,10 @@ export default function EventsPage() {
           )}
 
           {/* View More Button */}
-          {!loading && filteredEvents.length > 0 && (
+          {!loading && filteredEvents.length > visibleCount && (
             <button 
-              className="py-3 px-8 self-center border border-slate-200 hover:bg-slate-100 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+              onClick={() => setVisibleCount(prev => prev + 3)}
+              className="py-3 px-8 self-center border border-slate-200 hover:bg-slate-100 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer mt-2"
             >
               View More Events
             </button>
@@ -1607,46 +1797,23 @@ export default function EventsPage() {
         {/* Right Sidebar Widgets */}
         <aside className="lg:col-span-1 flex flex-col gap-6 text-left">
           
-          {/* List Your Event Card (₹20 or Free) */}
-          <div className="bg-white border border-slate-200/80 shadow-md rounded-[20px] p-6 flex flex-col gap-4 font-sans relative overflow-hidden">
-            <div className="absolute -right-8 -top-8 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
-            <div className="flex items-start gap-3.5 border-b border-slate-100 pb-3">
-              <div className="h-10 w-10 rounded-xl bg-[#E6F4EA] text-[#027244] flex items-center justify-center shrink-0">
+          {/* List Your Event Card (₹99 or Free) */}
+          <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-6 flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-emerald-50 text-[#027244] border border-emerald-100 flex items-center justify-center shrink-0">
                 <Calendar className="h-5.5 w-5.5" />
               </div>
               <div className="flex flex-col">
-                <h4 className="font-extrabold text-sm text-[#001c41] leading-none">List Your Event</h4>
-                <span className="text-[9.5px] text-slate-400 font-semibold mt-1">Reach thousands of active people</span>
+                <h4 className="font-extrabold text-base text-[#001c41] leading-none">List Your Event</h4>
+                <span className="text-[10px] text-slate-450 font-semibold mt-1.5 leading-normal">
+                  Reach thousands of people in Udumalpet. List your event for just
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 mt-1.5">
-              <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider leading-none">Standard Listing Charges</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-[#027244] font-black text-2xl">₹99</span>
-                <span className="text-[10px] text-slate-400 font-semibold">/ event listing</span>
-              </div>
-              <span className="text-[9px] text-[#027244] font-bold mt-1">✓ FREE for active business subscribers!</span>
-            </div>
-
-            {/* List of benefits */}
-            <div className="flex flex-col gap-2.5 mt-2 text-xs text-slate-550 font-semibold leading-none">
-              <div className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-[#027244] shrink-0" />
-                <span>Get more visibility</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-[#027244] shrink-0" />
-                <span>Attract more participants</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-[#027244] shrink-0" />
-                <span>Easy & quick listing</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 text-[#027244] shrink-0" />
-                <span>Secure payments</span>
-              </div>
+            <div className="flex items-baseline gap-1 mt-1">
+              <span className="text-[#027244] font-black text-3xl">₹99</span>
+              <span className="text-[10px] text-slate-400 font-semibold">/ listing</span>
             </div>
 
             <button 
@@ -1669,70 +1836,130 @@ export default function EventsPage() {
                   navigate(`/login?redirect=${encodeURIComponent('/events?list=true')}&from=events`);
                 }
               }}
-              className="w-full mt-4 py-3 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow transition-all uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-3 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow transition-all uppercase tracking-wider flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>List Your Event Now</span>
             </button>
+
+            {/* Checklist of benefits */}
+            <div className="flex flex-col gap-2.5 mt-2 border-t border-slate-100 pt-4 text-xs text-slate-550 font-semibold">
+              <div className="flex items-center gap-2">
+                <div className="h-4.5 w-4.5 rounded-full bg-emerald-50 text-[#027244] flex items-center justify-center shrink-0">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </div>
+                <span>Get more visibility</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4.5 w-4.5 rounded-full bg-emerald-50 text-[#027244] flex items-center justify-center shrink-0">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </div>
+                <span>Attract more participants</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4.5 w-4.5 rounded-full bg-emerald-50 text-[#027244] flex items-center justify-center shrink-0">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </div>
+                <span>Easy & quick listing</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4.5 w-4.5 rounded-full bg-emerald-50 text-[#027244] flex items-center justify-center shrink-0">
+                  <Check className="h-3 w-3 stroke-[3]" />
+                </div>
+                <span>Secure payments</span>
+              </div>
+            </div>
           </div>
 
           {/* Categories Count breakdown card */}
-          <div className="bg-white border border-slate-200/80 shadow-xs rounded-[20px] p-6 flex flex-col gap-4 font-sans">
-            <div className="flex flex-col border-b border-slate-100 pb-3">
-              <h4 className="font-extrabold text-sm text-[#001c41] leading-none">Categories</h4>
-              <span className="text-[9.5px] text-slate-400 font-semibold mt-1">Browse scheduled events by topic</span>
+          <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-6 flex flex-col gap-4">
+            <div className="flex items-start gap-3 border-b border-slate-100 pb-3">
+              <div className="h-10 w-10 rounded-xl bg-slate-50 text-slate-500 border border-slate-200/60 flex items-center justify-center shrink-0">
+                <Grid className="h-5.5 w-5.5" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <h4 className="font-extrabold text-base text-[#001c41] leading-none">Categories</h4>
+                <span className="text-[10px] text-slate-400 font-semibold mt-1">Browse scheduled events by topic</span>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1 mt-1">
+              {/* All Categories Item */}
               <div 
                 onClick={() => setFilterCategory('All Categories')}
-                className={`flex items-center justify-between cursor-pointer group py-1.5 border-b border-slate-50 last:border-0 ${filterCategory === 'All Categories' ? 'text-emerald-700 font-bold' : ''}`}
+                className={`flex items-center justify-between cursor-pointer group py-2.5 px-3 rounded-xl transition-all duration-200 ${
+                  filterCategory === 'All Categories' 
+                    ? 'bg-emerald-50 text-[#027244]' 
+                    : 'hover:bg-slate-50 text-slate-650'
+                }`}
               >
                 <div className="flex items-center gap-2.5">
                   <span className="text-sm shrink-0">📂</span>
-                  <span className="text-xs font-bold text-slate-700 group-hover:text-emerald-700 transition-colors leading-none">
+                  <span className="text-xs font-bold leading-none">
                     All Categories
                   </span>
                 </div>
-                <span className="text-[10px] font-extrabold text-slate-500 uppercase leading-none bg-slate-50 px-2.5 py-1 rounded">
-                  {categoryCounts['All Categories'] || 0}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-black leading-none ${
+                    filterCategory === 'All Categories' ? 'text-[#027244]' : 'text-slate-400'
+                  }`}>
+                    {categoryCounts['All Categories'] || 0}
+                  </span>
+                  <ChevronRight className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                    filterCategory === 'All Categories' ? 'text-[#027244] translate-x-0.5' : 'text-slate-355'
+                  }`} />
+                </div>
               </div>
 
               {availableCategories.map((c) => (
                 <div 
                   key={c}
                   onClick={() => setFilterCategory(c)}
-                  className={`flex items-center justify-between cursor-pointer group py-1.5 border-b border-slate-50 last:border-0 ${filterCategory === c ? 'text-emerald-700 font-bold' : ''}`}
+                  className={`flex items-center justify-between cursor-pointer group py-2.5 px-3 rounded-xl transition-all duration-200 ${
+                    filterCategory === c 
+                      ? 'bg-emerald-50 text-[#027244]' 
+                      : 'hover:bg-slate-50 text-slate-650'
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <span className="text-sm shrink-0">{getCategoryIcon(c)}</span>
-                    <span className="text-xs font-bold text-slate-700 group-hover:text-emerald-700 transition-colors leading-none">
+                    <span className="text-xs font-bold leading-none">
                       {c}
                     </span>
                   </div>
-                  <span className="text-[10px] font-extrabold text-slate-500 uppercase leading-none bg-slate-50 px-2.5 py-1 rounded">
-                    {categoryCounts[c] || 0}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-black leading-none ${
+                      filterCategory === c ? 'text-[#027244]' : 'text-slate-400'
+                    }`}>
+                      {categoryCounts[c] || 0}
+                    </span>
+                    <ChevronRight className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                      filterCategory === c ? 'text-[#027244] translate-x-0.5' : 'text-slate-355'
+                    }`} />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Need Help support box */}
-          <div className="bg-[#001c41] text-white border border-slate-900 shadow-xs rounded-[20px] p-6 flex flex-col gap-4 relative overflow-hidden font-sans">
-            <div className="absolute -right-8 -top-8 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
-            <div className="flex flex-col gap-1.5 z-10 text-left">
-              <span className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-widest leading-none">Need Help?</span>
-              <h4 className="font-extrabold text-sm leading-snug mt-1.5">Having trouble listing your event?</h4>
-              <p className="text-slate-450 text-[10px] font-semibold leading-relaxed mt-1">
-                Contact our support desk. We are active 24/7 to assist your listings and event promotion.
-              </p>
+          <div className="bg-white border border-[#E0E7FF] shadow-sm rounded-3xl p-6 flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute -right-8 -top-8 w-20 h-20 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-indigo-50 text-[#6366F1] border border-indigo-100 flex items-center justify-center shrink-0">
+                <Phone className="h-5.5 w-5.5" />
+              </div>
+              <div className="flex flex-col">
+                <h4 className="font-extrabold text-base text-[#001c41] leading-none">Need Help?</h4>
+                <span className="text-[10px] text-slate-450 font-semibold mt-1.5 leading-normal">
+                  Contact us if you need any help in listing your event.
+                </span>
+              </div>
             </div>
 
             <a 
               href="mailto:udumalpetbusinesstour@gmail.com"
-              className="w-full py-3 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow transition-all cursor-pointer text-center z-10 uppercase tracking-wider"
+              className="w-full py-3 border border-[#6366F1] text-[#6366F1] hover:bg-indigo-50 font-extrabold text-xs rounded-xl shadow-xs transition-all text-center uppercase tracking-wider cursor-pointer"
             >
               Contact Support
             </a>
@@ -1750,7 +1977,7 @@ export default function EventsPage() {
             <div className="flex justify-between items-start border-b border-slate-100 pb-3.5">
               <div>
                 <h3 className="font-extrabold text-slate-800 text-base md:text-lg">
-                  Event Comments - {activeCommentsEvent.title}
+                  {activeCommentsEvent.title}
                 </h3>
                 <p className="text-slate-450 text-[10.5px] font-semibold mt-1">
                   Organizer: {activeCommentsEvent.organizer} • Date: {formatEventDateRange(activeCommentsEvent.date, activeCommentsEvent.endDate)}
@@ -1765,6 +1992,82 @@ export default function EventsPage() {
               >
                 <X className="h-4.5 w-4.5" />
               </button>
+            </div>
+
+            {/* Event Info Overview Card inside Modal */}
+            <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-5 flex flex-col md:flex-row gap-5">
+              {/* Cover Image */}
+              <div className="md:w-44 h-36 shrink-0 rounded-xl overflow-hidden border border-slate-200/80 bg-slate-100 relative">
+                <div 
+                  className="h-full w-full bg-cover bg-center"
+                  style={{ backgroundImage: `url('${activeCommentsEvent.coverImageUrl || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500&q=80"}')` }}
+                />
+              </div>
+
+              {/* Core Details */}
+              <div className="flex-1 flex flex-col justify-between gap-3 text-left">
+                <div className="flex flex-col gap-1.5 text-left">
+                  {/* Badges */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 border rounded-md ${getBadgeStyles(activeCommentsEvent.category)}`}>
+                      {getCategoryIcon(activeCommentsEvent.category)} {activeCommentsEvent.category}
+                    </span>
+                    {activeCommentsEvent.duration && (
+                      <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-150 border border-slate-200 rounded-md text-slate-555">
+                        ⏱ {activeCommentsEvent.duration}
+                      </span>
+                    )}
+                    <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 border border-emerald-100 rounded-md text-[#027244]">
+                      {activeCommentsEvent.price === 0 ? 'FREE' : `₹${activeCommentsEvent.price}`}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed mt-0.5">
+                    {activeCommentsEvent.description}
+                  </p>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-semibold text-slate-655 pt-2 border-t border-slate-200/65">
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-[#027244] shrink-0" />
+                    <span className="truncate text-slate-700" title={activeCommentsEvent.venue}>{activeCommentsEvent.venue}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-[#027244] shrink-0" />
+                    <span className="text-slate-700">{formatEventDateRange(activeCommentsEvent.date, activeCommentsEvent.endDate)} • {activeCommentsEvent.time}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-[#027244] shrink-0" />
+                    <span className="text-slate-700">Host: {activeCommentsEvent.organizer}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-[#027244] shrink-0" />
+                    <span className="text-slate-700">Queries: {activeCommentsEvent.phone}</span>
+                  </div>
+                </div>
+
+                {/* Ticket Buy CTA Link */}
+                {activeCommentsEvent.paymentLink && (
+                  <a 
+                    href={activeCommentsEvent.paymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10.5px] py-2 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-xs w-full sm:w-auto self-start leading-none"
+                  >
+                    <span>Register / Book Tickets Now</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
+
+              </div>
+            </div>
+
+            {/* Comments Header Divider */}
+            <div className="border-t border-slate-100 pt-4 mt-2">
+              <h4 className="font-extrabold text-sm text-[#001c41]">
+                Discussion & Comments ({activeCommentsEvent.comments ? activeCommentsEvent.comments.length : 0})
+              </h4>
             </div>
 
             {/* Comments List */}

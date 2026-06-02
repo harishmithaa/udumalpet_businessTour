@@ -47,6 +47,19 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ['Active', 'Suspended'],
     default: 'Active',
+  },
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  referredBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  referralPoints: {
+    type: Number,
+    default: 0,
   }
 }, {
   timestamps: true
@@ -58,6 +71,19 @@ UserSchema.pre('save', async function () {
   if (this.name && !this.fullName) this.fullName = this.name;
   if (this.mobileNumber && !this.phone) this.phone = this.mobileNumber;
   if (this.phone && !this.mobileNumber) this.mobileNumber = this.phone;
+
+  if (!this.referralCode) {
+    let code;
+    let codeExists = true;
+    while (codeExists) {
+      code = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const tempUser = await this.constructor.findOne({ referralCode: code });
+      if (!tempUser) {
+        codeExists = false;
+      }
+    }
+    this.referralCode = code;
+  }
 
   if (!this.isModified('password')) {
     return;

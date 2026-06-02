@@ -6,9 +6,16 @@ const TestimonialSchema = new mongoose.Schema({
     required: [true, 'Author name is required'],
     trim: true,
   },
+  authorId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  authorEmail: {
+    type: String,
+  },
   role: {
     type: String,
-    enum: ['Business Owner', 'Event Manager', 'Blog Writer', 'Other'],
+    enum: ['Business Owner', 'Event Manager', 'Blog Writer', 'Viewer', 'Other'],
     required: [true, 'Role is required'],
   },
   text: {

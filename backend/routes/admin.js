@@ -102,6 +102,11 @@ router.put('/businesses/:id/status', async (req, res, next) => {
     
     await business.save({ validateBeforeSave: false });
 
+    if (status === 'Approved') {
+      const { checkAndCompleteReferralByBusiness } = require('../utils/referralHelper');
+      await checkAndCompleteReferralByBusiness(business._id);
+    }
+
     await Notification.create({
       userId: business.ownerId ? (business.ownerId._id || business.ownerId) : null,
       businessId: business._id,

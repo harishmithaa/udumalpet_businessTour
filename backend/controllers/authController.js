@@ -24,7 +24,7 @@ const registerUser = async (req, res, next) => {
       return sendError(res, 400, error.details[0].message);
     }
 
-    const { name, fullName, email, phone, mobileNumber, password, role } = value;
+    const { name, fullName, email, phone, mobileNumber, password, role, referralCode } = value;
     const resolvedName = name || fullName;
     const resolvedPhone = phone || mobileNumber;
 
@@ -61,6 +61,24 @@ const registerUser = async (req, res, next) => {
       return sendError(res, 400, message);
     }
 
+    // Look up referrer if referral code provided
+    let referrer = null;
+    if (referralCode) {
+      referrer = await User.findOne({ referralCode: referralCode.trim().toUpperCase() });
+      if (!referrer) {
+        return sendError(res, 400, 'Invalid referral code');
+      }
+
+      // Check self-referral
+      if (
+        referrer.email.toLowerCase() === email.toLowerCase() ||
+        referrer.phone === resolvedPhone ||
+        referrer.mobileNumber === resolvedPhone
+      ) {
+        return sendError(res, 400, 'You cannot refer yourself');
+      }
+    }
+
     // Create new user
     const user = await User.create({
       name: resolvedName,
@@ -70,7 +88,25 @@ const registerUser = async (req, res, next) => {
       mobileNumber: resolvedPhone,
       password,
       role: role || 'owner', // Defaults to owner onboarding
+      referredBy: referrer ? referrer._id : undefined
     });
+
+    // Create pending Referral record
+    if (referrer) {
+      const Referral = require('../models/Referral');
+      await Referral.create({
+        referrerId: referrer._id,
+        referredUserId: user._id,
+        status: 'pending',
+        points: 100,
+        antiFraudChecks: {
+          selfReferral: false,
+          duplicateMobile: false,
+          duplicateGST: false,
+          duplicateBusiness: false
+        }
+      });
+    }
 
     return sendSuccess(res, 201, 'User registered successfully', {
       token: generateToken(user._id),

@@ -331,6 +331,11 @@ export default function BlogDetail() {
           
           {/* Header info */}
           <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-400 border-b border-slate-100 pb-5">
+            {blog.category && (
+              <span className="bg-emerald-50 text-[#027244] border border-emerald-250 px-2.5 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider select-none">
+                {blog.category}
+              </span>
+            )}
             <Link 
               to={`/profile/${blog.author || blog.authorId}`}
               className="flex items-center gap-1.5 text-slate-700 hover:text-[#027244] transition-colors group cursor-pointer"

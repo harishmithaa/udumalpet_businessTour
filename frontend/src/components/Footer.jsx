@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Youtube, Send, Phone, Mail, Clock, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Youtube, Send, Phone, Mail, Clock, MapPin, Gift } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -50,7 +50,14 @@ export default function Footer() {
           <ul className="flex flex-col gap-2.5 text-xs font-semibold text-slate-400">
             <li><Link to="/add-business" className="hover:text-emerald-500 transition-colors">List Your Business</Link></li>
             <li><Link to="/login?from=business" className="hover:text-emerald-500 transition-colors">Business Login</Link></li>
-            <li><Link to="/businesses?focus=pricing" className="hover:text-emerald-500 transition-colors">Pricing & Plans</Link></li>
+            <li>
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('open-referral-modal'))} 
+                className="hover:text-emerald-500 transition-colors animate-shake cursor-pointer text-left inline-flex items-center gap-1.5 text-emerald-400 font-extrabold"
+              >
+                <Gift className="h-3.5 w-3.5 text-emerald-450 shrink-0" /> Refer other business
+              </button>
+            </li>
             <li><Link to="/#how-it-works" className="hover:text-emerald-500 transition-colors">How It Works</Link></li>
             <li><Link to="/businesses?focus=guidelines" className="hover:text-emerald-500 transition-colors">Business Guidelines</Link></li>
           </ul>

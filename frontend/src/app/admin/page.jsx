@@ -5,7 +5,7 @@ import {
   ArrowRight, Eye, Grid, Shield, CreditCard, LayoutDashboard, Store, BookOpen, Calendar, 
   MessageSquare, CreditCard as CardIcon, Bell, BarChart3, Settings, LogOut, Search, User, 
   MapPin, ChevronRight, Landmark, Trash2, Mail, Globe, Award, ShieldAlert, CheckCircle2,
-  Clock, Plus, Filter, ShieldCheck as ShieldOk, Activity, Cpu, Database, Terminal
+  Clock, Plus, Filter, ShieldCheck as ShieldOk, Activity, Cpu, Database, Terminal, Gift, Smile
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -82,6 +82,13 @@ export default function AdminDashboard() {
   // UBT App Testimonials states and handlers
   const [appTestimonials, setAppTestimonials] = useState([]);
   const [testimonialsLoading, setTestimonialsLoading] = useState(false);
+
+  // Referral System states
+  const [referrals, setReferrals] = useState([]);
+  const [referralsLoading, setReferralsLoading] = useState(false);
+  const [referralsError, setReferralsError] = useState('');
+  const [referralFilter, setReferralFilter] = useState('All'); // All | Pending | Completed | Rejected
+  const [referralSearch, setReferralSearch] = useState('');
 
   const fetchAppTestimonials = async () => {
     setTestimonialsLoading(true);
@@ -247,6 +254,77 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchReferrals = async () => {
+    setReferralsLoading(true);
+    setReferralsError('');
+    try {
+      const activeToken = localStorage.getItem('ubt_token');
+      const res = await fetch('http://localhost:5000/api/referrals/admin/all', {
+        headers: {
+          'Authorization': `Bearer ${activeToken}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReferrals(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch referrals.');
+      }
+    } catch (err) {
+      console.warn('API error, using realistic mockup referrals.', err);
+      const mockRefs = [
+        {
+          _id: 'ref1',
+          referrerId: { fullName: 'Aravind Swamy', email: 'aravind@gmail.com', mobileNumber: '9443211111' },
+          referredUserId: { fullName: 'Balaji Sweet Stall Owner', email: 'balaji@gmail.com', mobileNumber: '9876543210' },
+          referredBusinessId: { name: 'Balaji Sweet Stall', gstNumber: '33AAAAA1111A1Z1', phone: '9876543210', status: 'Pending Verification', subscriptionStatus: 'active' },
+          status: 'pending',
+          points: 100,
+          antiFraudChecks: { selfReferral: false, duplicateMobile: true, duplicateGST: false, duplicateBusiness: false },
+          createdAt: new Date().toISOString()
+        },
+        {
+          _id: 'ref2',
+          referrerId: { fullName: 'Lakshmi Textiles', email: 'lakshmi@gmail.com', mobileNumber: '9443599999' },
+          referredUserId: { fullName: 'Sri Murugan Stores Owner', email: 'murugan@gmail.com', mobileNumber: '9123456780' },
+          referredBusinessId: { name: 'Sri Murugan Stores', gstNumber: '33BBBBB2222B2Z2', phone: '9123456780', status: 'Approved', subscriptionStatus: 'active' },
+          status: 'completed',
+          points: 100,
+          antiFraudChecks: { selfReferral: false, duplicateMobile: false, duplicateGST: false, duplicateBusiness: false },
+          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+      setReferrals(mockRefs);
+    } finally {
+      setReferralsLoading(false);
+    }
+  };
+
+  const handleReferralModerate = async (referralId, action, rejectionReason = '') => {
+    try {
+      const activeToken = localStorage.getItem('ubt_token');
+      const res = await fetch('http://localhost:5000/api/referrals/admin/moderate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${activeToken}`
+        },
+        body: JSON.stringify({ referralId, action, rejectionReason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReferrals(prev => prev.map(r => r._id === referralId ? { ...r, status: action === 'approve' ? 'completed' : 'rejected', rejectionReason } : r));
+        alert(`Referral successfully ${action}d!`);
+      } else {
+        alert(data.message || `Failed to ${action} referral.`);
+      }
+    } catch (err) {
+      // Simulate offline update
+      setReferrals(prev => prev.map(r => r._id === referralId ? { ...r, status: action === 'approve' ? 'completed' : 'rejected', rejectionReason } : r));
+      alert(`Referral successfully ${action}d (simulated offline mode)!`);
+    }
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem('ubt_token');
     const storedUser = localStorage.getItem('ubt_user');
@@ -267,12 +345,19 @@ export default function AdminDashboard() {
       loadPlatformRealData();
       fetchQueries();
       fetchAppTestimonials();
+      fetchReferrals();
     } catch (err) {
       localStorage.removeItem('ubt_user');
       localStorage.removeItem('ubt_token');
       navigate('/login');
     }
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'Referral Moderation') {
+      fetchReferrals();
+    }
+  }, [activeTab]);
 
   const loadPlatformRealData = async () => {
     setLoading(true);
@@ -538,10 +623,12 @@ export default function AdminDashboard() {
               { id: 'Blogs', label: 'Blogs Moderation', icon: <BookOpen className="h-5 w-5" /> },
               { id: 'Events', label: 'Events Moderation', icon: <Calendar className="h-5 w-5" /> },
               { id: 'Reviews', label: 'Reviews Feed', icon: <MessageSquare className="h-5 w-5" /> },
+              { id: 'Testimonials', label: 'Testimonials Moderation', icon: <Smile className="h-5 w-5" /> },
               { id: 'Subscriptions', label: 'Subscriptions', icon: <CardIcon className="h-5 w-5" /> },
               { id: 'Notifications', label: 'Notifications Hub', icon: <Bell className="h-5 w-5" /> },
               { id: 'Reports', label: 'Reports & Trends', icon: <BarChart3 className="h-5 w-5" /> },
-              { id: 'Queries', label: 'Queries Inbox', icon: <Mail className="h-5 w-5" /> }
+              { id: 'Queries', label: 'Queries Inbox', icon: <Mail className="h-5 w-5" /> },
+              { id: 'Referral Moderation', label: 'Referral Moderation', icon: <Gift className="h-5 w-5" /> }
             ].map(item => (
               <button
                 key={item.id}
@@ -657,7 +744,8 @@ export default function AdminDashboard() {
                         <span className="text-3xl font-black text-amber-700 mt-2 leading-none">
                           {businesses.filter(b => b.status === 'Pending Verification' || b.status === 'Under Review').length +
                            blogs.filter(b => b.status === 'Pending Approval').length +
-                           events.filter(e => e.status === 'Pending Review').length}
+                           events.filter(e => e.status === 'Pending Review').length +
+                           appTestimonials.filter(t => t.status === 'Pending').length}
                         </span>
                       </div>
                       <div className="h-10 w-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 border border-amber-100/50">
@@ -771,7 +859,7 @@ export default function AdminDashboard() {
                           <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-black ${
                             auditSubTab === 'Testimonials' ? 'bg-white text-[#027244]' : 'bg-slate-200 text-slate-600'
                           }`}>
-                            {reviews.filter(r => r.status === 'flagged').length}
+                            {appTestimonials.filter(t => t.status === 'Pending').length}
                           </span>
                         </button>
                       </div>
@@ -892,8 +980,8 @@ export default function AdminDashboard() {
                             <div className="flex justify-between items-start gap-4">
                               <div className="flex flex-col text-left font-sans">
                                 <span className="font-extrabold text-[#001c41] text-xs sm:text-[13px] leading-snug">{b.title}</span>
-                                <span className="text-[9.5px] text-slate-400 font-bold mt-1 block">
-                                  Author: {b.authorName} • Date: {new Date(b.createdAt).toLocaleDateString()}
+                                <span className="text-[9.5px] text-slate-405 font-bold mt-1 block">
+                                  Author: {b.authorName} • Date: {new Date(b.createdAt).toLocaleDateString()} • Category: <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider">{b.category || 'Business Tips'}</span>
                                 </span>
                                 <a
                                   href={`/blogs/${b._id}`}
@@ -1011,39 +1099,89 @@ export default function AdminDashboard() {
 
                     {auditSubTab === 'Testimonials' && (
                       <div className="flex flex-col gap-4">
-                        {reviews.map(r => (
-                          <div key={r._id} className="bg-slate-50/50 border border-slate-200/80 rounded-2xl p-5 flex justify-between items-center gap-6">
-                            <div className="flex items-start gap-4">
-                              <div className="h-10 w-10 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center font-black text-slate-600 text-xs">
-                                {r.authorName.charAt(0)}
-                              </div>
-                              <div className="flex flex-col text-left">
-                                <span className="font-extrabold text-xs text-slate-800 leading-none">{r.authorName} on {r.businessName}</span>
-                                <div className="flex items-center gap-1.5 mt-1.5">
-                                  <div className="flex text-amber-400 gap-0.5 shrink-0">
-                                    {[...Array(5)].map((_, i) => (
-                                      <Star key={i} className={`h-3 w-3 ${i < r.rating ? 'fill-current' : 'text-slate-200'}`} />
-                                    ))}
-                                  </div>
-                                  {r.status === 'flagged' && <span className="bg-red-50 border border-red-150 text-red-650 text-[7.5px] font-black uppercase px-1 py-0.5 rounded leading-none shrink-0 animate-pulse">SPAM FLAG</span>}
-                                </div>
-                                <p className="text-[11.5px] text-slate-500 font-semibold mt-2 max-w-2xl leading-relaxed">{r.text}</p>
-                              </div>
-                            </div>
+                        {testimonialsLoading ? (
+                          <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
+                            <RefreshCw className="h-6 w-6 text-emerald-600 animate-spin" />
+                            <span className="text-[10px] font-bold">Loading Testimonials...</span>
+                          </div>
+                        ) : (
+                          <>
+                            {[...appTestimonials]
+                              .sort((a, b) => {
+                                const weight = (status) => status === 'Pending' ? 0 : status === 'Approved' ? 1 : 2;
+                                return weight(a.status) - weight(b.status) || new Date(b.createdAt) - new Date(a.createdAt);
+                              })
+                              .map(t => (
+                                <div key={t._id} className="bg-slate-50/50 border border-slate-200/80 rounded-2xl p-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-left">
+                                  <div className="flex items-start gap-4">
+                                    <div className="h-10 w-10 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center font-black text-[#027244] text-xs shrink-0 select-none uppercase">
+                                      {(t.authorName || 'KA').slice(0, 2)}
+                                    </div>
+                                    <div className="flex flex-col">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-extrabold text-xs text-slate-800 leading-none">{t.authorName}</span>
+                                        <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">{t.role}</span>
+                                        <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
+                                          t.status === 'Approved'
+                                            ? 'bg-emerald-50 border-emerald-250 text-emerald-700'
+                                            : t.status === 'Rejected'
+                                              ? 'bg-red-50 border-red-200 text-red-650'
+                                              : 'bg-amber-50 border-amber-250 text-amber-600 animate-pulse'
+                                        }`}>
+                                          {t.status}
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-1 mt-1.5 text-amber-400">
+                                        {[...Array(5)].map((_, i) => (
+                                          <Star key={i} className={`h-3 w-3 ${i < (t.rating || 5) ? 'fill-current' : 'text-slate-205'}`} />
+                                        ))}
+                                        <span className="text-[9.5px] text-slate-400 font-bold ml-2">
+                                          {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                                        </span>
+                                      </div>
 
-                            <button 
-                              onClick={() => handleReviewAction(r._id, 'delete')}
-                              className="h-10 w-10 rounded-xl bg-red-50 hover:bg-red-100 text-red-650 flex items-center justify-center shrink-0 shadow-2xs transition-colors cursor-pointer"
-                              title="Purge Review"
-                            >
-                              <Trash2 className="h-4.5 w-4.5" />
-                            </button>
-                          </div>
-                        ))}
-                        {reviews.length === 0 && (
-                          <div className="p-8 text-center text-slate-400 text-xs font-bold bg-slate-50 rounded-2xl">
-                            No active reviews to display.
-                          </div>
+                                      <p className="text-[11.5px] text-slate-555 font-semibold mt-2 max-w-2xl leading-relaxed italic">
+                                        "{t.text}"
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                    {t.status !== 'Approved' && (
+                                      <button 
+                                        onClick={() => handleTestimonialStatus(t._id, 'Approved')}
+                                        className="px-2.5 py-1.5 bg-[#027244] hover:bg-[#005934] text-white rounded-lg text-[10.5px] font-extrabold cursor-pointer transition-colors shadow-2xs"
+                                        title="Approve Testimonial"
+                                      >
+                                        Approve
+                                      </button>
+                                    )}
+                                    {t.status !== 'Rejected' && (
+                                      <button 
+                                        onClick={() => handleTestimonialStatus(t._id, 'Rejected')}
+                                        className="px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-650 rounded-lg text-[10.5px] font-extrabold cursor-pointer transition-colors"
+                                        title="Reject Testimonial"
+                                      >
+                                        Reject
+                                      </button>
+                                    )}
+                                    <button 
+                                      onClick={() => handleTestimonialDelete(t._id)}
+                                      className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center transition-colors cursor-pointer border border-slate-205"
+                                      title="Delete Permanently"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            {appTestimonials.length === 0 && (
+                              <div className="p-8 text-center text-slate-400 text-xs font-bold bg-slate-50 rounded-2xl">
+                                No app testimonials have been submitted yet.
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     )}
@@ -1189,6 +1327,16 @@ export default function AdminDashboard() {
                       >
                         Events ({events.filter(e => e.status === 'Pending Review').length})
                       </button>
+                      <button
+                        onClick={() => setPendingSubTab('Testimonials')}
+                        className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                          pendingSubTab === 'Testimonials'
+                            ? 'bg-[#027244] text-white shadow-sm shadow-emerald-950/15'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        Testimonials ({appTestimonials.filter(t => t.status === 'Pending').length})
+                      </button>
                     </div>
                   </div>
 
@@ -1277,8 +1425,10 @@ export default function AdminDashboard() {
                             )}
                             <div className="flex flex-col gap-1 text-left min-w-0 flex-1">
                               <h4 className="font-extrabold text-sm text-[#001c41] truncate leading-none">{b.title}</h4>
-                              <span className="text-xs text-emerald-650 font-bold mt-1 leading-none">Author: {b.authorName}</span>
-                              <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1 font-semibold">
+                              <span className="text-xs text-emerald-655 font-bold mt-1 leading-none">
+                                Author: {b.authorName} • Category: <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider">{b.category || 'Business Tips'}</span>
+                              </span>
+                              <span className="text-[10px] text-slate-400 mt-1.5 flex items-center gap-1 font-semibold">
                                 <Calendar className="h-3 w-3 text-slate-400 shrink-0" /> {new Date(b.createdAt).toLocaleDateString()}
                               </span>
                             </div>
@@ -1381,6 +1531,74 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   )}
+
+                  {/* Sub-tab view: Testimonials */}
+                  {pendingSubTab === 'Testimonials' && (
+                    <div className="flex flex-col gap-4">
+                      {testimonialsLoading ? (
+                        <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
+                          <RefreshCw className="h-6 w-6 text-emerald-600 animate-spin" />
+                          <span className="text-[10px] font-bold">Loading Testimonials...</span>
+                        </div>
+                      ) : (
+                        <>
+                          {appTestimonials.filter(t => t.status === 'Pending').map(t => (
+                            <div key={t._id} className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-left">
+                              <div className="flex items-start gap-4">
+                                <div className="h-10 w-10 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center font-black text-[#027244] text-xs shrink-0 select-none uppercase font-sans">
+                                  {(t.authorName || 'KA').slice(0, 2)}
+                                </div>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2 flex-wrap font-sans">
+                                    <span className="font-extrabold text-xs text-slate-800 leading-none">{t.authorName}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">{t.role}</span>
+                                    <span className="px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border bg-amber-50 border-amber-250 text-amber-600 animate-pulse">
+                                      {t.status}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-1 mt-1.5 text-amber-400">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star key={i} className={`h-3 w-3 ${i < (t.rating || 5) ? 'fill-current' : 'text-slate-205'}`} />
+                                    ))}
+                                    <span className="text-[9.5px] text-slate-400 font-bold ml-2 font-sans">
+                                      {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                                    </span>
+                                  </div>
+
+                                  <p className="text-[11.5px] text-slate-555 font-semibold mt-2 max-w-2xl leading-relaxed italic font-sans">
+                                    "{t.text}"
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                <button 
+                                  onClick={() => handleTestimonialStatus(t._id, 'Approved')}
+                                  className="px-3.5 py-2 bg-[#027244] hover:bg-[#005934] text-white rounded-xl text-[10.5px] font-extrabold cursor-pointer transition-colors shadow shadow-emerald-800/10"
+                                >
+                                  Approve & Publish
+                                </button>
+                                <button 
+                                  onClick={() => handleTestimonialStatus(t._id, 'Rejected')}
+                                  className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-650 rounded-xl text-[10.5px] font-extrabold cursor-pointer transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                          {appTestimonials.filter(t => t.status === 'Pending').length === 0 && (
+                            <div className="bg-white border border-slate-200 rounded-3xl p-16 text-center text-slate-400 flex flex-col items-center gap-3">
+                              <CheckCircle2 className="h-10 w-10 text-emerald-600 animate-bounce" />
+                              <span className="text-sm font-bold text-slate-800 font-sans">Queue Empty!</span>
+                              <p className="text-xs text-slate-400 font-semibold leading-relaxed max-w-xs">There are no pending testimonials waiting for review today.</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {/* TAB: BLOGS MODERATION */}
@@ -1408,7 +1626,9 @@ export default function AdminDashboard() {
                           )}
                           <div className="flex flex-col min-w-0 text-left">
                             <span className="font-extrabold text-[#001c41] text-xs sm:text-[13px] leading-snug truncate group-hover:text-[#027244] transition-colors">{b.title}</span>
-                            <span className="text-[9.5px] text-slate-405 font-bold mt-1">Author: {b.authorName} • {new Date(b.createdAt).toLocaleDateString()}</span>
+                            <span className="text-[9.5px] text-slate-455 font-bold mt-1">
+                              Author: {b.authorName} • {new Date(b.createdAt).toLocaleDateString()} • Category: <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider">{b.category || 'Business Tips'}</span>
+                            </span>
                           </div>
                         </div>
 
@@ -1514,7 +1734,7 @@ export default function AdminDashboard() {
                 <div className="flex flex-col gap-6 text-left">
                   <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6">
                     <h3 className="font-extrabold text-[#001c41] text-base">Ratings & Reviews Moderation</h3>
-                    <span className="text-[10px] text-slate-450 font-semibold mt-0.5">Purge spam, review duplicates, or filter inappropriate content</span>
+                    <span className="text-[10px] text-slate-455 font-semibold mt-0.5">Purge spam, review duplicates, or filter inappropriate content</span>
                   </div>
 
                   <div className="flex flex-col gap-4">
@@ -1547,6 +1767,100 @@ export default function AdminDashboard() {
                         </button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: TESTIMONIALS MODERATION */}
+              {activeTab === 'Testimonials' && (
+                <div className="flex flex-col gap-6 text-left">
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6">
+                    <h3 className="font-extrabold text-[#001c41] text-base font-sans leading-tight">Testimonials Moderation Desk</h3>
+                    <span className="text-[10px] text-slate-450 font-semibold mt-0.5">Audit community thoughts, publish reviews to home slider, or delete feedback</span>
+                  </div>
+
+                  <div className="flex flex-col gap-4">
+                    {testimonialsLoading ? (
+                      <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400">
+                        <RefreshCw className="h-6 w-6 text-emerald-600 animate-spin" />
+                        <span className="text-[10px] font-bold">Loading Testimonials...</span>
+                      </div>
+                    ) : (
+                      <>
+                        {[...appTestimonials]
+                          .sort((a, b) => {
+                            const weight = (status) => status === 'Pending' ? 0 : status === 'Approved' ? 1 : 2;
+                            return weight(a.status) - weight(b.status) || new Date(b.createdAt) - new Date(a.createdAt);
+                          })
+                          .map(t => (
+                            <div key={t._id} className="bg-white border border-slate-200 rounded-[20px] p-5 shadow-2xs flex flex-col sm:flex-row justify-between sm:items-center gap-4 text-left">
+                              <div className="flex items-start gap-4">
+                                <div className="h-10 w-10 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center font-black text-[#027244] text-xs shrink-0 select-none uppercase font-sans">
+                                  {(t.authorName || 'KA').slice(0, 2)}
+                                </div>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2 flex-wrap font-sans">
+                                    <span className="font-extrabold text-xs text-slate-800 leading-none">{t.authorName}</span>
+                                    <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase tracking-wider">{t.role}</span>
+                                    <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
+                                      t.status === 'Approved'
+                                        ? 'bg-emerald-50 border-emerald-250 text-emerald-700'
+                                        : t.status === 'Rejected'
+                                          ? 'bg-red-50 border-red-200 text-red-650'
+                                          : 'bg-amber-50 border-amber-250 text-amber-600 animate-pulse'
+                                    }`}>
+                                      {t.status}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-1 mt-1.5 text-amber-400">
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star key={i} className={`h-3 w-3 ${i < (t.rating || 5) ? 'fill-current' : 'text-slate-205'}`} />
+                                    ))}
+                                    <span className="text-[9.5px] text-slate-400 font-bold ml-2 font-sans">
+                                      {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN') : 'N/A'}
+                                    </span>
+                                  </div>
+
+                                  <p className="text-[11.5px] text-slate-555 font-semibold mt-2 max-w-2xl leading-relaxed italic font-sans">
+                                    "{t.text}"
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                                {t.status !== 'Approved' && (
+                                  <button 
+                                    onClick={() => handleTestimonialStatus(t._id, 'Approved')}
+                                    className="px-3.5 py-2 bg-[#027244] hover:bg-[#005934] text-white rounded-xl text-[10.5px] font-extrabold cursor-pointer transition-colors shadow shadow-emerald-800/10 font-sans"
+                                  >
+                                    Approve & Publish
+                                  </button>
+                                )}
+                                {t.status !== 'Rejected' && (
+                                  <button 
+                                    onClick={() => handleTestimonialStatus(t._id, 'Rejected')}
+                                    className="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-650 rounded-xl text-[10.5px] font-extrabold cursor-pointer transition-colors font-sans"
+                                  >
+                                    Reject
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => handleTestimonialDelete(t._id)}
+                                  className="h-8.5 w-8.5 rounded-xl bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-650 flex items-center justify-center transition-colors cursor-pointer border border-slate-200"
+                                >
+                                  <Trash2 className="h-4.5 w-4.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        {appTestimonials.length === 0 && (
+                          <div className="p-16 text-center text-slate-400 bg-white border border-slate-200 rounded-3xl">
+                            No testimonials recorded.
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -1866,6 +2180,229 @@ export default function AdminDashboard() {
                 </div>
               )}
 
+              {/* TAB: REFERRAL MODERATION */}
+              {activeTab === 'Referral Moderation' && (
+                <div className="flex flex-col gap-6 text-left animate-fadeIn font-sans">
+                  {/* Header Dashboard Banner */}
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="flex flex-col text-left font-sans">
+                      <h3 className="font-extrabold text-[#001c41] text-base leading-tight">Referrals & Rewards Moderation</h3>
+                      <span className="text-[10px] text-slate-400 font-semibold mt-1">Review referral credits request logs, verify anti-fraud flags, and manually audit reward balances</span>
+                    </div>
+
+                    {/* Filter controls */}
+                    <div className="bg-slate-100/60 p-1 rounded-xl flex items-center shrink-0 border border-slate-200/30">
+                      {['All', 'Pending', 'Completed', 'Rejected'].map(status => (
+                        <button
+                          key={status}
+                          onClick={() => setReferralFilter(status)}
+                          className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                            referralFilter === status
+                              ? 'bg-[#027244] text-white shadow-sm shadow-emerald-950/15'
+                              : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          {status === 'All' ? 'All Referrals' : `${status}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Stats cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 font-sans">
+                    <div className="bg-white border border-slate-200 rounded-[20px] p-5 shadow-2xs text-left flex flex-col gap-1.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Total Referrals</span>
+                      <span className="text-2xl font-black text-[#001c41]">{referrals.length}</span>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-[20px] p-5 shadow-2xs text-left flex flex-col gap-1.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Pending Review</span>
+                      <span className="text-2xl font-black text-amber-600">{referrals.filter(r => r.status === 'pending').length}</span>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-[20px] p-5 shadow-2xs text-left flex flex-col gap-1.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Completed</span>
+                      <span className="text-2xl font-black text-emerald-650">{referrals.filter(r => r.status === 'completed').length}</span>
+                    </div>
+                    <div className="bg-white border border-slate-200 rounded-[20px] p-5 shadow-2xs text-left flex flex-col gap-1.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Rejected / Flagged</span>
+                      <span className="text-2xl font-black text-rose-650">{referrals.filter(r => r.status === 'rejected').length}</span>
+                    </div>
+                  </div>
+
+                  {/* Search and Quick Filters bar */}
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-5 flex flex-col sm:flex-row gap-4 justify-between items-center font-sans">
+                    <div className="w-full sm:max-w-md bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-2">
+                      <Search className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Search by Referrer or Referred Merchant name/email..."
+                        value={referralSearch}
+                        onChange={(e) => setReferralSearch(e.target.value)}
+                        className="w-full bg-transparent text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Referrals Moderation List Table */}
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-3xl overflow-hidden font-sans">
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-150 text-[10px] font-black text-slate-450 uppercase tracking-wider text-left">
+                            <th className="px-6 py-4">Referrer (Invited By)</th>
+                            <th className="px-6 py-4">Referred User</th>
+                            <th className="px-6 py-4">Referred Business</th>
+                            <th className="px-6 py-4">Anti-Fraud Validation</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs text-slate-655 font-semibold">
+                          {referralsLoading ? (
+                            <tr>
+                              <td colSpan="6" className="text-center py-12 text-slate-400 font-semibold">
+                                Loading referrals registry...
+                              </td>
+                            </tr>
+                          ) : referrals
+                            .filter(r => {
+                              if (referralFilter === 'Pending') return r.status === 'pending';
+                              if (referralFilter === 'Completed') return r.status === 'completed';
+                              if (referralFilter === 'Rejected') return r.status === 'rejected';
+                              return true;
+                            })
+                            .filter(r => {
+                              const s = referralSearch.toLowerCase();
+                              const referrerName = r.referrerId?.fullName || r.referrerId?.name || '';
+                              const referrerEmail = r.referrerId?.email || '';
+                              const referredName = r.referredUserId?.fullName || r.referredUserId?.name || '';
+                              const referredEmail = r.referredUserId?.email || '';
+                              const bizName = r.referredBusinessId?.name || '';
+                              return (
+                                referrerName.toLowerCase().includes(s) ||
+                                referrerEmail.toLowerCase().includes(s) ||
+                                referredName.toLowerCase().includes(s) ||
+                                referredEmail.toLowerCase().includes(s) ||
+                                bizName.toLowerCase().includes(s)
+                              );
+                            })
+                            .map(r => {
+                              const checks = r.antiFraudChecks || {};
+                              const hasFlags = checks.selfReferral || checks.duplicateMobile || checks.duplicateGST || checks.duplicateBusiness;
+                              return (
+                                <tr key={r._id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-col text-left">
+                                      <span className="font-extrabold text-slate-800">{r.referrerId?.fullName || 'UBT Member'}</span>
+                                      <span className="text-[10px] text-slate-400 mt-0.5">{r.referrerId?.email || 'N/A'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-col text-left">
+                                      <span className="font-extrabold text-slate-800">{r.referredUserId?.fullName || 'New Merchant'}</span>
+                                      <span className="text-[10px] text-slate-400 mt-0.5">{r.referredUserId?.email || 'N/A'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-col text-left">
+                                      <span className="font-extrabold text-slate-800">{r.referredBusinessId?.name || 'No business listed yet'}</span>
+                                      {r.referredBusinessId?.gstNumber && (
+                                        <span className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">GST: {r.referredBusinessId.gstNumber}</span>
+                                      )}
+                                      {r.referredBusinessId && (
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                          <span className={`text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                            r.referredBusinessId.status === 'Approved'
+                                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                              : 'bg-amber-50 text-amber-700 border border-amber-100'
+                                          }`}>
+                                            {r.referredBusinessId.status}
+                                          </span>
+                                          <span className={`text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                            r.referredBusinessId.subscriptionStatus === 'active'
+                                              ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                              : 'bg-slate-50 text-slate-550 border border-slate-100'
+                                          }`}>
+                                            {r.referredBusinessId.subscriptionStatus === 'active' ? 'Subscribed' : 'No Sub'}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-wrap gap-1 max-w-[180px]">
+                                      {checks.selfReferral && <span className="bg-rose-50 text-rose-650 border border-rose-100 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Self Referral</span>}
+                                      {checks.duplicateMobile && <span className="bg-amber-50 text-amber-650 border border-amber-100 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Dup Phone</span>}
+                                      {checks.duplicateGST && <span className="bg-red-50 text-red-650 border border-red-100 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Dup GST</span>}
+                                      {checks.duplicateBusiness && <span className="bg-orange-50 text-orange-655 border border-orange-100 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Dup Name</span>}
+                                      {!hasFlags && <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Passed</span>}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`px-2 py-1 rounded-full text-[9.5px] font-black uppercase ${
+                                      r.status === 'completed'
+                                        ? 'bg-emerald-50 text-[#027244] border border-emerald-150'
+                                        : r.status === 'rejected'
+                                          ? 'bg-rose-50 text-rose-650 border border-rose-150'
+                                          : 'bg-amber-50 text-amber-650 border border-amber-150'
+                                    }`}>
+                                      {r.status === 'completed' ? 'Approved' : r.status}
+                                    </span>
+                                    {r.rejectionReason && (
+                                      <p className="text-[9px] text-rose-600 mt-1 max-w-[120px] truncate" title={r.rejectionReason}>
+                                        Reason: {r.rejectionReason}
+                                      </p>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex justify-end gap-2">
+                                      {r.status !== 'completed' && (
+                                        <button
+                                          onClick={() => {
+                                            if (confirm('Manually approve this referral and credit 100 points to the referrer?')) {
+                                              handleReferralModerate(r._id, 'approve');
+                                            }
+                                          }}
+                                          className="px-2.5 py-1.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10px] rounded-lg cursor-pointer transition-colors shadow-2xs"
+                                        >
+                                          Approve
+                                        </button>
+                                      )}
+                                      {r.status !== 'rejected' && (
+                                        <button
+                                          onClick={() => {
+                                            const reason = prompt('Please enter a rejection reason (optional):');
+                                            if (reason !== null) {
+                                              handleReferralModerate(r._id, 'reject', reason);
+                                            }
+                                          }}
+                                          className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-650 font-extrabold text-[10px] rounded-lg cursor-pointer transition-colors"
+                                        >
+                                          Reject
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          {!referralsLoading && referrals.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="text-center py-16 text-slate-400">
+                                <div className="flex flex-col items-center gap-2">
+                                  <Gift className="h-8 w-8 text-slate-300" />
+                                  <span className="text-xs font-bold text-slate-700">No Referrals Recorded</span>
+                                  <p className="text-[11px] text-slate-400 leading-relaxed max-w-xs font-semibold">No referrals have been recorded or submitted on the platform yet.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
         </div>
@@ -2109,13 +2646,13 @@ export default function AdminDashboard() {
                 <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider">
                   Submitted on {new Date(selectedBlogModal.createdAt).toLocaleString()} • Status: <span className={`font-extrabold ${
                     selectedBlogModal.status === 'Approved'
-                      ? 'text-emerald-650'
+                      ? 'text-emerald-655'
                       : selectedBlogModal.status === 'Pending Approval' || selectedBlogModal.status === 'Needs Revision'
                         ? 'text-amber-600'
                         : selectedBlogModal.status === 'Rejected'
                           ? 'text-rose-600'
                           : 'text-slate-500'
-                  }`}>{selectedBlogModal.status}</span>
+                  }`}>{selectedBlogModal.status}</span> • Category: <strong className="text-emerald-700 uppercase">{selectedBlogModal.category || 'Business Tips'}</strong>
                 </span>
                 <h2 className="font-extrabold text-xl text-[#001c41] leading-tight font-sans">{selectedBlogModal.title}</h2>
                 

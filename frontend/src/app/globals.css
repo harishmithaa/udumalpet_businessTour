@@ -260,3 +260,17 @@ button:active, .btn-active-press:active, a.btn:active {
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* Premium gentle wiggle animation for eye-catching tags */
+@keyframes gentle-wiggle {
+  0%, 85%, 100% { transform: rotate(0deg) scale(1); }
+  88% { transform: rotate(-4deg) scale(1.03); }
+  91% { transform: rotate(4deg) scale(1.03); }
+  94% { transform: rotate(-4deg) scale(1.03); }
+  97% { transform: rotate(4deg) scale(1.03); }
+}
+
+.animate-shake {
+  animation: gentle-wiggle 3.5s ease-in-out infinite;
+  transform-origin: center;
+}
+

@@ -45,6 +45,11 @@ const moderateBusiness = async (req, res, next) => {
     }
     await business.save({ validateBeforeSave: false });
 
+    if (action === 'approve' || action === 'reactivate') {
+      const { checkAndCompleteReferralByBusiness } = require('../utils/referralHelper');
+      await checkAndCompleteReferralByBusiness(business._id);
+    }
+
     // Log the administrative action audit trail
     await AdminAction.create({
       adminId: req.user._id,
@@ -96,6 +101,16 @@ const moderateBlog = async (req, res, next) => {
       });
     }
     await blog.save({ validateBeforeSave: false });
+
+    // Trigger newsletter broadcast if approved
+    if (status === 'Approved') {
+      try {
+        const { sendBlogNewsletter } = require('../utils/newsletterHelper');
+        sendBlogNewsletter(blog);
+      } catch (err) {
+        console.error('Failed to initiate newsletter helper:', err.message);
+      }
+    }
 
     // Notify author in-app
     await Notification.create({

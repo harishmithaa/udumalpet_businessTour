@@ -80,7 +80,7 @@ router.get('/:id', async (req, res) => {
 // @access  Private
 router.post('/', protect, async (req, res) => {
   try {
-    const { title, content, coverImage } = req.body;
+    const { title, content, coverImage, category } = req.body;
     
     if (!title || !content) {
       return res.status(400).json({ success: false, message: 'Please provide title and content' });
@@ -90,6 +90,7 @@ router.post('/', protect, async (req, res) => {
       title,
       content,
       coverImage: coverImage || undefined,
+      category: category || 'Business Tips',
       author: req.user._id,
       authorName: req.user.fullName,
       status: 'Pending Approval', // Needs approval from admin
@@ -135,6 +136,7 @@ router.put('/:id', protect, async (req, res) => {
     if (req.body.title !== undefined) blog.title = req.body.title;
     if (req.body.content !== undefined) blog.content = req.body.content;
     if (req.body.coverImage !== undefined) blog.coverImage = req.body.coverImage;
+    if (req.body.category !== undefined) blog.category = req.body.category;
     if (req.body.showLikes !== undefined) blog.showLikes = req.body.showLikes;
     if (req.body.showComments !== undefined) blog.showComments = req.body.showComments;
     
@@ -329,6 +331,15 @@ router.put('/:id/status', protect, admin, async (req, res) => {
     }
     blog.status = status;
     await blog.save();
+
+    if (status === 'Approved') {
+      try {
+        const { sendBlogNewsletter } = require('../utils/newsletterHelper');
+        sendBlogNewsletter(blog);
+      } catch (err) {
+        console.error('Failed to trigger newsletter broadcast:', err.message);
+      }
+    }
 
     res.json({ success: true, message: `Blog successfully ${status.toLowerCase()}`, data: blog });
   } catch (error) {

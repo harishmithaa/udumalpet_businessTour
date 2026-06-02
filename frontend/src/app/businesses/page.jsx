@@ -660,18 +660,15 @@ function BusinessesList() {
   const isPrivacyView = focusParam === 'privacy';
   const isRefundView = focusParam === 'refund';
   const isGuidelinesView = focusParam === 'guidelines';
-  const isPricingView = focusParam === 'pricing';
 
-  if (isTermsView || isPrivacyView || isRefundView || isGuidelinesView || isPricingView) {
+  if (isTermsView || isPrivacyView || isRefundView || isGuidelinesView) {
     const docTitle = isTermsView 
       ? 'Terms & Conditions' 
       : isPrivacyView 
         ? 'Privacy Policy' 
         : isRefundView 
           ? 'Refund Policy' 
-          : isGuidelinesView
-            ? 'Business Guidelines'
-            : 'Pricing & Plans';
+          : 'Business Guidelines';
 
     const docSub = isTermsView
       ? 'Understand your rights and responsibilities when using Udumalpet Business Tour.'
@@ -679,9 +676,7 @@ function BusinessesList() {
         ? 'Learn how we collect, store, protect, and use your personal data.'
         : isRefundView
           ? 'Review our terms regarding payment processing, plans renewal, and refund requests.'
-          : isGuidelinesView
-            ? 'Read the rules, quality standards, and verification guidelines for listing businesses.'
-            : 'Explore our affordable subscription plans designed to maximize your local customer reach.';
+          : 'Read the rules, quality standards, and verification guidelines for listing businesses.';
 
     return (
       <div className="w-full flex flex-col items-center bg-[#F8FAFC]">
@@ -764,153 +759,6 @@ function BusinessesList() {
                 
                 <h4 className="font-extrabold text-slate-800 text-sm mt-2">2. Prohibited Content</h4>
                 <p>Do not post misleading prices, copycat listings, or copyright-infringing cover photos. Event promotions must represent legitimate public activities with real organizer contacts.</p>
-              </div>
-            )}
-
-            {isPricingView && (
-              <div className="flex flex-col gap-8 font-sans">
-                <p className="text-xs font-semibold text-slate-600 leading-relaxed">
-                  Grow your business and reach thousands of customers in and around Udumalpet. Select from our flexible, transparent subscription plans below.
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
-                  {/* Basic Free Plan */}
-                  <div className="border border-slate-200 rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow bg-slate-50/50">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Basic</span>
-                        <h4 className="font-extrabold text-slate-800 text-lg">Free Listing</h4>
-                        <p className="text-[11px] font-semibold text-slate-400">Essential local presence</p>
-                      </div>
-                      
-                      <div className="flex items-baseline gap-1 mt-2">
-                        <span className="text-2xl font-black text-slate-800">₹0</span>
-                        <span className="text-[10px] font-bold text-slate-450">/ forever</span>
-                      </div>
-                      
-                      <ul className="flex flex-col gap-2.5 mt-4 text-[11.5px] font-semibold text-slate-550 border-t border-slate-100 pt-4">
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                          <span>Standard Directory Indexing</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                          <span>Basic Business Hours</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                          <span>Standard Vetting Queue</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-slate-300 line-through">
-                          <span>Verified UDT Badge</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-slate-350 line-through">
-                          <span>Priority Search Ranking</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-slate-350 line-through">
-                          <span>Free Local Event Listing</span>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <Link to="/register?from=business" className="mt-8 py-2.5 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-xs rounded-xl transition-all text-center">
-                      Get Started
-                    </Link>
-                  </div>
-
-                  {/* Monthly Premium Plan */}
-                  <div className="border-2 border-[#027244] rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow relative bg-white shadow-sm">
-                    <span className="absolute -top-3.5 right-6 bg-[#027244] text-white text-[9px] font-black uppercase px-3 py-1 rounded-full tracking-widest shadow-sm">Popular</span>
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase text-[#027244] tracking-wider">Premium Growth</span>
-                        <h4 className="font-extrabold text-[#001c41] text-lg">Monthly Plan</h4>
-                        <p className="text-[11px] font-semibold text-slate-400">Maximize customer leads</p>
-                      </div>
-                      
-                      <div className="flex items-baseline gap-1 mt-2">
-                        <span className="text-2xl font-black text-slate-800">₹500</span>
-                        <span className="text-[10px] font-bold text-slate-450">/ 28 days</span>
-                      </div>
-                      
-                      <ul className="flex flex-col gap-2.5 mt-4 text-[11.5px] font-semibold text-slate-550 border-t border-slate-100 pt-4">
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Priority Directory Ranking</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Direct Call & WhatsApp leads</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Photo gallery (multiple images)</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Google Review Sync</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Free local event posting</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-slate-300 line-through">
-                          <span>Priority support SLA</span>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <Link to="/register?from=business" className="mt-8 py-2.5 px-4 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl transition-all shadow-md text-center">
-                      Join Premium
-                    </Link>
-                  </div>
-
-                  {/* Yearly Premium Plan */}
-                  <div className="border border-slate-200 rounded-3xl p-6 flex flex-col justify-between hover:shadow-md transition-shadow bg-gradient-to-b from-white to-emerald-50/10">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider">Ultimate Exposure</span>
-                        <h4 className="font-extrabold text-slate-800 text-lg">Yearly Plan</h4>
-                        <p className="text-[11px] font-semibold text-slate-400">Best value for established brands</p>
-                      </div>
-                      
-                      <div className="flex flex-col gap-1 mt-2">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-slate-800">₹4,999</span>
-                          <span className="text-[10px] font-bold text-slate-450">/ 365 days</span>
-                        </div>
-                        <span className="text-[9px] font-extrabold text-[#027244] bg-emerald-50 border border-emerald-100 rounded px-1.5 py-0.5 w-fit leading-none mt-0.5">Save over 15%</span>
-                      </div>
-                      
-                      <ul className="flex flex-col gap-2.5 mt-4 text-[11.5px] font-semibold text-slate-550 border-t border-slate-100 pt-4">
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>All Premium Monthly features</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Maximum Priority Ranking</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>UDT Verified Badge eligibility</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Dedicated Support desk SLA</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Check className="h-4.5 w-4.5 text-emerald-600 shrink-0" />
-                          <span>Featured Home Banner priority</span>
-                        </li>
-                      </ul>
-                    </div>
-                    
-                    <Link to="/register?from=business" className="mt-8 py-2.5 px-4 bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl transition-all shadow-md text-center">
-                      Get Best Value
-                    </Link>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -1413,9 +1261,9 @@ function BusinessesList() {
                               onClick={() => navigate(`/businesses/${biz._id}`)}
                             >
                               {/* Cover image (Blurred if subscription is expired!) */}
-                              <div className="shrink-0 overflow-hidden relative h-48 md:w-64">
+                              <div className="shrink-0 overflow-hidden relative h-48 md:w-64 rounded-l-[23px]">
                                 <div 
-                                  className="h-full w-full bg-cover bg-center transition-transform duration-750 ease-out-expo group-hover:scale-105"
+                                  className="h-full w-full bg-cover bg-center transition-transform duration-750 ease-out-expo group-hover:scale-105 rounded-l-[23px]"
                                   style={{
                                     backgroundImage: `url('${biz.coverImageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80"}')`,
                                     filter: !isSubscribed ? 'blur(6px) grayscale(30%)' : 'none'
@@ -1910,17 +1758,19 @@ function BusinessesList() {
                   <div
                     key={biz._id}
                     className={`relative card-premium group rounded-3xl overflow-hidden flex cursor-pointer ${
-                      viewMode === 'list' ? 'flex-col md:flex-row' : 'flex-col min-h-[420px]'
+                      viewMode === 'list' ? 'flex-col md:flex-row' : 'flex-col min-h-[460px]'
                     }`}
                   >
                     {/* Cover image (Blurred if subscription is expired!) */}
                     <div
                       className={`shrink-0 overflow-hidden relative ${
-                        viewMode === 'list' ? 'h-48 md:w-64' : 'h-44 w-full'
+                        viewMode === 'list' ? 'h-48 md:w-64 rounded-l-[23px]' : 'h-56 w-full rounded-t-[23px]'
                       }`}
                     >
                       <div 
-                        className="h-full w-full bg-cover bg-center transition-transform duration-750 ease-out-expo group-hover:scale-105"
+                        className={`h-full w-full bg-cover bg-center transition-transform duration-750 ease-out-expo group-hover:scale-105 ${
+                          viewMode === 'list' ? 'rounded-l-[23px]' : 'rounded-t-[23px]'
+                        }`}
                         style={{
                           backgroundImage: `url('${biz.coverImageUrl || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&q=80"}')`,
                           filter: !isSubscribed ? 'blur(4px) grayscale(30%)' : 'none'

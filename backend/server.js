@@ -15,6 +15,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/blogs', require('./routes/blogs'));
 app.use('/api/testimonials', require('./routes/testimonials'));
+app.use('/api/newsletter', require('./routes/newsletter'));
 
 // Load environment variables
 dotenv.config();

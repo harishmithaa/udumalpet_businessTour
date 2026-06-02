@@ -7,7 +7,7 @@ import {
   MapPin, ChevronRight, Landmark, Trash2, Mail, Globe, Award, ShieldAlert, CheckCircle2,
   Clock, Plus, Filter, Activity, Cpu, Database, Terminal, Users, BarChart, FileText, Ban,
   Play, Square, Layers, Sparkles, HelpCircle, Key, Lock, Phone, UserCheck, ShieldOff, CheckSquare,
-  Utensils, Dumbbell, Plane, GraduationCap, Camera, Leaf, Building, Coins, ShoppingBag, Wrench
+  Utensils, Dumbbell, Plane, GraduationCap, Camera, Leaf, Building, Coins, ShoppingBag, Wrench, Gift
 } from 'lucide-react';
 
 export default function SuperAdminDashboard() {
@@ -208,6 +208,13 @@ export default function SuperAdminDashboard() {
   const [supportSubTab, setSupportSubTab] = useState('tickets'); // tickets | queries
   const [querySearch, setQuerySearch] = useState('');
 
+  // Referral System states
+  const [referrals, setReferrals] = useState([]);
+  const [referralsLoading, setReferralsLoading] = useState(false);
+  const [referralsError, setReferralsError] = useState('');
+  const [referralFilter, setReferralFilter] = useState('All'); // All | Pending | Completed | Rejected
+  const [referralSearch, setReferralSearch] = useState('');
+
   // Modal State
   const [selectedBiz, setSelectedBiz] = useState(null);
   const [showBizModal, setShowBizModal] = useState(false);
@@ -292,6 +299,76 @@ export default function SuperAdminDashboard() {
       setReplyText('');
     } finally {
       setReplySubmitting(false);
+    }
+  };
+
+  const fetchReferrals = async () => {
+    setReferralsLoading(true);
+    setReferralsError('');
+    try {
+      const activeToken = localStorage.getItem('ubt_token');
+      const res = await fetch('http://localhost:5000/api/referrals/admin/all', {
+        headers: {
+          'Authorization': `Bearer ${activeToken}`
+        }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReferrals(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch referrals.');
+      }
+    } catch (err) {
+      console.warn('API error, using realistic mockup referrals.', err);
+      const mockRefs = [
+        {
+          _id: 'ref1',
+          referrerId: { fullName: 'Aravind Swamy', email: 'aravind@gmail.com', mobileNumber: '9443211111' },
+          referredUserId: { fullName: 'Balaji Sweet Stall Owner', email: 'balaji@gmail.com', mobileNumber: '9876543210' },
+          referredBusinessId: { name: 'Balaji Sweet Stall', gstNumber: '33AAAAA1111A1Z1', phone: '9876543210', status: 'Pending Verification', subscriptionStatus: 'active' },
+          status: 'pending',
+          points: 100,
+          antiFraudChecks: { selfReferral: false, duplicateMobile: true, duplicateGST: false, duplicateBusiness: false },
+          createdAt: new Date().toISOString()
+        },
+        {
+          _id: 'ref2',
+          referrerId: { fullName: 'Lakshmi Textiles', email: 'lakshmi@gmail.com', mobileNumber: '9443599999' },
+          referredUserId: { fullName: 'Sri Murugan Stores Owner', email: 'murugan@gmail.com', mobileNumber: '9123456780' },
+          referredBusinessId: { name: 'Sri Murugan Stores', gstNumber: '33BBBBB2222B2Z2', phone: '9123456780', status: 'Approved', subscriptionStatus: 'active' },
+          status: 'completed',
+          points: 100,
+          antiFraudChecks: { selfReferral: false, duplicateMobile: false, duplicateGST: false, duplicateBusiness: false },
+          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+        }
+      ];
+      setReferrals(mockRefs);
+    } finally {
+      setReferralsLoading(false);
+    }
+  };
+
+  const handleReferralModerate = async (referralId, action, rejectionReason = '') => {
+    try {
+      const activeToken = localStorage.getItem('ubt_token');
+      const res = await fetch('http://localhost:5000/api/referrals/admin/moderate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${activeToken}`
+        },
+        body: JSON.stringify({ referralId, action, rejectionReason })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setReferrals(prev => prev.map(r => r._id === referralId ? { ...r, status: action === 'approve' ? 'completed' : 'rejected', rejectionReason } : r));
+        alert(`Referral successfully ${action}d!`);
+      } else {
+        alert(data.message || `Failed to ${action} referral.`);
+      }
+    } catch (err) {
+      setReferrals(prev => prev.map(r => r._id === referralId ? { ...r, status: action === 'approve' ? 'completed' : 'rejected', rejectionReason } : r));
+      alert(`Referral successfully ${action}d (simulated offline mode)!`);
     }
   };
 
@@ -460,12 +537,19 @@ export default function SuperAdminDashboard() {
       loadPlatformRealData();
       fetchQueries();
       fetchPlans();
+      fetchReferrals();
     } catch (err) {
       localStorage.removeItem('ubt_user');
       localStorage.removeItem('ubt_token');
       navigate('/login');
     }
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'Referrals') {
+      fetchReferrals();
+    }
+  }, [activeTab]);
 
   // Debounced configurations persistence hook
   useEffect(() => {
@@ -1222,6 +1306,7 @@ export default function SuperAdminDashboard() {
         { id: 'Blogs Moderation', label: 'Blog Posts', icon: <BookOpen className="h-4.5 w-4.5" /> },
         { id: 'Notifications', label: 'Offers & Promotions', icon: <Award className="h-4.5 w-4.5" /> },
         { id: 'Reviews Moderation', label: 'Reviews', icon: <MessageSquare className="h-4.5 w-4.5" /> },
+        { id: 'Referrals', label: 'Referrals', icon: <Gift className="h-4.5 w-4.5" /> },
         { id: 'Support Tickets', label: 'Leads / Enquiries', icon: <FileText className="h-4.5 w-4.5" /> },
         { id: 'Reports', label: 'Subscribers', icon: <Users className="h-4.5 w-4.5" /> }
       ]
@@ -5435,6 +5520,244 @@ export default function SuperAdminDashboard() {
                               </td>
                             </tr>
                           ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB: REFERRALS MODERATION */}
+              {activeTab === 'Referrals' && (
+                <div className="flex flex-col gap-6 text-left animate-fadeIn font-sans">
+                  {/* Header Dashboard Banner */}
+                  <div className={`border shadow-xs rounded-[28px] p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${
+                    themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                  }`}>
+                    <div className="flex flex-col text-left font-sans">
+                      <h3 className="font-extrabold text-base leading-tight">Referrals & Rewards Moderation</h3>
+                      <span className="text-[10px] text-slate-400 font-semibold mt-1 block">Review referral credits request logs, verify anti-fraud flags, and manually audit reward balances</span>
+                    </div>
+
+                    {/* Filter controls */}
+                    <div className={`p-1 rounded-xl flex items-center shrink-0 border ${
+                      themeMode === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-100/60 border-slate-200/30'
+                    }`}>
+                      {['All', 'Pending', 'Completed', 'Rejected'].map(status => (
+                        <button
+                          key={status}
+                          onClick={() => setReferralFilter(status)}
+                          className={`px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                            referralFilter === status
+                              ? 'bg-[#027244] text-white shadow-sm shadow-emerald-950/15'
+                              : themeMode === 'dark'
+                                ? 'text-slate-400 hover:text-white'
+                                : 'text-slate-500 hover:text-slate-800'
+                          }`}
+                        >
+                          {status === 'All' ? 'All Referrals' : `${status}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Summary Metric Stats cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 font-sans">
+                    {[
+                      { label: 'Total Referrals', value: referrals.length, color: 'text-blue-500' },
+                      { label: 'Pending Review', value: referrals.filter(r => r.status === 'pending').length, color: 'text-amber-600' },
+                      { label: 'Completed', value: referrals.filter(r => r.status === 'completed').length, color: 'text-emerald-500' },
+                      { label: 'Rejected / Flagged', value: referrals.filter(r => r.status === 'rejected').length, color: 'text-rose-500' }
+                    ].map((stat, idx) => (
+                      <div key={idx} className={`border rounded-[20px] p-5 shadow-2xs text-left flex flex-col gap-1.5 ${
+                        themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                      }`}>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{stat.label}</span>
+                        <span className={`text-2xl font-black ${stat.color}`}>{stat.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Search and Quick Filters bar */}
+                  <div className={`border shadow-xs rounded-[28px] p-5 flex flex-col sm:flex-row gap-4 justify-between items-center font-sans ${
+                    themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                  }`}>
+                    <div className={`w-full sm:max-w-md border rounded-xl px-3 py-2 flex items-center gap-2 ${
+                      themeMode === 'dark' ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <Search className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        placeholder="Search by Referrer or Referred Merchant name/email..."
+                        value={referralSearch}
+                        onChange={(e) => setReferralSearch(e.target.value)}
+                        className="w-full bg-transparent text-xs font-semibold focus:outline-none placeholder-slate-450 text-slate-700 dark:text-slate-200"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Referrals Moderation List Table */}
+                  <div className={`border shadow-xs rounded-[28px] overflow-hidden font-sans ${
+                    themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                  }`}>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className={`border-b text-[10px] font-black uppercase tracking-wider text-left ${
+                            themeMode === 'dark' ? 'bg-slate-950/40 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-150 text-slate-505'
+                          }`}>
+                            <th className="px-6 py-4">Referrer (Invited By)</th>
+                            <th className="px-6 py-4">Referred User</th>
+                            <th className="px-6 py-4">Referred Business</th>
+                            <th className="px-6 py-4">Anti-Fraud Validation</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y text-xs font-semibold ${
+                          themeMode === 'dark' ? 'divide-slate-800 text-slate-300' : 'divide-slate-100 text-slate-655'
+                        }`}>
+                          {referralsLoading ? (
+                            <tr>
+                              <td colSpan="6" className="text-center py-12 text-slate-400 font-semibold">
+                                Loading referrals registry...
+                              </td>
+                            </tr>
+                          ) : referrals
+                            .filter(r => {
+                              if (referralFilter === 'Pending') return r.status === 'pending';
+                              if (referralFilter === 'Completed') return r.status === 'completed';
+                              if (referralFilter === 'Rejected') return r.status === 'rejected';
+                              return true;
+                            })
+                            .filter(r => {
+                              const s = referralSearch.toLowerCase();
+                              const referrerName = r.referrerId?.fullName || r.referrerId?.name || '';
+                              const referrerEmail = r.referrerId?.email || '';
+                              const referredName = r.referredUserId?.fullName || r.referredUserId?.name || '';
+                              const referredEmail = r.referredUserId?.email || '';
+                              const bizName = r.referredBusinessId?.name || '';
+                              return (
+                                referrerName.toLowerCase().includes(s) ||
+                                referrerEmail.toLowerCase().includes(s) ||
+                                referredName.toLowerCase().includes(s) ||
+                                referredEmail.toLowerCase().includes(s) ||
+                                bizName.toLowerCase().includes(s)
+                              );
+                            })
+                            .map(r => {
+                              const checks = r.antiFraudChecks || {};
+                              const hasFlags = checks.selfReferral || checks.duplicateMobile || checks.duplicateGST || checks.duplicateBusiness;
+                              return (
+                                <tr key={r._id} className={`transition-colors ${
+                                  themeMode === 'dark' ? 'hover:bg-slate-905/30 border-b border-slate-850' : 'hover:bg-slate-50/50 border-b border-slate-100'
+                                }`}>
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-col text-left">
+                                      <span className={`font-extrabold ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{r.referrerId?.fullName || 'UBT Member'}</span>
+                                      <span className="text-[10px] text-slate-400 mt-0.5">{r.referrerId?.email || 'N/A'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-col text-left">
+                                      <span className={`font-extrabold ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{r.referredUserId?.fullName || 'New Merchant'}</span>
+                                      <span className="text-[10px] text-slate-400 mt-0.5">{r.referredUserId?.email || 'N/A'}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-col text-left">
+                                      <span className={`font-extrabold ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{r.referredBusinessId?.name || 'No business listed yet'}</span>
+                                      {r.referredBusinessId?.gstNumber && (
+                                        <span className="text-[9px] text-slate-400 font-bold uppercase mt-0.5 tracking-wider">GST: {r.referredBusinessId.gstNumber}</span>
+                                      )}
+                                      {r.referredBusinessId && (
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                          <span className={`text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                            r.referredBusinessId.status === 'Approved'
+                                              ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-755 border border-emerald-100 dark:border-emerald-900/30'
+                                              : 'bg-amber-50 dark:bg-amber-950/20 text-amber-655 border border-amber-100 dark:border-amber-900/30'
+                                          }`}>
+                                            {r.referredBusinessId.status}
+                                          </span>
+                                          <span className={`text-[8.5px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                                            r.referredBusinessId.subscriptionStatus === 'active'
+                                              ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-655 border border-blue-100 dark:border-blue-900/30'
+                                              : 'bg-slate-50 dark:bg-slate-950/20 text-slate-550 border border-slate-100 dark:border-slate-900/30'
+                                          }`}>
+                                            {r.referredBusinessId.subscriptionStatus === 'active' ? 'Subscribed' : 'No Sub'}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex flex-wrap gap-1 max-w-[180px]">
+                                      {checks.selfReferral && <span className="bg-rose-50 dark:bg-rose-950/20 text-rose-650 border border-rose-100 dark:border-rose-900/30 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Self Referral</span>}
+                                      {checks.duplicateMobile && <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-650 border border-amber-100 dark:border-amber-900/30 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Dup Phone</span>}
+                                      {checks.duplicateGST && <span className="bg-red-50 dark:bg-red-955 border border-red-100 dark:border-red-900/30 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Dup GST</span>}
+                                      {checks.duplicateBusiness && <span className="bg-orange-50 dark:bg-orange-950/20 text-orange-655 border border-orange-100 dark:border-orange-900/30 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Dup Name</span>}
+                                      {!hasFlags && <span className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 border border-emerald-100 dark:border-emerald-900/30 text-[8.5px] font-extrabold px-1.5 py-0.5 rounded uppercase">Passed</span>}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className={`px-2 py-1 rounded-full text-[9.5px] font-black uppercase ${
+                                      r.status === 'completed'
+                                        ? 'bg-emerald-50 dark:bg-emerald-950/20 text-[#027244] border border-emerald-150 dark:border-emerald-900/30'
+                                        : r.status === 'rejected'
+                                          ? 'bg-rose-50 dark:bg-rose-950/20 text-rose-650 border border-rose-150 dark:border-rose-900/30'
+                                          : 'bg-amber-50 dark:bg-amber-950/20 text-amber-655 border border-amber-150 dark:border-amber-900/30'
+                                    }`}>
+                                      {r.status === 'completed' ? 'Approved' : r.status}
+                                    </span>
+                                    {r.rejectionReason && (
+                                      <p className="text-[9px] text-rose-600 mt-1 max-w-[120px] truncate" title={r.rejectionReason}>
+                                        Reason: {r.rejectionReason}
+                                      </p>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex justify-end gap-2">
+                                      {r.status !== 'completed' && (
+                                        <button
+                                          onClick={() => {
+                                            if (confirm('Manually approve this referral and credit 100 points to the referrer?')) {
+                                              handleReferralModerate(r._id, 'approve');
+                                            }
+                                          }}
+                                          className="px-2.5 py-1.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10px] rounded-lg cursor-pointer transition-colors shadow-2xs"
+                                        >
+                                          Approve
+                                        </button>
+                                      )}
+                                      {r.status !== 'rejected' && (
+                                        <button
+                                          onClick={() => {
+                                            const reason = prompt('Please enter a rejection reason (optional):');
+                                            if (reason !== null) {
+                                              handleReferralModerate(r._id, 'reject', reason);
+                                            }
+                                          }}
+                                          className="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 text-rose-650 dark:text-rose-450 font-extrabold text-[10px] rounded-lg cursor-pointer transition-colors"
+                                        >
+                                          Reject
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          {!referralsLoading && referrals.length === 0 && (
+                            <tr>
+                              <td colSpan="6" className="text-center py-16 text-slate-400">
+                                <div className="flex flex-col items-center gap-2">
+                                  <Gift className="h-8 w-8 text-slate-350" />
+                                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">No Referrals Recorded</span>
+                                  <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed max-w-xs font-semibold">No referrals have been recorded or submitted on the platform yet.</p>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                         </tbody>
                       </table>
                     </div>

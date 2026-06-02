@@ -120,7 +120,7 @@ export default function Navbar() {
     { name: 'Businesses', path: '/businesses' },
     { name: 'Categories', path: '/businesses?focus=categories' },
     { name: 'Events', path: '/events' },
-    { name: 'Blog', path: '/blogs' },
+    { name: 'Blogs', path: '/blogs' },
     { name: 'About Us', path: '/about' },
     { name: 'Contact Us', path: '/businesses?focus=contact' },
   ];

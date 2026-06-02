@@ -992,6 +992,52 @@ router.post('/', protect, async (req, res) => {
       categoryStatus: categoryStatus || undefined,
     };
 
+    // If user is referred, run anti-fraud checks before creating/updating
+    try {
+      const Referral = require('../models/Referral');
+      const referral = await Referral.findOne({ referredUserId: req.user._id, status: 'pending' });
+      if (referral) {
+        let duplicateGST = false;
+        if (gstNumber) {
+          const existingGstBiz = await Business.findOne({
+            gstNumber: gstNumber.trim(),
+            ownerId: { $ne: req.user._id }
+          });
+          if (existingGstBiz) duplicateGST = true;
+        }
+
+        const existingNameBiz = await Business.findOne({
+          $or: [
+            { name: name },
+            { businessName: name }
+          ],
+          ownerId: { $ne: req.user._id }
+        });
+        const duplicateBusiness = !!existingNameBiz;
+
+        let duplicateMobile = false;
+        if (phone) {
+          const existingPhoneBiz = await Business.findOne({
+            $or: [{ phone }, { whatsapp: phone }],
+            ownerId: { $ne: req.user._id }
+          });
+          if (existingPhoneBiz) duplicateMobile = true;
+        }
+
+        if (duplicateGST) {
+          return res.status(400).json({ success: false, message: 'Referral validation failed: This GST number is already registered on UBT.' });
+        }
+        if (duplicateBusiness) {
+          return res.status(400).json({ success: false, message: 'Referral validation failed: This business name is already registered on UBT.' });
+        }
+        if (duplicateMobile) {
+          return res.status(400).json({ success: false, message: 'Referral validation failed: This mobile number is already registered on UBT.' });
+        }
+      }
+    } catch (err) {
+      console.error('Error during pre-save referral checks:', err);
+    }
+
     if (business) {
       if (business.subscriptionStatus === 'active') {
         return res.status(400).json({
@@ -1006,6 +1052,18 @@ router.post('/', protect, async (req, res) => {
         ownerId: req.user._id,
         ...updateData,
       });
+    }
+
+    // Save link to referral
+    try {
+      const Referral = require('../models/Referral');
+      const referral = await Referral.findOne({ referredUserId: req.user._id, status: 'pending' });
+      if (referral) {
+        referral.referredBusinessId = business._id;
+        await referral.save();
+      }
+    } catch (err) {
+      console.error('Error in post-save referral link:', err);
     }
 
     res.status(201).json({ success: true, data: business });

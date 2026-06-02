@@ -22,7 +22,7 @@ try {
 // @access  Private
 router.post('/create-order', protect, async (req, res) => {
   try {
-    const { businessId, planType } = req.body;
+    const { businessId, planType, applyReferralPoints, redeemPointsAmount } = req.body;
 
     if (!businessId || !planType) {
       return res.status(400).json({ success: false, message: 'Business ID and Plan Type are required' });
@@ -50,6 +50,46 @@ router.post('/create-order', protect, async (req, res) => {
       }
     }
 
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
+
+    let originalAmount = amount;
+    let discountAmount = 0;
+    let pointsUsed = 0;
+
+    if (applyReferralPoints) {
+      const points = user.referralPoints || 0;
+      let pointsToUse = points;
+      if (redeemPointsAmount !== undefined) {
+        pointsToUse = Math.min(Number(redeemPointsAmount), points);
+        if (pointsToUse < 0) pointsToUse = 0;
+      }
+      const maxDiscountPaise = pointsToUse * 10; // 1 point = 10 paise (₹0.10)
+
+      if (maxDiscountPaise >= amount) {
+        discountAmount = amount;
+        pointsUsed = Math.ceil(amount / 10);
+        amount = 0;
+      } else {
+        discountAmount = maxDiscountPaise;
+        pointsUsed = pointsToUse;
+        amount -= discountAmount;
+      }
+    }
+
+    // If points cover 100% of the price
+    if (amount === 0) {
+      return res.json({
+        success: true,
+        orderId: 'free_referral_' + Date.now(),
+        amount: 0,
+        currency: 'INR',
+        keyId: 'free',
+        discountApplied: discountAmount / 100,
+        pointsUsed
+      });
+    }
+
     // Razorpay mock / real order creation
     const options = {
       amount: amount,
@@ -62,7 +102,6 @@ router.post('/create-order', protect, async (req, res) => {
       order = await razorpay.orders.create(options);
     } catch (err) {
       console.warn('Razorpay SDK failed (key invalid/unconfigured), creating a mock order object.');
-      // Create a mock order object for seamless UI development
       order = {
         id: 'order_mock_' + Math.random().toString(36).substr(2, 9),
         amount: amount,
@@ -78,6 +117,8 @@ router.post('/create-order', protect, async (req, res) => {
       amount: order.amount,
       currency: order.currency,
       keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_mockKeyId12345',
+      discountApplied: discountAmount / 100,
+      pointsUsed
     });
   } catch (error) {
     console.error(error);
@@ -96,6 +137,8 @@ router.post('/verify-payment', protect, async (req, res) => {
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature,
+      applyReferralPoints,
+      redeemPointsAmount,
     } = req.body;
 
     if (!businessId || !planType || !razorpayOrderId) {
@@ -106,7 +149,7 @@ router.post('/verify-payment', protect, async (req, res) => {
     let isSignatureValid = false;
     
     // Support bypassing signature check in sandbox mode
-    if (razorpayOrderId.startsWith('order_mock_') || !razorpaySignature) {
+    if (razorpayOrderId.startsWith('order_mock_') || razorpayOrderId.startsWith('free_referral_') || !razorpaySignature) {
       console.log('Sandbox/Mock Payment Bypass verified.');
       isSignatureValid = true;
     } else {
@@ -139,13 +182,42 @@ router.post('/verify-payment', protect, async (req, res) => {
     const durationDays = dbPlan ? dbPlan.durationDays : (planType === 'Monthly' ? 28 : 365);
     endDate.setDate(startDate.getDate() + durationDays);
 
+    const baseAmount = dbPlan ? dbPlan.price : (planType === 'Monthly' ? 69 : 690);
+    let finalAmount = baseAmount;
+    let pointsUsed = 0;
+
+    if (applyReferralPoints) {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+      const points = user.referralPoints || 0;
+      let pointsToUse = points;
+      if (redeemPointsAmount !== undefined) {
+        pointsToUse = Math.min(Number(redeemPointsAmount), points);
+        if (pointsToUse < 0) pointsToUse = 0;
+      }
+      const maxDiscount = pointsToUse / 10; // 10 points = 1 Rs
+
+      if (maxDiscount >= baseAmount) {
+        finalAmount = 0;
+        pointsUsed = Math.ceil(baseAmount * 10);
+      } else {
+        finalAmount = baseAmount - maxDiscount;
+        pointsUsed = pointsToUse;
+      }
+
+      if (pointsUsed > 0) {
+        user.referralPoints -= pointsUsed;
+        await user.save();
+        console.log(`[Referral Redeem] Deducted ${pointsUsed} points from user ${user.email}`);
+      }
+    }
+
     // Create Subscription
-    const subscriptionAmount = dbPlan ? dbPlan.price : (planType === 'Monthly' ? 69 : 690);
     const subscription = await Subscription.create({
       businessId: business._id,
       ownerId: req.user._id,
       plan: planType,
-      amount: subscriptionAmount,
+      amount: finalAmount,
       status: 'active',
       razorpayOrderId: razorpayOrderId,
       razorpayPaymentId: razorpayPaymentId || 'pay_mock_' + Math.random().toString(36).substr(2, 9),
@@ -160,11 +232,14 @@ router.post('/verify-payment', protect, async (req, res) => {
     
     // If the business was approved or pending, keep/approve
     if (['Pending Verification', 'Under Review'].includes(business.status)) {
-      // Auto-approve premium businesses to delight owners (or keep it pending based on preference, let's keep it approved upon payment!)
       business.status = 'Approved';
     }
     
     await business.save();
+
+    // Trigger referral point award check for the owner of the referral code
+    const { checkAndCompleteReferralByBusiness } = require('../utils/referralHelper');
+    await checkAndCompleteReferralByBusiness(business._id);
 
     res.json({
       success: true,

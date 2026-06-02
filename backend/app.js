@@ -58,10 +58,12 @@ app.use('/api/events', require('./routes/events'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/superadmin', require('./routes/superadmin'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/referrals', require('./routes/referrals'));
 app.use('/api/support', require('./routes/support'));
 app.use('/api/testimonials', require('./routes/testimonials'));
 app.use('/api/queries', require('./routes/queries'));
 app.use('/api/plans', require('./routes/plans'));
+app.use('/api/newsletter', require('./routes/newsletter'));
 
 // Root & Health Status Check
 app.get('/', (req, res) => {

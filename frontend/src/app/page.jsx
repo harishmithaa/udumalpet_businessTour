@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, MapPin, Grid, Shield, Heart, Phone, Users, Star, ArrowRight, Check, ShieldCheck,
-  ChevronLeft, ChevronRight, HelpCircle, Eye, MessageSquare, Play, Sparkles, X,
+  ChevronLeft, ChevronRight, HelpCircle, Eye, MessageSquare, Play, Sparkles, X, Gift,
   Hotel, Store, Wrench, HeartPulse, GraduationCap, Home as HouseIcon, Car, LayoutGrid,
   FileEdit, PhoneCall, Smile, Users2, Tv, Utensils, Building, ShoppingBag, Factory, 
   Briefcase, Compass, Sprout, CreditCard, Dumbbell
@@ -384,7 +384,43 @@ export default function Home() {
 
     fetchFeaturedAndCounts();
     fetchTestimonials();
-  }, []);
+
+    // Check if the URL has ?testimonial=true and the user is logged in
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('testimonial') === 'true') {
+      const token = localStorage.getItem('ubt_token');
+      if (token) {
+        let loggedInName = '';
+        let loggedInRole = 'Viewer';
+        try {
+          const storedUser = localStorage.getItem('ubt_user');
+          if (storedUser) {
+            const parsed = JSON.parse(storedUser);
+            loggedInName = parsed.fullName || parsed.name || '';
+            if (parsed.role === 'owner') {
+              loggedInRole = 'Business Owner';
+            } else if (parsed.role === 'editor' || parsed.role === 'blog_writer') {
+              loggedInRole = 'Blog Writer';
+            } else if (parsed.role === 'event_manager') {
+              loggedInRole = 'Event Manager';
+            } else if (parsed.role === 'viewer' || parsed.role === 'user') {
+              loggedInRole = 'Viewer';
+            }
+          }
+        } catch (e) {
+          console.warn('Failed to parse ubt_user details:', e);
+        }
+        setNewTestimonial({
+          authorName: loggedInName,
+          role: loggedInRole,
+          text: '',
+          rating: 5,
+        });
+        setIsTestimonialModalOpen(true);
+        navigate('/', { replace: true });
+      }
+    }
+  }, [navigate]);
 
   const handlePrevTestimonial = () => {
     if (testimonials.length === 0) return;
@@ -409,10 +445,12 @@ export default function Home() {
     }
 
     try {
+      const token = localStorage.getItem('ubt_token');
       const res = await fetch('http://localhost:5000/api/testimonials', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(newTestimonial),
       });
@@ -447,9 +485,50 @@ export default function Home() {
         setSubmitSuccess('');
       }, 3500);
     } finally {
-      setSubmitting(false);
-    }
-  };
+        setSubmitting(false);
+      }
+    };
+
+    const handleShareThoughtsClick = () => {
+      const token = localStorage.getItem('ubt_token');
+      if (!token) {
+        navigate('/login?redirect=' + encodeURIComponent('/?testimonial=true'));
+        return;
+      }
+
+      // Prepopulate name and role
+      let loggedInName = '';
+      let loggedInRole = 'Viewer';
+      try {
+        const storedUser = localStorage.getItem('ubt_user');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          loggedInName = parsed.fullName || parsed.name || '';
+          
+          if (parsed.role === 'owner') {
+            loggedInRole = 'Business Owner';
+          } else if (parsed.role === 'editor' || parsed.role === 'blog_writer') {
+            loggedInRole = 'Blog Writer';
+          } else if (parsed.role === 'event_manager') {
+            loggedInRole = 'Event Manager';
+          } else if (parsed.role === 'viewer' || parsed.role === 'user') {
+            loggedInRole = 'Viewer';
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to parse ubt_user details:', e);
+      }
+
+      setNewTestimonial({
+        authorName: loggedInName,
+        role: loggedInRole,
+        text: '',
+        rating: 5,
+      });
+      setSubmitSuccess('');
+      setSubmitError('');
+      setIsTestimonialModalOpen(true);
+    };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -501,6 +580,16 @@ export default function Home() {
             <p className="mt-5 text-sm md:text-base text-slate-500 font-semibold max-w-xl leading-relaxed">
               A trusted local platform to discover, connect and grow with verified businesses in and around Udumalpet.
             </p>
+
+            {/* Shaking Referral Tag */}
+            <button 
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-referral-modal'))}
+              className="mt-5 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[11px] font-black uppercase tracking-wider px-4 py-2.5 rounded-full shadow-md animate-shake border border-amber-500/20 flex items-center gap-2 cursor-pointer transition-all"
+            >
+              <Gift className="h-4 w-4 text-[#027244] shrink-0 animate-bounce" />
+              Refer other business & earn rewards!
+            </button>
 
             {/* Rich horizontal search bar */}
             <form onSubmit={handleSearchSubmit} className="mt-8 w-full bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2 flex flex-col md:flex-row gap-2 max-w-3xl">
@@ -677,9 +766,9 @@ export default function Home() {
                 className="card-premium group rounded-2xl overflow-hidden flex flex-col cursor-pointer relative"
                 onClick={() => navigate(`/businesses/${biz._id}`)}
               >
-                <div className="h-44 w-full overflow-hidden relative">
+                <div className="h-44 w-full overflow-hidden relative rounded-t-[15px]">
                   <div 
-                    className="h-full w-full bg-cover bg-center transition-transform duration-700 ease-out-expo group-hover:scale-106"
+                    className="h-full w-full bg-cover bg-center transition-transform duration-700 ease-out-expo group-hover:scale-106 rounded-t-[15px]"
                     style={{ 
                       backgroundImage: `url('${biz.coverImageUrl}')`,
                       filter: !isSubscribed ? 'blur(6px) grayscale(30%)' : 'none'
@@ -937,31 +1026,31 @@ export default function Home() {
             <p className="text-xs text-slate-400 font-semibold mt-1">Real experiences shared by our core community member creators</p>
           </div>
 
-          {testimonials.length > 0 && (
+          {testimonials.length > 0 && testimonials[testimonialIdx] && (
             <div className="w-full card-premium group rounded-3xl p-8 flex flex-col items-center text-center gap-5 relative bg-slate-50">
               
               {/* Review stars */}
               <div className="flex items-center text-amber-400">
-                {[...Array(testimonials[testimonialIdx].rating || 5)].map((_, i) => (
+                {[...Array(testimonials[testimonialIdx]?.rating || 5)].map((_, i) => (
                   <Star key={i} className="h-4.5 w-4.5 fill-current" />
                 ))}
-                {[...Array(5 - (testimonials[testimonialIdx].rating || 5))].map((_, i) => (
+                {[...Array(5 - (testimonials[testimonialIdx]?.rating || 5))].map((_, i) => (
                   <Star key={i + 10} className="h-4.5 w-4.5 text-slate-200" />
                 ))}
               </div>
               
               <p className="text-slate-600 font-semibold italic text-sm md:text-base leading-relaxed max-w-xl">
-                "{testimonials[testimonialIdx].text}"
+                "{testimonials[testimonialIdx]?.text || ''}"
               </p>
 
               <div className="flex items-center gap-3 mt-1">
                 <div className="h-10 w-10 rounded-full border border-slate-200 bg-[#E6F2ED] text-[#027244] font-black text-xs flex items-center justify-center select-none shadow-xs uppercase">
-                  {testimonials[testimonialIdx].authorName.slice(0, 2)}
+                  {(testimonials[testimonialIdx]?.authorName || '').slice(0, 2)}
                 </div>
                 <div className="text-left flex flex-col gap-0.5">
-                  <span className="font-extrabold text-xs text-slate-800 leading-none">{testimonials[testimonialIdx].authorName}</span>
+                  <span className="font-extrabold text-xs text-slate-800 leading-none">{testimonials[testimonialIdx]?.authorName || ''}</span>
                   <span className="text-[9px] font-bold text-[#027244] uppercase tracking-widest mt-1 bg-emerald-50 border border-emerald-100 rounded-sm px-1.5 py-0.5 leading-none inline-block">
-                    {testimonials[testimonialIdx].role}
+                    {testimonials[testimonialIdx]?.role || 'Business Owner'}
                   </span>
                 </div>
               </div>
@@ -999,7 +1088,7 @@ export default function Home() {
           <div className="flex flex-col items-center gap-3.5 mt-4">
             <span className="text-xs text-slate-500 font-bold">Are you a Business Owner, Event Manager, or Blog Writer using UBT?</span>
             <button
-              onClick={() => setIsTestimonialModalOpen(true)}
+              onClick={handleShareThoughtsClick}
               className="bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-1.5 cursor-pointer"
             >
               Share Your Thoughts About UBT
@@ -1125,6 +1214,7 @@ export default function Home() {
                     <option value="Business Owner">Business Owner</option>
                     <option value="Event Manager">Event Manager</option>
                     <option value="Blog Writer">Blog Writer</option>
+                    <option value="Viewer">Viewer</option>
                     <option value="Other">Other Community Member</option>
                   </select>
                 </div>

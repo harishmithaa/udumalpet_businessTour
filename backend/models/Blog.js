@@ -30,6 +30,11 @@ const BlogSchema = new mongoose.Schema({
     required: [true, 'Blog title is required'],
     trim: true
   },
+  category: {
+    type: String,
+    default: 'Business Tips',
+    trim: true
+  },
   slug: {
     type: String,
     lowercase: true,
