@@ -632,7 +632,7 @@ export default function EventsPage() {
   const handleStage1Submit = async (e) => {
     e.preventDefault();
     const finalCategory = evtCategory === 'Others' ? (customCategory.trim() || 'Others') : evtCategory;
-    if (!evtTitle || !finalCategory || !evtDate || !evtEndDate || !evtTime || !evtOrganizer) {
+    if (!evtTitle || !finalCategory || !evtDate || !evtEndDate || !evtOrganizer) {
       setErrorMsg('Please fill in all mandatory fields');
       return;
     }
@@ -653,10 +653,10 @@ export default function EventsPage() {
           date: evtDate,
           endDate: evtEndDate,
           duration: evtDuration || undefined,
-          time: evtTime,
+          time: 'TBD',
           organizer: evtOrganizer,
-          price: evtPrice,
-          paymentLink: evtPaymentLink
+          price: 0,
+          paymentLink: ''
         })
       });
       const data = await res.json();
@@ -1278,30 +1278,17 @@ export default function EventsPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Category *</span>
-                    <select
-                      value={evtCategory}
-                      onChange={(e) => setEvtCategory(e.target.value)}
-                      className="h-10 px-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 cursor-pointer focus:outline-none focus:border-[#027244]"
-                    >
-                      {availableCategories.map(c => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Event Timings / Schedule *</span>
-                    <input
-                      type="text"
-                      placeholder="e.g. Sunday, 6:00 AM"
-                      value={evtTime}
-                      onChange={(e) => setEvtTime(e.target.value)}
-                      required
-                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
-                    />
-                  </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Category *</span>
+                  <select
+                    value={evtCategory}
+                    onChange={(e) => setEvtCategory(e.target.value)}
+                    className="h-10 px-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 cursor-pointer focus:outline-none focus:border-[#027244]"
+                  >
+                    {availableCategories.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {evtCategory === 'Others' && (
@@ -1361,31 +1348,6 @@ export default function EventsPage() {
                     required
                     className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
                   />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Registration Fee / Ticket Price (₹) *</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={evtPrice}
-                      onChange={(e) => setEvtPrice(Number(e.target.value))}
-                      placeholder="e.g. 0 for Free, 150 for Entry Ticket"
-                      required
-                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Registration Link (Optional)</span>
-                    <input
-                      type="url"
-                      value={evtPaymentLink}
-                      onChange={(e) => setEvtPaymentLink(e.target.value)}
-                      placeholder="e.g. https://tickets.udumalpetevents.in"
-                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
-                    />
-                  </div>
                 </div>
 
                 <div className="flex items-center justify-between gap-4 mt-4">

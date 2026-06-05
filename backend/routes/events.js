@@ -196,13 +196,12 @@ router.post('/', protect, async (req, res) => {
  
     console.log('Event creation req.body:', req.body);
 
-    if (!title || !category || !date || !endDate || !time || !organizer) {
+    if (!title || !category || !date || !endDate || !organizer) {
       const missing = [];
       if (!title) missing.push('title');
       if (!category) missing.push('category');
       if (!date) missing.push('date');
       if (!endDate) missing.push('endDate');
-      if (!time) missing.push('time');
       if (!organizer) missing.push('organizer');
       console.warn('Event creation missing fields:', missing);
       return res.status(400).json({ 
@@ -213,7 +212,7 @@ router.post('/', protect, async (req, res) => {
  
     // Find user's business listing to link profile
     const userBusiness = await Business.findOne({ ownerId: req.user._id });
-
+ 
     const event = await Event.create({
       ownerId: req.user._id,
       businessId: userBusiness ? userBusiness._id : undefined,
@@ -221,7 +220,7 @@ router.post('/', protect, async (req, res) => {
       category,
       date: new Date(date),
       endDate: new Date(endDate),
-      time,
+      time: time || 'TBD',
       organizer,
       price: price !== undefined ? Number(price) : 0,
       paymentLink: paymentLink || '',

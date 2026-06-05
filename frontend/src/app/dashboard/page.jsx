@@ -1059,7 +1059,7 @@ function DashboardContent() {
     const finalCategory = eventCategory === 'Others' ? (customEventCategory.trim() || 'Others') : eventCategory;
 
     // Validate only basic details
-    if (!eventTitle.trim() || !eventDate || !eventEndDate || !eventTime || !eventOrganizer || !eventDuration) {
+    if (!eventTitle.trim() || !eventDate || !eventEndDate || !eventOrganizer || !eventDuration) {
       setEventError('Please enter all required fields.');
       setEventSubmitLoading(false);
       return;
@@ -1079,11 +1079,11 @@ function DashboardContent() {
           category: finalCategory,
           date: eventDate,
           endDate: eventEndDate,
-          time: eventTime,
+          time: 'TBD',
           organizer: eventOrganizer,
           duration: eventDuration,
-          price: eventPrice,
-          paymentLink: eventPaymentLink
+          price: 0,
+          paymentLink: ''
         })
       });
       const data = await res.json();
@@ -1142,11 +1142,11 @@ function DashboardContent() {
         category: finalCategory,
         date: new Date(eventDate),
         endDate: new Date(eventEndDate),
-        time: eventTime,
+        time: 'TBD',
         organizer: eventOrganizer,
         duration: eventDuration,
-        price: eventPrice,
-        paymentLink: eventPaymentLink,
+        price: 0,
+        paymentLink: '',
         status: 'Pending Review',
         paymentStatus: 'Pending',
         isCompleted: false
@@ -2955,20 +2955,23 @@ function DashboardContent() {
                             </button>
                           </div>
 
-                          {evt.status?.toLowerCase() === 'approved' && !evt.isCompleted && (
+                          {/* If payment is pending, allow paying listing fee before admin approval */}
+                          {evt.paymentStatus === 'Pending' && (
+                            <button
+                              onClick={() => handleOpenCompleteEvent(evt)}
+                              className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
+                            >
+                              <CreditCard className="h-4 w-4" /> Pay Listing Fee (₹99)
+                            </button>
+                          )}
+
+                          {/* If payment is verified, allow completing details only after admin approval */}
+                          {evt.paymentStatus !== 'Pending' && evt.status?.toLowerCase() === 'approved' && !evt.isCompleted && (
                             <button
                               onClick={() => handleOpenCompleteEvent(evt)}
                               className="w-full py-2 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
                             >
-                              {evt.paymentStatus === 'Paid' || evt.paymentStatus === 'Free' ? (
-                                <>
-                                  <Edit3 className="h-4 w-4" /> Complete Event Details
-                                </>
-                              ) : (
-                                <>
-                                  <CreditCard className="h-4 w-4" /> Pay & Complete Listing
-                                </>
-                              )}
+                              <Edit3 className="h-4 w-4" /> Complete Event Details
                             </button>
                           )}
                         </div>
@@ -5967,56 +5970,16 @@ function DashboardContent() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Event Timing *</label>
-                    <input 
-                      type="text" 
-                      value={eventTime}
-                      onChange={(e) => setEventTime(e.target.value)}
-                      placeholder="e.g. Sunday, 6:00 AM"
-                      required
-                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Organizer Name *</label>
-                    <input 
-                      type="text" 
-                      value={eventOrganizer}
-                      onChange={(e) => setEventOrganizer(e.target.value)}
-                      placeholder="e.g. Sports Club"
-                      required
-                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Registration Fee / Ticket Price (₹) *</label>
-                    <input 
-                      type="number" 
-                      min="0"
-                      value={eventPrice}
-                      onChange={(e) => setEventPrice(Number(e.target.value))}
-                      placeholder="e.g. 0 for Free, 99 for Ticket"
-                      required
-                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Registration Link (Optional)</label>
-                    <input 
-                      type="url" 
-                      value={eventPaymentLink}
-                      onChange={(e) => setEventPaymentLink(e.target.value)}
-                      placeholder="e.g. https://tickets.udumalpetevents.in"
-                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
-                    />
-                  </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Organizer Name *</label>
+                  <input 
+                    type="text" 
+                    value={eventOrganizer}
+                    onChange={(e) => setEventOrganizer(e.target.value)}
+                    placeholder="e.g. Sports Club"
+                    required
+                    className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
+                  />
                 </div>
 
                 <div className="flex justify-end gap-3 mt-1 border-t border-slate-100 pt-4">
