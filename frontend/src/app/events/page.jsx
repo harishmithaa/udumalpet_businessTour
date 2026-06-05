@@ -270,6 +270,7 @@ export default function EventsPage() {
   const [evtPaymentLink, setEvtPaymentLink] = useState('');
   const [evtPhone, setEvtPhone] = useState('');
   const [evtCoverUrl, setEvtCoverUrl] = useState('');
+  const [evtPrice, setEvtPrice] = useState(0);
 
   // Submission / Loading states
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -654,6 +655,8 @@ export default function EventsPage() {
           duration: evtDuration || undefined,
           time: evtTime,
           organizer: evtOrganizer,
+          price: evtPrice,
+          paymentLink: evtPaymentLink
         })
       });
       const data = await res.json();
@@ -867,7 +870,7 @@ export default function EventsPage() {
           phone: evtPhone,
           coverImageUrl: evtCoverUrl,
           paymentLink: evtPaymentLink,
-          price: paymentPrice
+          price: evtPrice
         })
       });
       const data = await res.json();
@@ -894,7 +897,7 @@ export default function EventsPage() {
         phone: evtPhone,
         coverImageUrl: evtCoverUrl || getEventDefaultImage(evtCategory),
         paymentLink: evtPaymentLink,
-        price: paymentPrice
+        price: evtPrice
       };
       setEvents([mockPush, ...events]);
       calculateCounts([mockPush, ...events]);
@@ -1360,6 +1363,31 @@ export default function EventsPage() {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Registration Fee / Ticket Price (₹) *</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={evtPrice}
+                      onChange={(e) => setEvtPrice(Number(e.target.value))}
+                      placeholder="e.g. 0 for Free, 150 for Entry Ticket"
+                      required
+                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Registration Link (Optional)</span>
+                    <input
+                      type="url"
+                      value={evtPaymentLink}
+                      onChange={(e) => setEvtPaymentLink(e.target.value)}
+                      placeholder="e.g. https://tickets.udumalpetevents.in"
+                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between gap-4 mt-4">
                   <button 
                     type="button"
@@ -1412,6 +1440,7 @@ export default function EventsPage() {
                   setEvtPhone('');
                   setEvtCoverUrl('');
                   setEvtPaymentLink('');
+                  setEvtPrice(0);
                 }}
                 className="py-3.5 w-full bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow cursor-pointer uppercase tracking-wider mt-2.5"
               >
@@ -1557,6 +1586,32 @@ export default function EventsPage() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Registration Fee / Ticket Price (₹) *</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={evtPrice}
+                      onChange={(e) => setEvtPrice(Number(e.target.value))}
+                      placeholder="e.g. 0 for Free, 150 for Entry Ticket"
+                      required
+                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Event Timings / Schedule *</span>
+                    <input
+                      type="text"
+                      value={evtTime}
+                      onChange={(e) => setEvtTime(e.target.value)}
+                      placeholder="e.g. Sunday, 6:00 AM"
+                      required
+                      className="h-10 px-3 border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244]"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Cover Image URL (Optional)</span>
                   <input
@@ -1628,6 +1683,7 @@ export default function EventsPage() {
                   setEvtPhone('');
                   setEvtCoverUrl('');
                   setEvtPaymentLink('');
+                  setEvtPrice(0);
                 }}
                 className="py-3.5 w-full bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow cursor-pointer uppercase tracking-wider mt-2.5"
               >
@@ -1829,6 +1885,9 @@ export default function EventsPage() {
                               ⏱ {evt.duration}
                             </span>
                           )}
+                          <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 border border-emerald-100 rounded-md text-[#027244]">
+                            {evt.price === 0 ? 'FREE' : `₹${evt.price}`}
+                          </span>
                           {new Date(evt.endDate || evt.date) < new Date() && (
                             <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-red-50 border border-red-200 rounded-md text-red-700">
                               Expired

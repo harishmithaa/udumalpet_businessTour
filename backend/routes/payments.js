@@ -369,7 +369,6 @@ router.post('/verify-event-payment', protect, async (req, res) => {
       subscriptionStatus: 'active' 
     });
     event.paymentStatus = activeBusiness ? 'Free' : 'Paid';
-    event.price = activeBusiness ? 0 : 99;
     await event.save();
 
     // Create Payment record if not free

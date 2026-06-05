@@ -192,7 +192,7 @@ router.get('/:id', async (req, res) => {
 // @access  Private
 router.post('/', protect, async (req, res) => {
   try {
-    const { title, category, date, endDate, time, organizer, duration } = req.body;
+    const { title, category, date, endDate, time, organizer, duration, price, paymentLink } = req.body;
  
     console.log('Event creation req.body:', req.body);
 
@@ -211,13 +211,6 @@ router.post('/', protect, async (req, res) => {
       });
     }
  
-    // Check if user has an active business subscription
-    const activeBusiness = await Business.findOne({ 
-      ownerId: req.user._id,
-      subscriptionStatus: 'active' 
-    });
-    const finalPrice = activeBusiness ? 0 : 99;
-
     // Find user's business listing to link profile
     const userBusiness = await Business.findOne({ ownerId: req.user._id });
 
@@ -230,7 +223,8 @@ router.post('/', protect, async (req, res) => {
       endDate: new Date(endDate),
       time,
       organizer,
-      price: finalPrice,
+      price: price !== undefined ? Number(price) : 0,
+      paymentLink: paymentLink || '',
       duration: duration || '',
       status: 'Pending Review',
       isCompleted: false,
@@ -261,7 +255,7 @@ router.put('/:id', protect, async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized to update this event' });
     }
 
-    const { description, venue, phone, coverImageUrl, paymentLink, isCompleted, paymentStatus } = req.body;
+    const { description, venue, phone, coverImageUrl, paymentLink, isCompleted, paymentStatus, price, time } = req.body;
 
     if (description !== undefined) event.description = description;
     if (venue !== undefined) event.venue = venue;
@@ -270,6 +264,8 @@ router.put('/:id', protect, async (req, res) => {
     if (paymentLink !== undefined) event.paymentLink = paymentLink;
     if (isCompleted !== undefined) event.isCompleted = isCompleted;
     if (paymentStatus !== undefined) event.paymentStatus = paymentStatus;
+    if (price !== undefined) event.price = Number(price);
+    if (time !== undefined) event.time = time;
 
     await event.save();
 

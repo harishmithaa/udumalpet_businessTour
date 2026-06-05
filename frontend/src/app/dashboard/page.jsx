@@ -157,6 +157,7 @@ function DashboardContent() {
   const [eventCoverUrl, setEventCoverUrl] = useState('');
   const [eventPaymentLink, setEventPaymentLink] = useState('');
   const [eventDuration, setEventDuration] = useState('');
+  const [eventPrice, setEventPrice] = useState(0);
   
   const [eventSubmitLoading, setEventSubmitLoading] = useState(false);
   const [eventSuccess, setEventSuccess] = useState('');
@@ -173,6 +174,8 @@ function DashboardContent() {
   const [completeEventCoverUrl, setCompleteEventCoverUrl] = useState('');
   const [completeEventPaymentLink, setCompleteEventPaymentLink] = useState('');
   const [completeEventPaymentStatus, setCompleteEventPaymentStatus] = useState('Pending');
+  const [completeEventPrice, setCompleteEventPrice] = useState(0);
+  const [completeEventTime, setCompleteEventTime] = useState('');
   const [completeEventLoading, setCompleteEventLoading] = useState(false);
   const [completeEventError, setCompleteEventError] = useState('');
   const [completeEventSuccess, setCompleteEventSuccess] = useState('');
@@ -1079,7 +1082,8 @@ function DashboardContent() {
           time: eventTime,
           organizer: eventOrganizer,
           duration: eventDuration,
-          price: price
+          price: eventPrice,
+          paymentLink: eventPaymentLink
         })
       });
       const data = await res.json();
@@ -1111,6 +1115,10 @@ function DashboardContent() {
         setCompleteEventCoverUrl(createdEvent.coverImageUrl || '');
         setCompleteEventPaymentLink(createdEvent.paymentLink || '');
         setCompleteEventPaymentStatus(createdEvent.paymentStatus || 'Pending');
+        setCompleteEventPrice(createdEvent.price || 0);
+        setCompleteEventTime(createdEvent.time || '');
+        setEventPrice(0);
+        setEventPaymentLink('');
         setCompleteEventError('');
         setCompleteEventSuccess('');
         setCompleteEventLoading(false);
@@ -1137,7 +1145,8 @@ function DashboardContent() {
         time: eventTime,
         organizer: eventOrganizer,
         duration: eventDuration,
-        price: price,
+        price: eventPrice,
+        paymentLink: eventPaymentLink,
         status: 'Pending Review',
         paymentStatus: 'Pending',
         isCompleted: false
@@ -1166,6 +1175,10 @@ function DashboardContent() {
       setCompleteEventCoverUrl(mockEvt.coverImageUrl || '');
       setCompleteEventPaymentLink(mockEvt.paymentLink || '');
       setCompleteEventPaymentStatus(mockEvt.paymentStatus || 'Pending');
+      setCompleteEventPrice(mockEvt.price || 0);
+      setCompleteEventTime(mockEvt.time || '');
+      setEventPrice(0);
+      setEventPaymentLink('');
       setCompleteEventError('');
       setCompleteEventSuccess('');
       setCompleteEventLoading(false);
@@ -1361,6 +1374,8 @@ function DashboardContent() {
     setCompleteEventCoverUrl(evt.coverImageUrl || '');
     setCompleteEventPaymentLink(evt.paymentLink || '');
     setCompleteEventPaymentStatus(evt.paymentStatus || 'Pending');
+    setCompleteEventPrice(evt.price || 0);
+    setCompleteEventTime(evt.time || '');
     setCompleteEventError('');
     setCompleteEventSuccess('');
     setCompleteEventLoading(true);
@@ -1673,7 +1688,9 @@ function DashboardContent() {
           coverImageUrl: completeEventCoverUrl,
           paymentLink: completeEventPaymentLink,
           isCompleted: true,
-          paymentStatus: completeEventPaymentStatus
+          paymentStatus: completeEventPaymentStatus,
+          price: completeEventPrice,
+          time: completeEventTime
         })
       });
 
@@ -1697,7 +1714,9 @@ function DashboardContent() {
         coverImageUrl: completeEventCoverUrl || getEventDefaultImage(completeEvent?.category),
         paymentLink: completeEventPaymentLink,
         isCompleted: true,
-        paymentStatus: completeEventPaymentStatus
+        paymentStatus: completeEventPaymentStatus,
+        price: completeEventPrice,
+        time: completeEventTime
       } : evt));
 
       setCompleteEventSuccess('Mock Mode: Event listed successfully!');
@@ -5974,6 +5993,32 @@ function DashboardContent() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Registration Fee / Ticket Price (₹) *</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={eventPrice}
+                      onChange={(e) => setEventPrice(Number(e.target.value))}
+                      placeholder="e.g. 0 for Free, 99 for Ticket"
+                      required
+                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Registration Link (Optional)</label>
+                    <input 
+                      type="url" 
+                      value={eventPaymentLink}
+                      onChange={(e) => setEventPaymentLink(e.target.value)}
+                      placeholder="e.g. https://tickets.udumalpetevents.in"
+                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-3 mt-1 border-t border-slate-100 pt-4">
                   <button 
                     type="button"
@@ -6153,6 +6198,33 @@ function DashboardContent() {
                       value={completeEventPaymentLink}
                       onChange={(e) => setCompleteEventPaymentLink(e.target.value)}
                       placeholder="e.g. https://tickets.udumalpetevents.in"
+                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Registration Fee / Ticket Price (₹) *</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={completeEventPrice}
+                      onChange={(e) => setCompleteEventPrice(Number(e.target.value))}
+                      placeholder="e.g. 0 for Free, 99 for Ticket"
+                      required
+                      className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Event Timings / Hours *</label>
+                    <input 
+                      type="text" 
+                      value={completeEventTime}
+                      onChange={(e) => setCompleteEventTime(e.target.value)}
+                      placeholder="e.g. Sunday, 6:00 AM"
+                      required
                       className="w-full border border-slate-200/70 p-2.5 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] bg-slate-50/20"
                     />
                   </div>
