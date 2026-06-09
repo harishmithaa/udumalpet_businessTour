@@ -13,6 +13,7 @@ import Login from './app/login/page';
 import Register from './app/register/page';
 import ChoosePlan from './app/choose-plan/page';
 import EventsPage from './app/events/page';
+import EventDetail from './app/events/[id]/page';
 import BlogsPage from './app/blogs/page';
 import BlogDetail from './app/blogs/[id]/page';
 import AboutPage from './app/about/page';
@@ -64,6 +65,7 @@ function AppContent() {
           <Route path="/register" element={<Register />} />
           <Route path="/choose-plan" element={<ChoosePlan />} />
           <Route path="/events" element={<EventsPage />} />
+          <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/blogs" element={<BlogsPage />} />
           <Route path="/blogs/:id" element={<BlogDetail />} />
           <Route path="/about" element={<AboutPage />} />
