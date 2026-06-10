@@ -6831,36 +6831,37 @@ function DashboardContent() {
               <p className="text-xs text-slate-400 font-semibold max-w-md mt-1">Select the subscription package that best fits your business goals</p>
             </div>
 
-            {business && business.status !== 'Approved' ? (
-              <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-200/80 rounded-3xl text-center gap-6 mt-4 select-none w-full">
-                <div className="h-16 w-16 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-3xl flex items-center justify-center shadow-inner animate-bounce">
-                  <svg className="h-8 w-8 text-amber-500 fill-none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                </div>
-                
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-xl font-extrabold text-slate-800 tracking-tight">Pricing Plans Locked</h3>
-                  <p className="text-xs font-semibold text-slate-400 max-w-md leading-relaxed">
-                    Subscription plans and checkout options will become visible and selectable once your listing has been reviewed and <span className="text-[#027244] font-black uppercase">Approved</span> by our administrators.
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-center bg-white border border-slate-200/60 p-4.5 rounded-2xl max-w-sm w-full gap-3 shadow-2xs">
-                  <div className="flex items-center justify-between w-full border-b border-slate-100 pb-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Current Listing Status</span>
-                    <span className="bg-amber-100 border border-amber-200/60 text-amber-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      {business.status || 'Pending Vetting'}
-                    </span>
-                  </div>
-                  <p className="text-[10.5px] font-medium text-slate-500 leading-normal text-left">
-                    We are currently vetting your business details. You will receive an instant notification and full access to payment plans as soon as the review process is complete!
-                  </p>
-                </div>
+            {/* Quick business & subscription stats overview banner */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full bg-[#F8FAFC] border border-slate-200/60 p-4.5 rounded-2xl">
+              <div className="flex flex-col text-left">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Current Plan</span>
+                <span className={`text-xs font-black mt-1.5 w-fit px-2 py-0.5 rounded uppercase tracking-wide border ${
+                  business?.subscriptionStatus === 'active' 
+                    ? 'bg-emerald-50 text-[#027244] border-emerald-100' 
+                    : 'bg-amber-50 text-amber-700 border-amber-200/60'
+                }`}>
+                  {business?.subscriptionStatus === 'active' ? 'Active Pro Plan' : 'Inactive Plan'}
+                </span>
               </div>
-            ) : (
-              <>
+              <div className="flex flex-col text-left sm:border-l sm:border-slate-200 sm:pl-4">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Listing Status</span>
+                <span className={`text-xs font-black mt-1.5 w-fit px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                  business?.status === 'Approved'
+                    ? 'bg-emerald-50 text-[#027244] border-emerald-100'
+                    : 'bg-amber-50 text-amber-700 border-amber-200/60'
+                }`}>
+                  {business?.status || 'Pending Vetting'}
+                </span>
+              </div>
+              <div className="flex flex-col text-left sm:border-l sm:border-slate-200 sm:pl-4">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Referral Points</span>
+                <span className="text-xs font-extrabold text-slate-800 mt-1.5">
+                  {referralStats?.referralPoints || 0} Points (₹{referralStats?.referralCredits || 0} Credits)
+                </span>
+              </div>
+            </div>
+
+            <>
             {referralStats && referralStats.referralPoints > 0 && (
               <div className="bg-emerald-50/50 border border-emerald-100/80 rounded-2xl p-4.5 flex flex-col gap-3.5 max-w-md mx-auto w-full shadow-2xs mt-2 mb-2 transition-all">
                 <div className="flex items-center justify-between gap-4">
@@ -7127,7 +7128,6 @@ function DashboardContent() {
               </div>
             </div>
           </>
-        )}
 
           </div>
         </div>
