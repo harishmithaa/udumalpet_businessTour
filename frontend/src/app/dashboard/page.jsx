@@ -29,6 +29,7 @@ function DashboardContent() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [business, setBusiness] = useState(null);
+  const isGmbVerified = !!(business && ((business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked));
   const [primaryBusiness, setPrimaryBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -2733,9 +2734,13 @@ function DashboardContent() {
             <div className="flex flex-col overflow-hidden">
               <h4 className="font-extrabold text-white text-xs leading-snug truncate">{business.name}</h4>
               <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                {business.status === 'Approved' ? (
+                {isGmbVerified ? (
                   <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-900/60 px-1.5 py-0.5 rounded text-[8.5px] font-extrabold inline-flex items-center gap-0.5 shrink-0">
                     <ShieldCheck className="h-2.5 w-2.5 fill-current" /> UDT Verified
+                  </span>
+                ) : business.status === 'Approved' ? (
+                  <span className="bg-blue-950/80 text-blue-400 border border-blue-900/60 px-1.5 py-0.5 rounded text-[8.5px] font-extrabold inline-flex items-center gap-0.5 shrink-0">
+                    <Check className="h-2.5 w-2.5" /> Approved
                   </span>
                 ) : business.status === 'Under Review' ? (
                   <span className="bg-blue-950/80 text-blue-400 border border-blue-900/60 px-1.5 py-0.5 rounded text-[8.5px] font-extrabold inline-flex items-center gap-0.5 shrink-0 animate-pulse">
@@ -3187,28 +3192,38 @@ function DashboardContent() {
                 {/* Listing Status */}
                 <div className="card-premium p-4.5 rounded-2xl flex items-center gap-3.5 bg-white">
                   <div className={`h-10.5 w-10.5 rounded-xl flex items-center justify-center shrink-0 ${
-                    business.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' :
+                    isGmbVerified ? 'bg-emerald-50 text-emerald-600' :
+                    business.status === 'Approved' ? 'bg-blue-50 text-blue-600' :
                     business.status === 'Under Review' ? 'bg-blue-50 text-blue-600 animate-pulse' :
                     business.status === 'Suspended' ? 'bg-red-50 text-red-650' :
                     business.status === 'Rejected' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-500'
                   }`}>
-                    <ShieldCheck className="h-5 w-5 fill-current" />
+                    {isGmbVerified ? (
+                      <ShieldCheck className="h-5 w-5 fill-current" />
+                    ) : business.status === 'Approved' ? (
+                      <Check className="h-5 w-5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5" />
+                    )}
                   </div>
                   <div className="flex flex-col text-left overflow-hidden min-w-0">
                     <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest truncate">Listing Status</span>
                     <span className={`text-[15px] font-extrabold leading-none mt-1.5 truncate ${
-                      business.status === 'Approved' ? 'text-[#027244]' :
+                      isGmbVerified ? 'text-[#027244]' :
+                      business.status === 'Approved' ? 'text-blue-650' :
                       business.status === 'Under Review' ? 'text-blue-650' :
                       business.status === 'Suspended' ? 'text-red-650' :
                       business.status === 'Rejected' ? 'text-rose-600' : 'text-amber-550'
                     }`}>
-                      {business.status === 'Approved' ? 'Verified' : 
+                      {isGmbVerified ? 'Verified' : 
+                       business.status === 'Approved' ? 'Approved' : 
                        business.status === 'Under Review' ? 'In Review' : 
                        business.status === 'Suspended' ? 'Suspended' : 
                        business.status === 'Rejected' ? 'Rejected' : 'Pending'}
                     </span>
                     <span className="text-[9px] font-bold text-slate-400 mt-1.5 truncate">
-                      {business.status === 'Approved' ? 'Your business is live' :
+                      {isGmbVerified ? 'Your listing is verified' :
+                       business.status === 'Approved' ? 'Your business is live' :
                        business.status === 'Under Review' ? 'Auditing in progress' :
                        business.status === 'Suspended' ? 'Profile locked' :
                        business.status === 'Rejected' ? 'Needs modifications' : 'Awaiting verification'}
@@ -3665,7 +3680,7 @@ function DashboardContent() {
                         <div className="flex flex-col gap-1.5 justify-center">
                           <div className="flex flex-wrap items-center gap-3">
                             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-sans">{business.name}</h1>
-                            {business.isAddressVerified && (
+                            {isGmbVerified && (
                               <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-400/25 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm shrink-0">
                                 <ShieldCheck className="h-3 w-3" /> Verified Business
                               </span>

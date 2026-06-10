@@ -872,7 +872,7 @@ export default function BusinessDetail() {
               <div className="flex flex-col gap-1.5 justify-center">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-sans">{business.name}</h1>
-                  {business.isAddressVerified && (
+                  {((business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked) && (
                     <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-400/25 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm shrink-0">
                       <ShieldCheck className="h-3.5 w-3.5" /> Verified Business
                     </span>
@@ -1988,7 +1988,7 @@ export default function BusinessDetail() {
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <span className="font-black text-sm text-[#001c41] uppercase tracking-wider">Contact Business</span>
                 <div className="flex items-center gap-2">
-                  {business.isAddressVerified && (
+                  {((business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked) && (
                     <span className="bg-emerald-50 text-emerald-700 border border-emerald-150 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
                       ✓ Verified
                     </span>

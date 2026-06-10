@@ -435,14 +435,22 @@ router.get('/', async (req, res) => {
 
     // Verified check
     if (verified === 'true') {
-      query.isAddressVerified = true;
+      query.$or = [
+        { googlePlaceId: { $exists: true, $ne: '' } },
+        { googleBusinessLink: { $exists: true, $ne: '' } },
+        { googleLinked: true }
+      ];
     }
 
     // Business type (Premium / Verified)
     if (type === 'Premium') {
       query.isPremium = true;
     } else if (type === 'Verified') {
-      query.isAddressVerified = true;
+      query.$or = [
+        { googlePlaceId: { $exists: true, $ne: '' } },
+        { googleBusinessLink: { $exists: true, $ne: '' } },
+        { googleLinked: true }
+      ];
     }
 
     // Execute query

@@ -491,7 +491,7 @@ function BusinessesList() {
         results = results.filter(b => b.locality === loc);
       }
       if (verifiedFilter) {
-        results = results.filter(b => b.isAddressVerified);
+        results = results.filter(b => (b.googlePlaceId && b.googlePlaceId !== '') || (b.googleBusinessLink && b.googleBusinessLink !== '') || b.googleLinked);
       }
       if (premiumFilter) {
         results = results.filter(b => b.isPremium);
@@ -1278,7 +1278,7 @@ function BusinessesList() {
                                         <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider">Premium</span>
                                       </div>
                                     )}
-                                    {biz.status === 'Approved' && (
+                                    {((biz.googlePlaceId && biz.googlePlaceId !== '') || (biz.googleBusinessLink && biz.googleBusinessLink !== '') || biz.googleLinked) && (
                                       <div className="bg-white border border-emerald-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
                                         <ShieldCheck className="h-3.5 w-3.5 text-[#027244]" />
                                         <span className="text-[9px] font-black text-[#027244] uppercase tracking-wider font-sans">UDT Verified</span>
@@ -1786,7 +1786,7 @@ function BusinessesList() {
                             </div>
                           )}
                           
-                          {biz.status === 'Approved' && (
+                          {((biz.googlePlaceId && biz.googlePlaceId !== '') || (biz.googleBusinessLink && biz.googleBusinessLink !== '') || biz.googleLinked) && (
                             <div className="bg-white border border-emerald-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
                               <ShieldCheck className="h-3.5 w-3.5 text-[#027244]" />
                               <span className="text-[9px] font-black text-[#027244] uppercase tracking-wider font-sans">UDT Verified</span>
