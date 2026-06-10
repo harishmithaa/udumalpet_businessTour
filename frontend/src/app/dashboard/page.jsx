@@ -32,6 +32,10 @@ function DashboardContent() {
   const [primaryBusiness, setPrimaryBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Notifications states
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   
   // Dashboard states
   const [profileCompletion, setProfileCompletion] = useState(85);
@@ -585,6 +589,34 @@ function DashboardContent() {
     await saveInlineFields({ offers: newOffers });
   };
 
+  const fetchNotifications = async (authToken) => {
+    try {
+      const res = await fetch('http://localhost:5000/api/notifications', {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(data.data.filter(n => !n.isRead));
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
+  const markAllRead = async () => {
+    if (!token) return;
+    try {
+      await fetch('http://localhost:5000/api/notifications/read-all', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifications([]);
+      setShowNotifications(false);
+    } catch (err) {
+      console.error('Failed to mark all read:', err);
+    }
+  };
+
   useEffect(() => {
     const storedToken = localStorage.getItem('ubt_token');
     const storedUser = localStorage.getItem('ubt_user');
@@ -619,6 +651,7 @@ function DashboardContent() {
       });
       fetchUserBusiness(storedToken);
       fetchPaymentPlans();
+      fetchNotifications(storedToken);
     } catch (err) {
       navigate('/login');
     }
@@ -2862,20 +2895,60 @@ function DashboardContent() {
             )}
 
             {/* Notification bell */}
-            <button className="relative p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-slate-500 transition-colors cursor-pointer group">
-              <Bell className="h-4 w-4 group-hover:scale-105 transition-transform" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-white text-[9px] font-extrabold text-white flex items-center justify-center select-none">
-                3
-              </span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-slate-500 transition-colors cursor-pointer group"
+              >
+                <Bell className="h-4 w-4 group-hover:scale-105 transition-transform" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full border-2 border-white text-[9px] font-extrabold text-white flex items-center justify-center select-none animate-pulse">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl py-2.5 z-50 text-slate-800 animate-fadeIn">
+                  <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+                    <span className="font-extrabold text-xs text-slate-700">Notifications ({notifications.length})</span>
+                    {notifications.length > 0 && (
+                      <button onClick={markAllRead} className="text-emerald-600 hover:text-emerald-700 hover:underline text-[10px] font-bold cursor-pointer border-none bg-transparent">
+                        Clear all
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-5 text-center text-slate-400 text-xs font-semibold">No new notifications</div>
+                    ) : (
+                      notifications.map((n) => (
+                        <div key={n._id} className="p-3.5 border-b border-slate-50 hover:bg-slate-50/50 text-[11px] font-semibold leading-relaxed text-left flex flex-col gap-1">
+                          <p className="text-slate-600 m-0">{n.message}</p>
+                          <span className="text-[9px] text-slate-400 font-bold">
+                            {new Date(n.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* User Profile Avatar dropdown summary */}
             <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
-              <img 
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80" 
-                alt="Karthik S." 
-                className="h-8.5 w-8.5 rounded-full border border-slate-200 object-cover bg-slate-50"
-              />
+              {user?.profileImage ? (
+                <img 
+                  src={user.profileImage} 
+                  alt={user.fullName || 'User'} 
+                  className="h-8.5 w-8.5 rounded-full border border-slate-200 object-cover bg-slate-50"
+                />
+              ) : (
+                <div className="h-8.5 w-8.5 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 text-xs font-black select-none uppercase">
+                  {(user?.fullName || user?.name || 'U').split(' ').map(n => n[0]).slice(0, 2).join('')}
+                </div>
+              )}
               <div className="flex flex-col text-left hidden sm:flex">
                 <span className="text-xs font-extrabold text-slate-800 leading-none">{user?.fullName}</span>
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
