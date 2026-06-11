@@ -1871,10 +1871,17 @@ export default function EventsPage() {
                         </h3>
 
                         {/* Venue locality */}
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-0.5">
-                          <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          <span>{evt.venue}</span>
-                        </div>
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(evt.venue + ', Udumalpet')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-0.5 hover:text-emerald-500 transition-colors cursor-pointer group"
+                          onClick={(e) => e.stopPropagation()}
+                          title="View Venue on Google Maps"
+                        >
+                          <MapPin className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-500 shrink-0" />
+                          <span className="group-hover:underline">{evt.venue}</span>
+                        </a>
 
                         <p className="text-xs text-slate-450 leading-relaxed font-medium mt-1 pr-4">
                           {evt.description}

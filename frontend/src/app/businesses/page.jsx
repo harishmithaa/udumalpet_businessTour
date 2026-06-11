@@ -1313,10 +1313,17 @@ function BusinessesList() {
                                   >
                                     {biz.name}
                                   </Link>
-                                  <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 mt-0.5">
-                                    <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                                    <span>{biz.locality}, Udumalpet</span>
-                                  </div>
+                                  <a 
+                                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(biz.address ? `${biz.name}, ${biz.address}` : `${biz.name}, ${biz.locality || ''}, Udumalpet`)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-xs font-semibold text-slate-500 mt-0.5 hover:text-[#027244] transition-colors cursor-pointer group"
+                                    onClick={(e) => e.stopPropagation()}
+                                    title="View on Google Maps"
+                                  >
+                                    <MapPin className="h-4 w-4 text-slate-400 group-hover:text-[#027244] shrink-0" />
+                                    <span className="group-hover:underline">{biz.locality}, Udumalpet</span>
+                                  </a>
                                   <div className="flex items-center gap-1.5 text-xs text-slate-450 font-bold mt-0.5 select-none w-fit">
                                     <Folder className="h-3.5 w-3.5 text-[#027244] shrink-0" />
                                     <span>{biz.category}</span>
@@ -1820,10 +1827,17 @@ function BusinessesList() {
                         </Link>
 
                         {/* Locality */}
-                        <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 mt-0.5">
-                          <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                          <span>{biz.locality}, Udumalpet</span>
-                        </div>
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(biz.address ? `${biz.name}, ${biz.address}` : `${biz.name}, ${biz.locality || ''}, Udumalpet`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs font-semibold text-slate-500 mt-0.5 hover:text-[#027244] transition-colors cursor-pointer group"
+                          onClick={(e) => e.stopPropagation()}
+                          title="View on Google Maps"
+                        >
+                          <MapPin className="h-4 w-4 text-slate-400 group-hover:text-[#027244] shrink-0" />
+                          <span className="group-hover:underline">{biz.locality}, Udumalpet</span>
+                        </a>
 
                         {/* Category */}
                         <div 

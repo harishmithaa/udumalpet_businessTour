@@ -43,11 +43,7 @@ export default function BusinessDetail() {
 
   const [mediaError, setMediaError] = useState('');
   const directionsUrl = business
-    ? (business.googleBusinessLink && business.googleBusinessLink !== '')
-      ? business.googleBusinessLink
-      : (business.googlePlaceId && business.googlePlaceId !== '' && !business.googlePlaceId.startsWith('mock_') && !business.googlePlaceId.endsWith('Udt') && !business.googlePlaceId.endsWith('10024'))
-        ? `https://www.google.com/maps/search/?api=1&query_place_id=${business.googlePlaceId}`
-        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address ? `${business.name}, ${business.address}` : business.name || '')}`
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address ? `${business.name}, ${business.address}` : `${business.name}, Udumalpet`)}`
     : '#';
 
   const [showMenuModal, setShowMenuModal] = useState(false);
@@ -2307,7 +2303,7 @@ Please confirm availability and delivery time.`;
                     href={
                       selectedBranch === null
                         ? directionsUrl
-                        : selectedBranch.googleMapsLocation || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedBranch.name + ' ' + selectedBranch.address)}`
+                        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedBranch.name}, ${selectedBranch.address}`)}`
                     }
                     target="_blank"
                     rel="noopener noreferrer"

@@ -81,8 +81,16 @@ export default function Footer() {
           <h4 className="text-white font-bold text-sm uppercase tracking-wider">Contact Us</h4>
           <ul className="flex flex-col gap-3.5 text-xs font-semibold text-slate-400">
             <li className="flex items-start gap-2.5">
-              <MapPin className="h-4.5 w-4.5 text-emerald-500 shrink-0 mt-0.5" />
-              <span className="leading-relaxed">Udumalpet, Tamil Nadu - 642126</span>
+              <a 
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Udumalpet, Tamil Nadu - 642126')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-2.5 hover:text-emerald-500 transition-colors cursor-pointer group"
+                title="View on Google Maps"
+              >
+                <MapPin className="h-4.5 w-4.5 text-emerald-500 shrink-0 mt-0.5 group-hover:text-emerald-400" />
+                <span className="leading-relaxed group-hover:underline">Udumalpet, Tamil Nadu - 642126</span>
+              </a>
             </li>
             <li className="flex items-center gap-2.5">
               <Phone className="h-4.5 w-4.5 text-emerald-500 shrink-0" />

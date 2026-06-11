@@ -594,13 +594,19 @@ export default function EventDetail() {
 
           {/* Details Spec Table */}
           <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-slate-600">
-            <div className="flex items-start gap-2.5">
-              <MapPin className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
+            <a 
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + ', Udumalpet')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-start gap-2.5 hover:text-emerald-500 transition-colors cursor-pointer group"
+              title="Open Venue in Google Maps"
+            >
+              <MapPin className="h-4.5 w-4.5 text-[#027244] group-hover:text-emerald-500 shrink-0 mt-0.5" />
               <div className="flex flex-col text-left">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider leading-none">Venue</span>
-                <span className="font-bold text-slate-800 mt-1">{event.venue}</span>
+                <span className="font-bold text-slate-800 mt-1 group-hover:underline">{event.venue}</span>
               </div>
-            </div>
+            </a>
 
             <div className="flex items-start gap-2.5">
               <Calendar className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />

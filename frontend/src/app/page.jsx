@@ -804,10 +804,17 @@ export default function Home() {
                   <div className="flex flex-col gap-1.5 text-left">
                     <h4 className="font-extrabold text-sm text-[#001c41] leading-tight transition-colors duration-300 group-hover:text-[#027244]">{biz.name}</h4>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{biz.category}</span>
-                    <div className="flex items-center gap-1 text-[11px] text-slate-500 font-semibold mt-1">
-                      <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>{biz.locality}</span>
-                    </div>
+                    <a 
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(biz.address ? `${biz.name}, ${biz.address}` : `${biz.name}, ${biz.locality || ''}, Udumalpet`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 text-[11px] text-slate-500 font-semibold mt-1 hover:text-emerald-500 transition-colors cursor-pointer group"
+                      title="View on Google Maps"
+                    >
+                      <MapPin className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-500 shrink-0" />
+                      <span className="group-hover:underline">{biz.locality}</span>
+                    </a>
                   </div>
 
                   <div className="flex justify-between items-center border-t border-slate-100 pt-3 text-xs">
@@ -829,14 +836,14 @@ export default function Home() {
                           <Phone className="h-3.5 w-3.5" />
                         </a>
                         <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(biz.name + ' ' + (biz.locality || '') + ' Udumalpet')}`}
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(biz.address ? `${biz.name}, ${biz.address}` : `${biz.name}, ${biz.locality || ''}, Udumalpet`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 border border-blue-100/50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer"
+                          className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 border border-blue-100/50 flex items-center justify-center hover:bg-blue-100 transition-colors cursor-pointer group"
                           title="View on Google Maps"
                         >
-                          <MapPin className="h-3.5 w-3.5" />
+                          <MapPin className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
                         </a>
                       </div>
                     </div>
