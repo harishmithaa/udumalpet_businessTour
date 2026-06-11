@@ -83,7 +83,7 @@ export default function Register() {
         
         const redirect = searchParams.get('redirect');
         setTimeout(() => {
-          if (redirect && redirect !== '/') {
+          if (redirect && redirect !== '/' && redirect !== '/login' && redirect !== '/register') {
             navigate(redirect);
           } else {
             navigate('/add-business');
@@ -113,7 +113,7 @@ export default function Register() {
       localStorage.setItem('ubt_token', 'mock_jwt_token_' + Math.random().toString(36).substr(2, 9));
       localStorage.setItem('ubt_user', JSON.stringify(dummyUser));
       const redirect = searchParams.get('redirect');
-      if (redirect && redirect !== '/') {
+      if (redirect && redirect !== '/' && redirect !== '/login' && redirect !== '/register') {
         navigate(redirect);
       } else {
         navigate('/add-business');

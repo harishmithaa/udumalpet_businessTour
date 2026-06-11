@@ -255,6 +255,7 @@ const syncGoogleBusiness = async (req, res, next) => {
     business.googlePlaceId = googlePlaceId || business.googlePlaceId;
     business.googleRating = googleRating || business.googleRating;
     business.googleReviewsCount = googleReviewsCount || business.googleReviewsCount;
+    business.isAddressVerified = true;
     business.googleLinked = true;
     
     if (googleReviews && googleReviews.length) {

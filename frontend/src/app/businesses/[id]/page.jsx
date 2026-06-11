@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   MapPin, Phone, Mail, Clock, ShieldCheck, HeartHandshake, Star, Share2, Heart, Award, 
   ArrowLeft, Send, CheckCircle2, MessageSquare, AlertCircle, RefreshCw, Calendar, Globe, Sparkles,
-  Briefcase, Users, ChevronRight, Check, X, Facebook, Twitter, Edit3, Plus, Upload, Trash2, Instagram, Move, ImageIcon
+  Briefcase, Users, ChevronRight, Check, X, Facebook, Twitter, Edit3, Plus, Upload, Trash2, Instagram, Move, ImageIcon,
+  Utensils
 } from 'lucide-react';
 
 
@@ -41,11 +42,27 @@ export default function BusinessDetail() {
   const [currentUser, setCurrentUser] = useState(null);
 
   const [mediaError, setMediaError] = useState('');
+  const directionsUrl = business
+    ? (business.googleBusinessLink && business.googleBusinessLink !== '')
+      ? business.googleBusinessLink
+      : (business.googlePlaceId && business.googlePlaceId !== '' && !business.googlePlaceId.startsWith('mock_') && !business.googlePlaceId.endsWith('Udt') && !business.googlePlaceId.endsWith('10024'))
+        ? `https://www.google.com/maps/search/?api=1&query_place_id=${business.googlePlaceId}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address ? `${business.name}, ${business.address}` : business.name || '')}`
+    : '#';
 
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [menuUploading, setMenuUploading] = useState(false);
   const [menuUrlsState, setMenuUrlsState] = useState([]);
   const [menuError, setMenuError] = useState('');
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+
+  // Verification states
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyPlaceId, setVerifyPlaceId] = useState('');
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+  const [verifySuccess, setVerifySuccess] = useState('');
 
   // Sync menuUrlsState with business.menuUrls
   useEffect(() => {
@@ -131,6 +148,108 @@ export default function BusinessDetail() {
       setMenuUploading(false);
     }
   };
+
+  const handleVerifyGoogleBusiness = async () => {
+    setVerifyLoading(true);
+    setVerifyError('');
+    setVerifySuccess('');
+    try {
+      // 1. Fetch place details using autofill endpoint
+      const autofillRes = await fetch('http://localhost:5000/api/businesses/google-autofill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placeId: verifyPlaceId })
+      });
+      const autofillData = await autofillRes.json();
+      if (!autofillData.success || !autofillData.data) {
+        setVerifyError(autofillData.message || 'Failed to fetch details for the provided Place ID.');
+        setVerifyLoading(false);
+        return;
+      }
+
+      const googlePlace = autofillData.data;
+
+      // 2. Verify the address matching
+      const googlePincodeClean = googlePlace.pincode ? googlePlace.pincode.replace(/\s+/g, '') : '';
+      const businessPincodeClean = business.pincode ? business.pincode.replace(/\s+/g, '') : '';
+      
+      let addressesMatch = false;
+      if (googlePincodeClean && businessPincodeClean && googlePincodeClean.slice(0, 6) === businessPincodeClean.slice(0, 6)) {
+        addressesMatch = true;
+      } else {
+        const addr1 = (googlePlace.address || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
+        const addr2 = (business.address || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
+        const words1 = addr1.split(' ').filter(w => w.length > 3);
+        const words2 = addr2.split(' ').filter(w => w.length > 3);
+        const common = words1.filter(w => words2.includes(w));
+        if (common.length >= 2) {
+          addressesMatch = true;
+        }
+      }
+
+      if (!addressesMatch) {
+        setVerifyError(`Address Mismatch! The address on Google Place does not match your registered business address. Pincode on Google: ${googlePlace.pincode || 'N/A'}, Registered Pincode: ${business.pincode || 'N/A'}`);
+        setVerifyLoading(false);
+        return;
+      }
+
+      // 3. Match successful! Sync with backend
+      const storedToken = localStorage.getItem('ubt_token');
+      
+      // If it's a mock business (starts with 'biz_'), we just simulate success locally
+      if (business._id && typeof business._id === 'string' && business._id.startsWith('biz_')) {
+        const updatedBiz = {
+          ...business,
+          googlePlaceId: googlePlace.googlePlaceId,
+          googleRating: googlePlace.googleRating || 4.7,
+          googleReviewsCount: googlePlace.googleReviewsCount || 10,
+          googleReviews: googlePlace.googleReviews || [],
+          isAddressVerified: true,
+          googleLinked: true
+        };
+        setVerifySuccess('Business address verified and linked successfully!');
+        setBusiness(updatedBiz);
+        setTimeout(() => {
+          setShowVerifyModal(false);
+          setVerifySuccess('');
+          setVerifyPlaceId('');
+        }, 2000);
+        return;
+      }
+
+      const syncRes = await fetch(`http://localhost:5000/api/businesses/${business._id}/sync-google`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${storedToken}`
+        },
+        body: JSON.stringify({
+          googlePlaceId: googlePlace.googlePlaceId,
+          googleRating: googlePlace.googleRating,
+          googleReviewsCount: googlePlace.googleReviewsCount,
+          googleReviews: googlePlace.googleReviews
+        })
+      });
+      const syncData = await syncRes.json();
+      if (syncData.success) {
+        setVerifySuccess('Business address verified and linked successfully!');
+        // Update local business state
+        setBusiness(syncData.data);
+        setTimeout(() => {
+          setShowVerifyModal(false);
+          setVerifySuccess('');
+          setVerifyPlaceId('');
+        }, 2000);
+      } else {
+        setVerifyError(syncData.message || 'Failed to sync Google profile.');
+      }
+    } catch (err) {
+      setVerifyError('An error occurred during verification. Please try again.');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
+
 
 
 
@@ -308,6 +427,124 @@ export default function BusinessDetail() {
     }
   };
 
+  const fetchMenu = async (businessId) => {
+    if (!businessId) return;
+    setMenuLoading(true);
+    setMenuError('');
+    try {
+      if (businessId === 'UBT-10024' || String(businessId).startsWith('biz_')) {
+        throw new Error('Offline mock mode');
+      }
+      const res = await fetch(`http://localhost:5000/api/menu/${businessId}`);
+      const data = await res.json();
+      if (data.success && data.data) {
+        setMenuItems(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch menu items');
+      }
+    } catch (err) {
+      console.warn('Using mock menu items due to error or mock business id:', err.message);
+      // Dynamic mock menu items based on business
+      if (businessId === 'biz_2') {
+        setMenuItems([
+          {
+            _id: 'menu_mock_1',
+            businessId: businessId,
+            name: 'Chocolate Truffle Cake',
+            price: 650,
+            offerPrice: 599,
+            isVeg: true,
+            isAvailable: true,
+            description: 'Rich, moist chocolate cake layered with dark chocolate ganache and chocolate flakes.',
+            category: 'Cakes'
+          },
+          {
+            _id: 'menu_mock_2',
+            businessId: businessId,
+            name: 'Paneer Tikka Sandwich',
+            price: 120,
+            offerPrice: 99,
+            isVeg: true,
+            isAvailable: true,
+            description: 'Grilled sandwich stuffed with spiced paneer tikka, mint chutney, onions, and capsicum.',
+            category: 'Sandwiches'
+          },
+          {
+            _id: 'menu_mock_3',
+            businessId: businessId,
+            name: 'Special Veg Burger',
+            price: 110,
+            offerPrice: null,
+            isVeg: true,
+            isAvailable: true,
+            description: 'Crispy vegetable patty topped with cheese, lettuce, tomatoes, onions, and house mayonnaise.',
+            category: 'Fast Food'
+          },
+          {
+            _id: 'menu_mock_4',
+            businessId: businessId,
+            name: 'Cold Coffee with Ice Cream',
+            price: 90,
+            offerPrice: 79,
+            isVeg: true,
+            isAvailable: false,
+            description: 'Chilled blended coffee served with a scoop of vanilla ice cream and chocolate syrup drizzle.',
+            category: 'Beverages'
+          }
+        ]);
+      } else {
+        setMenuItems([
+          {
+            _id: 'menu_mock_1',
+            businessId: businessId,
+            name: 'Special South Indian Meals',
+            price: 150,
+            offerPrice: 120,
+            isVeg: true,
+            isAvailable: true,
+            description: 'A traditional banana leaf meal with rice, sambar, rasam, kootu, poriyal, appalam, and sweet payasam.',
+            category: 'Meals'
+          },
+          {
+            _id: 'menu_mock_2',
+            businessId: businessId,
+            name: 'Udumalpet Special Mutton Biryani',
+            price: 280,
+            offerPrice: 250,
+            isVeg: false,
+            isAvailable: true,
+            description: 'Aromatic seeraga samba biryani cooked with tender local lamb chops and spices, served with raita and brinjal curry.',
+            category: 'Biryani'
+          },
+          {
+            _id: 'menu_mock_3',
+            businessId: businessId,
+            name: 'Paneer Butter Masala',
+            price: 180,
+            offerPrice: null,
+            isVeg: true,
+            isAvailable: true,
+            description: 'Rich and creamy cottage cheese chunks simmered in a mildly spiced onion-tomato gravy with butter.',
+            category: 'Gravies'
+          },
+          {
+            _id: 'menu_mock_4',
+            businessId: businessId,
+            name: 'Ghee Onion Rava Dosa',
+            price: 110,
+            offerPrice: 99,
+            isVeg: true,
+            isAvailable: false,
+            description: 'Crispy semolina crepe with finely chopped onions, flavored with pure ghee, served with three chutneys and hot sambar.',
+            category: 'Tiffin'
+          }
+        ]);
+      }
+    } finally {
+      setMenuLoading(false);
+    }
+  };
+
   const fetchBusinessDetails = async () => {
     setLoading(true);
     try {
@@ -317,6 +554,9 @@ export default function BusinessDetail() {
         setBusiness(data.data);
         setReviews(data.data.reviews || []);
         fetchBranches(data.data._id);
+        if (isFoodRelated(data.data.category, data.data.customCategoryName)) {
+          fetchMenu(data.data._id);
+        }
       } else {
         throw new Error('Business details not found.');
       }
@@ -569,6 +809,9 @@ export default function BusinessDetail() {
       if (mockDetails) {
         setBusiness(mockDetails);
         setReviews(mockDetails.googleReviews || []);
+        if (isFoodRelated(mockDetails.category, mockDetails.customCategoryName)) {
+          fetchMenu(mockDetails._id);
+        }
       } else {
         setError('Business details not found.');
       }
@@ -698,6 +941,22 @@ export default function BusinessDetail() {
     trackClick('whatsapp');
     const cleanNum = whatsapp.replace(/[^0-9]/g, '');
     window.open(`https://wa.me/${cleanNum}?text=Hello%20${encodeURIComponent(name)},%20I%20saw%2520your%20listing%20on%20UBT.`);
+  };
+
+  const handleWhatsAppOrder = (item) => {
+    trackClick('whatsapp');
+    let number = business.whatsapp || business.phone || '';
+    let cleanNum = number.replace(/[^0-9]/g, '');
+    if (cleanNum.length === 10) {
+      cleanNum = '91' + cleanNum;
+    }
+    const text = `Hello! I would like to order "${item.name}" from "${business.name}" via Udumalpet Business Tour (UBT).
+
+Price: ₹${item.offerPrice || item.price}
+Dietary: ${item.isVeg ? 'Veg 🌱' : 'Non-Veg 🍗'}
+
+Please confirm availability and delivery time.`;
+    window.open(`https://wa.me/${cleanNum}?text=${encodeURIComponent(text)}`);
   };
 
   if (loading) {
@@ -872,10 +1131,22 @@ export default function BusinessDetail() {
               <div className="flex flex-col gap-1.5 justify-center">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white font-sans">{business.name}</h1>
-                  {((business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked) && (
+                  {(business.isAddressVerified || (business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked) ? (
                     <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-400/25 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm shrink-0">
-                      <ShieldCheck className="h-3.5 w-3.5" /> Verified Business
+                      <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                        <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg> Verified Business
                     </span>
+                  ) : (
+                    isOwner && (
+                      <button
+                        onClick={() => setShowVerifyModal(true)}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm shrink-0 transition-all cursor-pointer hover:scale-105 active:scale-95 border-none"
+                      >
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0" /> Verify Now
+                      </button>
+                    )
                   )}
                   {branches.length > 0 && (
                     <span className="bg-blue-500/10 text-blue-400 border border-blue-400/25 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm shrink-0">
@@ -944,10 +1215,16 @@ export default function BusinessDetail() {
               <span className="text-slate-600">•</span>
               <span className="text-emerald-450 font-bold bg-emerald-500/5 border border-emerald-500/15 px-2.5 py-1 rounded-lg">{business.type}</span>
               <span className="text-slate-600">•</span>
-              <div className="flex items-center gap-1.5 text-slate-350">
+              <a 
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open Directions in Google Maps"
+                className="flex items-center gap-1.5 text-slate-350 hover:text-emerald-450 transition-colors cursor-pointer"
+              >
                 <MapPin className="h-4 w-4 text-emerald-500" />
                 <span>{business.locality}, Udumalpet, Tamil Nadu - {business.pincode}</span>
-              </div>
+              </a>
             </div>
             
             {business.subscriptionStatus === 'active' ? (
@@ -970,7 +1247,7 @@ export default function BusinessDetail() {
 
                 {/* Map/Location Action - uses Google Maps directions URL (no API key needed) */}
                 <a 
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${business.coordinates?.lat || 10.5891},${business.coordinates?.lng || 77.2412}`}
+                  href={directionsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Open Directions in Google Maps"
@@ -1029,6 +1306,9 @@ export default function BusinessDetail() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex overflow-x-auto gap-8">
           {[
             { id: 'overview', label: 'Overview' },
+            ...(isFoodRelated(business?.category, business?.customCategoryName) ? [
+              { id: 'menu', label: `Menu${menuItems.length > 0 ? ` (${menuItems.length})` : ''}` }
+            ] : []),
             { id: 'services', label: 'Services' },
             { id: 'photos', label: `Photos (${galleryCount})` },
             { id: 'reviews', label: `Reviews (${allReviews.length})` },
@@ -1422,6 +1702,121 @@ export default function BusinessDetail() {
                 </div>
               </div>
 
+            </div>
+          )}
+
+          {/* TAB: MENU */}
+          {activeTab === 'menu' && (
+            <div className="flex flex-col gap-6 animate-fadeIn text-left">
+              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-3.5 gap-3">
+                <div>
+                  <h3 className="text-xl font-extrabold text-slate-800 font-sans flex items-center gap-2">
+                    <Utensils className="h-5.5 w-5.5 text-emerald-600" />
+                    <span>Food Menu</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 font-semibold mt-1">
+                    Explore delicious offerings from {business.name} and order directly.
+                  </p>
+                </div>
+              </div>
+
+              {menuLoading ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <RefreshCw className="h-7 w-7 text-emerald-600 animate-spin" />
+                  <span className="text-xs font-bold font-sans">Loading menu...</span>
+                </div>
+              ) : menuItems.length === 0 ? (
+                <div className="py-20 text-center border-2 border-dashed border-slate-200 rounded-3xl p-8 flex flex-col items-center gap-3 bg-slate-50/50">
+                  <Utensils className="h-10 w-10 text-slate-300" />
+                  <h4 className="font-extrabold text-slate-700 text-sm">No Menu Items Listed</h4>
+                  <p className="text-xs text-slate-450 max-w-sm">
+                    This food business hasn't listed any menu items yet. Check back soon or contact them directly.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-8">
+                  {/* Group items by category */}
+                  {Object.entries(
+                    menuItems.reduce((groups, item) => {
+                      const cat = item.category || 'General';
+                      if (!groups[cat]) groups[cat] = [];
+                      groups[cat].push(item);
+                      return groups;
+                    }, {})
+                  ).map(([categoryName, items]) => (
+                    <div key={categoryName} className="flex flex-col gap-4">
+                      <div className="flex items-center gap-3 border-b border-slate-100 pb-2">
+                        <h4 className="font-black text-sm text-[#001c41] uppercase tracking-wider">
+                          {categoryName}
+                        </h4>
+                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold py-0.5 px-2 rounded-full">
+                          {items.length} {items.length === 1 ? 'item' : 'items'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {items.map((item) => {
+                          const discountPercent = item.offerPrice 
+                            ? Math.round(((item.price - item.offerPrice) / item.price) * 100)
+                            : 0;
+                          return (
+                            <div 
+                              key={item._id} 
+                              className={`bg-white border border-slate-200 p-5 rounded-2xl flex flex-col justify-between gap-4 shadow-2xs relative transition-all duration-300 ${
+                                !item.isAvailable ? 'opacity-65 grayscale-[30%]' : 'hover:border-slate-300 hover:shadow-xs'
+                              }`}
+                            >
+                              <div className="flex flex-col gap-2.5 text-left">
+                                <div className="flex justify-between items-start gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <div className={`h-4.5 w-4.5 border-2 flex items-center justify-center p-0.5 rounded shrink-0 select-none ${item.isVeg ? 'border-emerald-600' : 'border-red-600'}`}>
+                                      <div className={`h-2 w-2 rounded-full ${item.isVeg ? 'bg-emerald-600' : 'bg-red-600'}`} />
+                                    </div>
+                                    <span className={`text-[10px] font-black uppercase tracking-wider ${item.isVeg ? 'text-emerald-700' : 'text-red-700'}`}>
+                                      {item.isVeg ? 'Veg' : 'Non-Veg'}
+                                    </span>
+                                  </div>
+                                  
+                                  <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider select-none ${
+                                    item.isAvailable 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-250/20' 
+                                      : 'bg-rose-50 text-rose-700 border border-rose-250/20'
+                                  }`}>
+                                    {item.isAvailable ? 'Available' : 'Out of Stock'}
+                                  </span>
+                                </div>
+
+                                <div className="flex flex-col">
+                                  <h5 className="font-extrabold text-sm text-[#001c41] leading-snug">{item.name}</h5>
+                                  {/* item.description removed */}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between border-t border-slate-100 pt-3.5 mt-1">
+                                <div className="flex flex-col text-left">
+                                  {item.offerPrice ? (
+                                    <div className="flex flex-col">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-base font-extrabold text-slate-800">₹{item.offerPrice}</span>
+                                        <span className="text-[9px] bg-rose-50 border border-rose-100 text-rose-600 font-extrabold px-1.5 py-0.5 rounded select-none">
+                                          {discountPercent}% OFF
+                                        </span>
+                                      </div>
+                                      <span className="text-[10px] text-slate-400 font-bold line-through">M.R.P: ₹{item.price}</span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-base font-extrabold text-slate-800">₹{item.price}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1911,10 +2306,8 @@ export default function BusinessDetail() {
                   <a
                     href={
                       selectedBranch === null
-                        ? (business.parentBusiness 
-                          ? `https://www.google.com/maps/dir/?api=1&destination=${business.parentBusiness.coordinates?.lat || 10.5891},${business.parentBusiness.coordinates?.lng || 77.2412}`
-                          : `https://www.google.com/maps/dir/?api=1&destination=${business.coordinates?.lat || 10.5891},${business.coordinates?.lng || 77.2412}`)
-                        : selectedBranch.googleMapsLocation || `https://www.google.com/maps/dir/?api=1&destination=${selectedBranch.latitude},${selectedBranch.longitude}`
+                        ? directionsUrl
+                        : selectedBranch.googleMapsLocation || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedBranch.name + ' ' + selectedBranch.address)}`
                     }
                     target="_blank"
                     rel="noopener noreferrer"
@@ -1934,7 +2327,7 @@ export default function BusinessDetail() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-xl font-extrabold text-slate-800 font-sans">Map & Directions</h3>
                 <a
-                  href={`https://www.openstreetmap.org/directions?from=&to=${business.coordinates?.lat || 10.5891},${business.coordinates?.lng || 77.2412}`}
+                  href={directionsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2.5 px-5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 transition-all shadow-md shadow-emerald-800/10 uppercase tracking-wider"
@@ -1965,7 +2358,7 @@ export default function BusinessDetail() {
                   </div>
                   {/* Google Maps directions URL — completely free, no API key needed */}
                   <a 
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${business.coordinates?.lat || 10.5891},${business.coordinates?.lng || 77.2412}`}
+                    href={directionsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-1 py-2 px-4 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[11px] rounded-xl text-center uppercase tracking-wider transition-colors shadow-sm self-start"
@@ -1988,10 +2381,19 @@ export default function BusinessDetail() {
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <span className="font-black text-sm text-[#001c41] uppercase tracking-wider">Contact Business</span>
                 <div className="flex items-center gap-2">
-                  {((business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked) && (
+                  {(business.isAddressVerified || (business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked) ? (
                     <span className="bg-emerald-50 text-emerald-700 border border-emerald-150 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-0.5">
                       ✓ Verified
                     </span>
+                  ) : (
+                    isOwner && (
+                      <button
+                        onClick={() => setShowVerifyModal(true)}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-950 border-none text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-0.5 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                      >
+                        Verify Now
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -2185,6 +2587,76 @@ export default function BusinessDetail() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Google My Business Verification Modal */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-md w-full bg-white border border-slate-200 shadow-2xl rounded-[32px] p-6 md:p-8 flex flex-col gap-6 animate-scaleUp text-left relative">
+            
+            {/* Close button */}
+            <button 
+              onClick={() => {
+                setShowVerifyModal(false);
+                setVerifyError('');
+                setVerifySuccess('');
+                setVerifyPlaceId('');
+              }} 
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 h-8 w-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors z-10 border-none"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
+
+            <div className="flex flex-col gap-2">
+              <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-inner">
+                <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                  <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mt-2 font-sans">Verify Your Business Listing</h3>
+              <p className="text-slate-500 text-xs font-semibold leading-relaxed font-sans">
+                Provide your Google Place ID to link your Google Business Profile. We will check that the addresses match and instantly verify your profile.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4 animate-fadeIn">
+              <div className="flex flex-col gap-1.5 font-sans">
+                <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Google Place ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ChIJnUv03E3NqTsRHR_zk-gs78w"
+                  value={verifyPlaceId}
+                  onChange={(e) => setVerifyPlaceId(e.target.value)}
+                  className="py-3 px-4 bg-white border border-slate-350 rounded-xl shadow-sm text-sm font-semibold w-full focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 text-slate-800"
+                />
+              </div>
+
+              {verifyError && (
+                <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 text-xs font-semibold flex items-start gap-2.5 shadow-sm animate-shake">
+                  <AlertCircle className="h-4.5 w-4.5 text-red-500 shrink-0 mt-0.5" />
+                  <span>{verifyError}</span>
+                </div>
+              )}
+
+              {verifySuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 text-xs font-semibold flex items-start gap-2.5 shadow-sm animate-fadeIn">
+                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>{verifySuccess}</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={verifyLoading || !verifyPlaceId}
+                onClick={handleVerifyGoogleBusiness}
+                className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 border-none"
+              >
+                {verifyLoading ? 'Verifying...' : 'Verify & Link'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -6,7 +6,7 @@ import {
   RefreshCw, Star, CreditCard, ChevronRight, ChevronLeft, ArrowLeft, Activity, PhoneCall, 
   MessageSquare, Plus, CheckCircle, Info, Bell, ExternalLink, Globe,
   Copy, Check, Gift, Upload, HelpCircle, Briefcase, Mail, Settings, Menu, X, Trash2, Search, Lock,
-  FileEdit, BookOpen, Heart, Eye, Calendar, Clock, MapPin, LogOut, Facebook, Instagram, Phone, Users, Move
+  FileEdit, BookOpen, Heart, Eye, Calendar, Clock, MapPin, LogOut, Facebook, Instagram, Phone, Users, Move, Utensils
 } from 'lucide-react';
 
 const getEventDefaultImage = (category) => {
@@ -29,7 +29,72 @@ function DashboardContent() {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [business, setBusiness] = useState(null);
-  const isGmbVerified = !!(business && ((business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked));
+
+  // Food Menu States
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [menuError, setMenuError] = useState('');
+  
+  // Menu Item Modal States
+  const [showMenuItemModal, setShowMenuItemModal] = useState(false);
+  const [currentMenuItem, setCurrentMenuItem] = useState(null); // null for Add, object for Edit
+  const [menuItemName, setMenuItemName] = useState('');
+  const [menuItemPrice, setMenuItemPrice] = useState('');
+  const [menuItemOfferPrice, setMenuItemOfferPrice] = useState('');
+  const [menuItemIsVeg, setMenuItemIsVeg] = useState(true);
+  const [menuItemIsAvailable, setMenuItemIsAvailable] = useState(true);
+  const [menuItemDescription, setMenuItemDescription] = useState('');
+  const [menuItemCategory, setMenuItemCategory] = useState('General');
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState('');
+  const [menuCategories, setMenuCategories] = useState([
+    "General", "Starters", "Main Course", "Biryani", "Desserts", "Beverages", "Snacks", "Tiffin", "Meals"
+  ]);
+  const [menuItemSubmitLoading, setMenuItemSubmitLoading] = useState(false);
+  const [menuItemError, setMenuItemError] = useState('');
+
+  useEffect(() => {
+    if (menuItems && menuItems.length > 0) {
+      const defaultCategories = ["General", "Starters", "Main Course", "Biryani", "Desserts", "Beverages", "Snacks", "Tiffin", "Meals"];
+      const customCats = menuItems.map(item => item.category).filter(Boolean);
+      setMenuCategories(prev => {
+        const combined = new Set([...prev, ...customCats]);
+        return Array.from(combined);
+      });
+    }
+  }, [menuItems]);
+
+  const isFoodRelated = (category, customCategoryName) => {
+    const cat = (category || '').toLowerCase();
+    const sub = (customCategoryName || '').toLowerCase();
+    
+    const foodKeywords = [
+      'food', 'restaurant', 'restarent', 'cafe', 'bakery', 'sweet', 'catering', 
+      'juice', 'ice cream', 'parlor', 'hotel', 'dhaba', 'mess', 
+      'biryani', 'pizza', 'burger', 'kitchen', 'canteen', 'sweets', 'tea',
+      'beverage', 'stall', 'caterer', 'dining', 'eatery', 'baker'
+    ];
+    
+    const foodCategories = [
+      'Restaurants', 'Bakeries', 'Cafes & Tea Shops', 'Sweet Shops', 
+      'Fast Food Centers', 'Catering Services', 'Juice & Ice Cream Parlors',
+      'Food & Restaurants', 'Food & Drinks', 'Hotels & Restaurants'
+    ];
+
+    return (
+      foodCategories.includes(category) ||
+      foodKeywords.some(keyword => cat.includes(keyword) || sub.includes(keyword))
+    );
+  };
+  const isGmbVerified = !!(business && (business.isAddressVerified || (business.googlePlaceId && business.googlePlaceId !== '') || (business.googleBusinessLink && business.googleBusinessLink !== '') || business.googleLinked));
+  
+  // Verification states
+  const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [verifyPlaceId, setVerifyPlaceId] = useState('');
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [verifyError, setVerifyError] = useState('');
+  const [verifySuccess, setVerifySuccess] = useState('');
+
   const [primaryBusiness, setPrimaryBusiness] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,6 +117,88 @@ function DashboardContent() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [applyReferralPoints, setApplyReferralPoints] = useState(false);
   const [redeemPointsAmount, setRedeemPointsAmount] = useState(0);
+
+  const handleVerifyGoogleBusiness = async () => {
+    setVerifyLoading(true);
+    setVerifyError('');
+    setVerifySuccess('');
+    try {
+      // 1. Fetch place details using autofill endpoint
+      const autofillRes = await fetch('http://localhost:5000/api/businesses/google-autofill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placeId: verifyPlaceId })
+      });
+      const autofillData = await autofillRes.json();
+      if (!autofillData.success || !autofillData.data) {
+        setVerifyError(autofillData.message || 'Failed to fetch details for the provided Place ID.');
+        setVerifyLoading(false);
+        return;
+      }
+
+      const googlePlace = autofillData.data;
+
+      // 2. Verify the address matching
+      const googlePincodeClean = googlePlace.pincode ? googlePlace.pincode.replace(/\s+/g, '') : '';
+      const businessPincodeClean = business.pincode ? business.pincode.replace(/\s+/g, '') : '';
+      
+      let addressesMatch = false;
+      if (googlePincodeClean && businessPincodeClean && googlePincodeClean.slice(0, 6) === businessPincodeClean.slice(0, 6)) {
+        addressesMatch = true;
+      } else {
+        const addr1 = (googlePlace.address || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
+        const addr2 = (business.address || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
+        const words1 = addr1.split(' ').filter(w => w.length > 3);
+        const words2 = addr2.split(' ').filter(w => w.length > 3);
+        const common = words1.filter(w => words2.includes(w));
+        if (common.length >= 2) {
+          addressesMatch = true;
+        }
+      }
+
+      if (!addressesMatch) {
+        setVerifyError(`Address Mismatch! The address on Google Place does not match your registered business address. Pincode on Google: ${googlePlace.pincode || 'N/A'}, Registered Pincode: ${business.pincode || 'N/A'}`);
+        setVerifyLoading(false);
+        return;
+      }
+
+      // 3. Match successful! Sync with backend
+      const storedToken = localStorage.getItem('ubt_token') || token;
+      const syncRes = await fetch(`http://localhost:5000/api/businesses/${business._id}/sync-google`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${storedToken}`
+        },
+        body: JSON.stringify({
+          googlePlaceId: googlePlace.googlePlaceId,
+          googleRating: googlePlace.googleRating,
+          googleReviewsCount: googlePlace.googleReviewsCount,
+          googleReviews: googlePlace.googleReviews
+        })
+      });
+      const syncData = await syncRes.json();
+      if (syncData.success) {
+        setVerifySuccess('Business address verified and linked successfully!');
+        // Update local business state
+        setBusiness(syncData.data);
+        if (primaryBusiness && primaryBusiness._id === business._id) {
+          setPrimaryBusiness(syncData.data);
+        }
+        setTimeout(() => {
+          setShowVerifyModal(false);
+          setVerifySuccess('');
+          setVerifyPlaceId('');
+        }, 2000);
+      } else {
+        setVerifyError(syncData.message || 'Failed to sync Google profile.');
+      }
+    } catch (err) {
+      setVerifyError('An error occurred during verification. Please try again.');
+    } finally {
+      setVerifyLoading(false);
+    }
+  };
 
   const handleApplyReferralPointsToggle = (checked) => {
     setApplyReferralPoints(checked);
@@ -691,6 +838,9 @@ function DashboardContent() {
           fetchBranches(authToken, userBiz._id);
           fetchLeads(authToken, userBiz._id);
           fetchReviews(authToken, userBiz._id);
+          if (isFoodRelated(userBiz.category, userBiz.customCategoryName)) {
+            fetchMenu(authToken, userBiz._id);
+          }
           setEditFields({
             name: userBiz.name || '',
             category: userBiz.category || 'Services',
@@ -757,8 +907,8 @@ function DashboardContent() {
       const mockBiz = {
         _id: 'UBT-10024',
         name: 'Sri Murugan Stores',
-        category: 'Shops',
-        type: 'Departmental Stores',
+        category: 'Restaurants',
+        type: 'Vegetarian Restaurant',
         description: 'Sri Murugan Stores is a premium departmental store in Gandhi Nagar, Udumalpet offering fresh organic grocery items, dry fruits, fresh pulses and household commodities.',
         phone: '+91 94430 12345',
         whatsapp: '+91 94430 12345',
@@ -782,6 +932,9 @@ function DashboardContent() {
       fetchBranches(authToken, mockBiz._id);
       fetchLeads(authToken, mockBiz._id);
       fetchReviews(authToken, mockBiz._id);
+      if (isFoodRelated('Restaurants', 'Vegetarian Restaurant')) {
+        fetchMenu(authToken, mockBiz._id);
+      }
       setEditFields({
         name: mockBiz.name || '',
         category: mockBiz.category || 'Services',
@@ -981,6 +1134,9 @@ function DashboardContent() {
     const activeToken = token || localStorage.getItem('ubt_token');
     fetchLeads(activeToken, targetBiz._id);
     fetchReviews(activeToken, targetBiz._id);
+    if (isFoodRelated(targetBiz.category, targetBiz.customCategoryName)) {
+      fetchMenu(activeToken, targetBiz._id);
+    }
     setOffersList(targetBiz.offers || []);
 
     // Sync photo gallery from the switched business
@@ -1227,6 +1383,277 @@ function DashboardContent() {
       console.error('Error deleting branch:', err);
       alert('Network error. Failed to delete branch.');
     }
+  };
+
+  const fetchMenu = async (authToken, businessId) => {
+    if (!businessId) return;
+    const activeToken = authToken || token || localStorage.getItem('ubt_token');
+    setMenuLoading(true);
+    setMenuError('');
+    try {
+      if (!activeToken || businessId === 'UBT-10024' || String(businessId).startsWith('biz_')) {
+        throw new Error('Offline mock mode');
+      }
+      const res = await fetch(`http://localhost:5000/api/menu/${businessId}`, {
+        headers: { Authorization: `Bearer ${activeToken}` },
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setMenuItems(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch menu items');
+      }
+    } catch (err) {
+      console.warn('Using mock menu items due to error or mock business id:', err.message);
+      setMenuItems([
+        {
+          _id: 'menu_mock_1',
+          businessId: businessId,
+          name: 'Special South Indian Meals',
+          price: 150,
+          offerPrice: 120,
+          isVeg: true,
+          isAvailable: true,
+          description: 'A traditional banana leaf meal with rice, sambar, rasam, kootu, poriyal, appalam, and sweet payasam.',
+          category: 'Meals'
+        },
+        {
+          _id: 'menu_mock_2',
+          businessId: businessId,
+          name: 'Udumalpet Special Mutton Biryani',
+          price: 280,
+          offerPrice: 250,
+          isVeg: false,
+          isAvailable: true,
+          description: 'Aromatic seeraga samba biryani cooked with tender local lamb chops and spices, served with raita and brinjal curry.',
+          category: 'Biryani'
+        },
+        {
+          _id: 'menu_mock_3',
+          businessId: businessId,
+          name: 'Paneer Butter Masala',
+          price: 180,
+          offerPrice: null,
+          isVeg: true,
+          isAvailable: true,
+          description: 'Rich and creamy cottage cheese chunks simmered in a mildly spiced onion-tomato gravy with butter.',
+          category: 'Gravies'
+        },
+        {
+          _id: 'menu_mock_4',
+          businessId: businessId,
+          name: 'Ghee Onion Rava Dosa',
+          price: 110,
+          offerPrice: 99,
+          isVeg: true,
+          isAvailable: false,
+          description: 'Crispy semolina crepe with finely chopped onions, flavored with pure ghee, served with three chutneys and hot sambar.',
+          category: 'Tiffin'
+        }
+      ]);
+    } finally {
+      setMenuLoading(false);
+    }
+  };
+
+  const handleMenuSubmit = async (e) => {
+    e.preventDefault();
+    if (!menuItemName || menuItemPrice === '') {
+      setMenuItemError('Item Name and Price are required.');
+      return;
+    }
+
+    setMenuItemSubmitLoading(true);
+    setMenuItemError('');
+
+    let finalCategory = menuItemCategory;
+    if (isCustomCategory) {
+      if (!customCategoryName.trim()) {
+        setMenuItemError('Please specify the custom category name.');
+        setMenuItemSubmitLoading(false);
+        return;
+      }
+      finalCategory = customCategoryName.trim();
+    }
+
+    const bodyData = {
+      name: menuItemName,
+      price: Number(menuItemPrice),
+      offerPrice: menuItemOfferPrice !== '' && menuItemOfferPrice !== null && menuItemOfferPrice !== undefined ? Number(menuItemOfferPrice) : null,
+      isVeg: menuItemIsVeg,
+      isAvailable: menuItemIsAvailable,
+      description: '', // description removed
+      category: finalCategory || 'General'
+    };
+
+    const activeToken = token || localStorage.getItem('ubt_token');
+
+    try {
+      if (finalCategory && !menuCategories.includes(finalCategory)) {
+        setMenuCategories(prev => [...prev, finalCategory]);
+      }
+
+      if (business._id === 'UBT-10024' || String(business._id).startsWith('biz_')) {
+        const updatedItem = {
+          _id: currentMenuItem ? currentMenuItem._id : `menu_mock_${Date.now()}`,
+          businessId: business._id,
+          ...bodyData
+        };
+
+        if (currentMenuItem) {
+          setMenuItems(prev => prev.map(item => item._id === currentMenuItem._id ? updatedItem : item));
+        } else {
+          setMenuItems(prev => [updatedItem, ...prev]);
+        }
+        setShowMenuItemModal(false);
+        resetMenuItemForm();
+        return;
+      }
+
+      const url = currentMenuItem 
+        ? `http://localhost:5000/api/menu/${currentMenuItem._id}`
+        : `http://localhost:5000/api/menu/${business._id}`;
+      const method = currentMenuItem ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${activeToken}`
+        },
+        body: JSON.stringify(bodyData)
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        if (finalCategory && !menuCategories.includes(finalCategory)) {
+          setMenuCategories(prev => [...prev, finalCategory]);
+        }
+        if (currentMenuItem) {
+          setMenuItems(prev => prev.map(item => item._id === currentMenuItem._id ? data.data : item));
+        } else {
+          setMenuItems(prev => [data.data, ...prev]);
+        }
+        setShowMenuItemModal(false);
+        resetMenuItemForm();
+      } else {
+        setMenuItemError(data.message || 'Failed to save menu item.');
+      }
+    } catch (err) {
+      console.error('Error submitting menu item:', err);
+      const updatedItem = {
+        _id: currentMenuItem ? currentMenuItem._id : `menu_mock_${Date.now()}`,
+        businessId: business._id,
+        ...bodyData
+      };
+      if (currentMenuItem) {
+        setMenuItems(prev => prev.map(item => item._id === currentMenuItem._id ? updatedItem : item));
+      } else {
+        setMenuItems(prev => [updatedItem, ...prev]);
+      }
+      setShowMenuItemModal(false);
+      resetMenuItemForm();
+    } finally {
+      setMenuItemSubmitLoading(false);
+    }
+  };
+
+  const resetMenuItemForm = () => {
+    setCurrentMenuItem(null);
+    setMenuItemName('');
+    setMenuItemPrice('');
+    setMenuItemOfferPrice('');
+    setMenuItemIsVeg(true);
+    setMenuItemIsAvailable(true);
+    setMenuItemDescription('');
+    setMenuItemCategory('General');
+    setIsCustomCategory(false);
+    setCustomCategoryName('');
+    setMenuItemError('');
+  };
+
+  const handleMenuDelete = async (itemId) => {
+    if (!window.confirm('Are you sure you want to delete this menu item?')) return;
+
+    const activeToken = token || localStorage.getItem('ubt_token');
+
+    try {
+      if (business._id === 'UBT-10024' || String(business._id).startsWith('biz_')) {
+        setMenuItems(prev => prev.filter(item => item._id !== itemId));
+        return;
+      }
+
+      const res = await fetch(`http://localhost:5000/api/menu/${itemId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMenuItems(prev => prev.filter(item => item._id !== itemId));
+      } else {
+        alert(data.message || 'Failed to delete menu item');
+      }
+    } catch (err) {
+      console.error('Error deleting menu item:', err);
+      setMenuItems(prev => prev.filter(item => item._id !== itemId));
+    }
+  };
+
+  const handleToggleAvailability = async (item) => {
+    const updatedStatus = !item.isAvailable;
+    const activeToken = token || localStorage.getItem('ubt_token');
+
+    try {
+      if (business._id === 'UBT-10024' || String(business._id).startsWith('biz_')) {
+        setMenuItems(prev => prev.map(i => i._id === item._id ? { ...i, isAvailable: updatedStatus } : i));
+        return;
+      }
+
+      const res = await fetch(`http://localhost:5000/api/menu/${item._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${activeToken}`
+        },
+        body: JSON.stringify({ isAvailable: updatedStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMenuItems(prev => prev.map(i => i._id === item._id ? data.data : i));
+      } else {
+        alert(data.message || 'Failed to update availability');
+      }
+    } catch (err) {
+      console.error('Error toggling availability:', err);
+      setMenuItems(prev => prev.map(i => i._id === item._id ? { ...i, isAvailable: updatedStatus } : i));
+    }
+  };
+
+  const handleOpenMenuItemModal = (item = null) => {
+    setMenuItemError('');
+    if (item) {
+      setCurrentMenuItem(item);
+      setMenuItemName(item.name || '');
+      setMenuItemPrice(item.price || '');
+      setMenuItemOfferPrice(item.offerPrice || '');
+      setMenuItemIsVeg(item.isVeg !== undefined ? item.isVeg : true);
+      setMenuItemIsAvailable(item.isAvailable !== undefined ? item.isAvailable : true);
+      setMenuItemDescription(item.description || '');
+      
+      const defaultCategories = ["General", "Starters", "Main Course", "Biryani", "Desserts", "Beverages", "Snacks", "Tiffin", "Meals"];
+      if (item.category && !defaultCategories.includes(item.category)) {
+        setIsCustomCategory(true);
+        setCustomCategoryName(item.category);
+        setMenuItemCategory(item.category);
+      } else {
+        setIsCustomCategory(false);
+        setCustomCategoryName('');
+        setMenuItemCategory(item.category || 'General');
+      }
+    } else {
+      resetMenuItemForm();
+    }
+    setShowMenuItemModal(true);
   };
 
   const fetchUserBlogs = async () => {
@@ -1780,6 +2207,12 @@ function DashboardContent() {
       fetchUserEvents();
     }
   }, [token, activeTab]);
+
+  useEffect(() => {
+    if (token && activeTab === 'Menu' && business) {
+      fetchMenu(token, business._id);
+    }
+  }, [token, activeTab, business]);
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
@@ -2691,6 +3124,9 @@ function DashboardContent() {
       { label: 'Dashboard', icon: <Briefcase className="h-4 w-4" /> },
       { label: 'Business Details', icon: <Edit3 className="h-4 w-4" /> },
       { label: 'Branches', icon: <MapPin className="h-4 w-4" /> },
+      ...(isFoodRelated(business.category, business.customCategoryName) ? [
+        { label: 'Menu', icon: <Utensils className="h-4 w-4" /> }
+      ] : []),
       { label: 'Photos & Media', icon: <ImageIcon className="h-4 w-4" /> },
       { label: 'Reviews & Reputation', icon: <Star className="h-4 w-4" /> },
       { label: 'Leads & Enquiries', icon: <Mail className="h-4 w-4" />, badge: 18 },
@@ -2735,8 +3171,11 @@ function DashboardContent() {
               <h4 className="font-extrabold text-white text-xs leading-snug truncate">{business.name}</h4>
               <div className="flex flex-wrap items-center gap-1.5 mt-1">
                 {isGmbVerified ? (
-                  <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-900/60 px-1.5 py-0.5 rounded text-[8.5px] font-extrabold inline-flex items-center gap-0.5 shrink-0">
-                    <ShieldCheck className="h-2.5 w-2.5 fill-current" /> UDT Verified
+                  <span className="bg-emerald-950/80 text-emerald-400 border border-emerald-900/60 px-1.5 py-0.5 rounded text-[8.5px] font-extrabold inline-flex items-center gap-1 shrink-0">
+                    <svg className="h-2.5 w-2.5 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                      <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg> UDT Verified
                   </span>
                 ) : business.status === 'Approved' ? (
                   <span className="bg-blue-950/80 text-blue-400 border border-blue-900/60 px-1.5 py-0.5 rounded text-[8.5px] font-extrabold inline-flex items-center gap-0.5 shrink-0">
@@ -3199,7 +3638,10 @@ function DashboardContent() {
                     business.status === 'Rejected' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-500'
                   }`}>
                     {isGmbVerified ? (
-                      <ShieldCheck className="h-5 w-5 fill-current" />
+                      <svg className="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                        <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     ) : business.status === 'Approved' ? (
                       <Check className="h-5 w-5" />
                     ) : (
@@ -3228,6 +3670,14 @@ function DashboardContent() {
                        business.status === 'Suspended' ? 'Profile locked' :
                        business.status === 'Rejected' ? 'Needs modifications' : 'Awaiting verification'}
                     </span>
+                    {!isGmbVerified && (
+                      <button
+                        onClick={() => setShowVerifyModal(true)}
+                        className="mt-2 text-[9px] bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-2.5 py-1 rounded-lg transition-all shadow-sm shadow-emerald-700/10 cursor-pointer inline-flex items-center gap-1 self-start select-none"
+                      >
+                        Verify Now
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -3682,7 +4132,10 @@ function DashboardContent() {
                             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white font-sans">{business.name}</h1>
                             {isGmbVerified && (
                               <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-400/25 text-[9px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 shadow-sm shrink-0">
-                                <ShieldCheck className="h-3 w-3" /> Verified Business
+                                <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                                  <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg> Verified Business
                               </span>
                             )}
                             {branches.length > 0 && (
@@ -4403,7 +4856,13 @@ function DashboardContent() {
                             <h3 className="text-base font-extrabold text-slate-800 font-sans">Map & Directions</h3>
                             {/* Google Maps directions URL — opens in browser, completely free, no API key */}
                             <a
-                              href={`https://www.google.com/maps/dir/?api=1&destination=${business.coordinates?.lat || 10.5891},${business.coordinates?.lng || 77.2412}`}
+                              href={
+                                (business.googleBusinessLink && business.googleBusinessLink !== '')
+                                  ? business.googleBusinessLink
+                                  : (business.googlePlaceId && business.googlePlaceId !== '' && !business.googlePlaceId.startsWith('mock_') && !business.googlePlaceId.endsWith('Udt') && !business.googlePlaceId.endsWith('10024'))
+                                    ? `https://www.google.com/maps/search/?api=1&query_place_id=${business.googlePlaceId}`
+                                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address ? `${business.name}, ${business.address}` : business.name || '')}`
+                              }
                               target="_blank"
                               rel="noopener noreferrer"
                               className="shrink-0 py-2 px-3.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[11px] rounded-xl flex items-center gap-1.5 transition-all shadow"
@@ -5725,6 +6184,154 @@ function DashboardContent() {
                 ))}
               </div>
 
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAB: MENU DASHBOARD */}
+          {/* ========================================================================= */}
+          {activeTab === 'Menu' && (
+            <div className="flex flex-col gap-6 text-left animate-fadeIn font-sans">
+              
+              {/* Header card with subtle gradient background */}
+              <div className="bg-gradient-to-r from-white via-white to-emerald-50/15 border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex flex-col">
+                  <h3 className="font-extrabold text-[#001c41] text-base md:text-lg tracking-tight">Food Menu Management</h3>
+                  <span className="text-[11px] text-slate-455 font-semibold mt-1">Manage your food menu items, categories, pricing, discounts, and availability in real time</span>
+                </div>
+                <button 
+                  onClick={() => handleOpenMenuItemModal()}
+                  className="bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-6 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2 cursor-pointer border border-emerald-700/10 btn-active-press"
+                >
+                  <Plus className="h-4.5 w-4.5" /> Add Menu Item
+                </button>
+              </div>
+
+              {/* Menu Items Desk Content */}
+              {menuLoading ? (
+                <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-455 flex flex-col items-center gap-2.5 shadow-sm">
+                  <RefreshCw className="h-7 w-7 text-emerald-600 animate-spin" />
+                  <span className="text-xs font-bold">Synchronizing your food menu desk...</span>
+                </div>
+              ) : menuItems.length === 0 ? (
+                <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center text-slate-455 flex flex-col items-center gap-4 shadow-sm max-w-md mx-auto my-6">
+                  <div className="h-14 w-14 bg-emerald-55/15 text-[#027244] rounded-2xl flex items-center justify-center border border-emerald-100/50 animate-pulse">
+                    <Utensils className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-slate-800 text-sm">No Menu Items Listed</h4>
+                    <p className="text-xs text-slate-455 font-semibold leading-relaxed mt-1.5">
+                      Get started by listing your restaurant's delicious dishes so customers can view and order them directly.
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => handleOpenMenuItemModal()}
+                    className="w-full py-2.5 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow cursor-pointer"
+                  >
+                    Add Your First Item
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {/* Category-grouped Items View */}
+                  {(() => {
+                    const categories = [...new Set(menuItems.map(item => item.category || 'General'))];
+                    return categories.map(cat => {
+                      const itemsInCat = menuItems.filter(item => (item.category || 'General') === cat);
+                      return (
+                        <div key={cat} className="flex flex-col gap-4">
+                          <h4 className="font-extrabold text-slate-800 text-sm md:text-base border-l-4 border-[#027244] pl-3 capitalize">{cat}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {itemsInCat.map(item => {
+                              const discountPercent = item.offerPrice 
+                                ? Math.round(((item.price - item.offerPrice) / item.price) * 100)
+                                : 0;
+                              return (
+                                <div key={item._id} className={`card-premium rounded-3xl p-5 flex flex-col justify-between gap-4 bg-white border border-slate-200 transition-all duration-300 relative ${!item.isAvailable ? 'opacity-75' : ''}`}>
+                                  <div className="flex flex-col gap-2.5 text-left">
+                                    <div className="flex justify-between items-start gap-2">
+                                      <div className="flex items-center gap-2">
+                                        <div className={`h-4.5 w-4.5 border-2 flex items-center justify-center p-0.5 rounded shrink-0 select-none ${item.isVeg ? 'border-emerald-600' : 'border-red-600'}`}>
+                                          <div className={`h-2 w-2 rounded-full ${item.isVeg ? 'bg-emerald-600' : 'bg-red-600'}`} />
+                                        </div>
+                                        <span className={`text-[10px] font-black uppercase tracking-wider ${item.isVeg ? 'text-emerald-700' : 'text-red-700'}`}>
+                                          {item.isVeg ? 'Veg' : 'Non-Veg'}
+                                        </span>
+                                      </div>
+                                      
+                                      <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wider select-none ${
+                                        item.isAvailable 
+                                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-250/30' 
+                                          : 'bg-rose-50 text-rose-700 border border-rose-250/30'
+                                      }`}>
+                                        {item.isAvailable ? 'Available' : 'Out of Stock'}
+                                      </span>
+                                    </div>
+
+                                    <div className="flex flex-col">
+                                      <h5 className="font-extrabold text-sm text-[#001c41] leading-snug">{item.name}</h5>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between border-t border-slate-100 pt-3.5 mt-2">
+                                    <div className="flex flex-col text-left">
+                                      {item.offerPrice ? (
+                                        <div className="flex flex-col">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-base font-extrabold text-slate-800">₹{item.offerPrice}</span>
+                                            <span className="text-[10px] bg-rose-50 border border-rose-100 text-rose-600 font-extrabold px-1.5 py-0.5 rounded">
+                                              {discountPercent}% OFF
+                                            </span>
+                                          </div>
+                                          <span className="text-[10px] text-slate-400 font-bold line-through">M.R.P: ₹{item.price}</span>
+                                        </div>
+                                      ) : (
+                                        <span className="text-base font-extrabold text-slate-850">₹{item.price}</span>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleAvailability(item)}
+                                        className={`py-1.5 px-2.5 rounded-lg text-[9.5px] font-black uppercase transition-all cursor-pointer ${
+                                          item.isAvailable 
+                                            ? 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200' 
+                                            : 'bg-emerald-50 hover:bg-emerald-100 text-[#027244] border border-emerald-200'
+                                        }`}
+                                      >
+                                        {item.isAvailable ? 'Mark Out' : 'Mark In'}
+                                      </button>
+                                      
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenMenuItemModal(item)}
+                                        className="p-1.5 border border-slate-200 hover:border-slate-350 text-slate-600 hover:text-emerald-700 bg-slate-50/50 hover:bg-slate-100/50 rounded-xl transition-all cursor-pointer"
+                                        title="Edit Item"
+                                      >
+                                        <Edit3 className="h-3.5 w-3.5" />
+                                      </button>
+                                      
+                                      <button
+                                        type="button"
+                                        onClick={() => handleMenuDelete(item._id)}
+                                        className="p-1.5 border border-rose-200 hover:border-rose-350 text-rose-655 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+                                        title="Delete Item"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
             </div>
           )}
 
@@ -7144,6 +7751,76 @@ function DashboardContent() {
             </div>
           </>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 1.5: Google My Business Verification Modal */}
+      {showVerifyModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-md w-full bg-white border border-slate-200 shadow-2xl rounded-[32px] p-6 md:p-8 flex flex-col gap-6 animate-scaleUp text-left relative">
+            
+            {/* Close button */}
+            <button 
+              onClick={() => {
+                setShowVerifyModal(false);
+                setVerifyError('');
+                setVerifySuccess('');
+                setVerifyPlaceId('');
+              }} 
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 h-8 w-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors z-10"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
+
+            <div className="flex flex-col gap-2">
+              <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-inner">
+                <svg className="h-6 w-6 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                  <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mt-2">Verify Your Business Listing</h3>
+              <p className="text-slate-550 text-xs font-semibold leading-relaxed">
+                Provide your Google Place ID to link your Google Business Profile. We will check that the addresses match and instantly verify your profile.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Google Place ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ChIJnUv03E3NqTsRHR_zk-gs78w"
+                  value={verifyPlaceId}
+                  onChange={(e) => setVerifyPlaceId(e.target.value)}
+                  className="py-3 px-4 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold w-full focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                />
+              </div>
+
+              {verifyError && (
+                <div className="bg-red-50 border border-red-200 text-red-650 rounded-2xl p-4 text-xs font-semibold flex items-start gap-2.5 shadow-sm animate-shake">
+                  <AlertCircle className="h-4.5 w-4.5 text-red-500 shrink-0 mt-0.5" />
+                  <span>{verifyError}</span>
+                </div>
+              )}
+
+              {verifySuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 text-xs font-semibold flex items-start gap-2.5 shadow-sm animate-fadeIn">
+                  <CheckCircle className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>{verifySuccess}</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={verifyLoading || !verifyPlaceId}
+                onClick={handleVerifyGoogleBusiness}
+                className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {verifyLoading ? 'Verifying...' : 'Verify & Link'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -8644,6 +9321,188 @@ function DashboardContent() {
               </form>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: Add / Edit Menu Item Modal */}
+      {showMenuItemModal && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="max-w-md w-full bg-white border border-slate-200 shadow-2xl rounded-[32px] p-6 md:p-8 flex flex-col gap-6 animate-scaleUp text-left relative">
+            
+            <button 
+              onClick={() => {
+                setShowMenuItemModal(false);
+                resetMenuItemForm();
+              }} 
+              className="absolute right-6 top-6 text-slate-400 hover:text-slate-600 h-8 w-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center cursor-pointer transition-colors z-10"
+            >
+              <X className="h-4.5 w-4.5" />
+            </button>
+
+            <div className="flex flex-col gap-2">
+              <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shadow-inner">
+                <Utensils className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mt-2">
+                {currentMenuItem ? 'Edit Menu Item' : 'Add Food Menu Item'}
+              </h3>
+              <p className="text-slate-550 text-xs font-semibold leading-relaxed">
+                {currentMenuItem 
+                  ? 'Update details, pricing, discount, and availability status of this food item.' 
+                  : 'Add a new food dish or drink to your business profile digital menu.'}
+              </p>
+            </div>
+
+            <form onSubmit={handleMenuSubmit} className="flex flex-col gap-4">
+              
+              {menuItemError && (
+                <div className="bg-red-50 border border-red-250 text-red-655 rounded-xl p-3 text-xs font-semibold flex items-center gap-2">
+                  <AlertCircle className="h-4.5 w-4.5 text-red-500 shrink-0" />
+                  <span>{menuItemError}</span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Item Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Masala Dosa, Chicken Biryani"
+                  value={menuItemName}
+                  onChange={(e) => setMenuItemName(e.target.value)}
+                  required
+                  className="py-3 px-4 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold w-full focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Original Price (₹) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 150"
+                    value={menuItemPrice}
+                    onChange={(e) => setMenuItemPrice(e.target.value)}
+                    required
+                    className="py-3 px-4 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold w-full focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Offer Price (₹) (Optional)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 120"
+                    value={menuItemOfferPrice}
+                    onChange={(e) => setMenuItemOfferPrice(e.target.value)}
+                    className="py-3 px-4 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold w-full focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Menu Category *</label>
+                  <select
+                    value={isCustomCategory ? 'Others' : menuItemCategory}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === 'Others') {
+                        setIsCustomCategory(true);
+                        setMenuItemCategory('');
+                      } else {
+                        setIsCustomCategory(false);
+                        setMenuItemCategory(val);
+                      }
+                    }}
+                    className="py-3 px-4 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold w-full focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 cursor-pointer"
+                  >
+                    {menuCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="Others">Others (Type Custom...)</option>
+                  </select>
+
+                  {isCustomCategory && (
+                    <input
+                      type="text"
+                      placeholder="Enter custom category"
+                      value={customCategoryName}
+                      onChange={(e) => {
+                        setCustomCategoryName(e.target.value);
+                        setMenuItemCategory(e.target.value);
+                      }}
+                      className="mt-2 py-2.5 px-4 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold w-full focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                    />
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Diet Type *</label>
+                  <div className="flex items-center gap-4 py-2">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-655 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="menuItemIsVeg"
+                        checked={menuItemIsVeg === true}
+                        onChange={() => setMenuItemIsVeg(true)}
+                        className="h-4.5 w-4.5 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                      />
+                      <span>Veg</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-655 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="menuItemIsVeg"
+                        checked={menuItemIsVeg === false}
+                        onChange={() => setMenuItemIsVeg(false)}
+                        className="h-4.5 w-4.5 text-red-655 focus:ring-rose-500 cursor-pointer"
+                      />
+                      <span>Non-Veg</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item Description (Optional) removed */}
+
+              <div className="flex items-center gap-2.5 py-1 text-left">
+                <input
+                  type="checkbox"
+                  id="menuItemIsAvailable"
+                  checked={menuItemIsAvailable}
+                  onChange={(e) => setMenuItemIsAvailable(e.target.checked)}
+                  className="h-5 w-5 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500 cursor-pointer"
+                />
+                <label htmlFor="menuItemIsAvailable" className="text-xs font-bold text-slate-705 cursor-pointer select-none">
+                  Available & In Stock
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-4 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenuItemModal(false);
+                    resetMenuItemForm();
+                  }}
+                  className="py-2.5 px-5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-extrabold text-[10.5px] rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={menuItemSubmitLoading}
+                  className="py-2.5 px-6 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10.5px] rounded-xl cursor-pointer shadow-md shadow-emerald-800/10 flex items-center gap-2 disabled:opacity-60"
+                >
+                  {menuItemSubmitLoading && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+                  <span>{currentMenuItem ? 'Save Changes' : 'Add to Menu'}</span>
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}

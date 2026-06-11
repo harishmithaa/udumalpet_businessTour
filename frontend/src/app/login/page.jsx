@@ -348,7 +348,7 @@ export default function Login() {
         localStorage.setItem('ubt_token', token);
         localStorage.setItem('ubt_user', JSON.stringify(user));
         const redirect = searchParams.get('redirect');
-        if (redirect) {
+        if (redirect && redirect !== '/' && redirect !== '/login' && redirect !== '/register') {
           navigate(redirect);
         } else if (draftBusiness) {
           localStorage.setItem('ubt_draft_business', JSON.stringify(draftBusiness));
@@ -427,7 +427,7 @@ export default function Login() {
         localStorage.setItem('ubt_token', token);
         localStorage.setItem('ubt_user', JSON.stringify(user));
         const redirect = searchParams.get('redirect');
-        if (redirect) {
+        if (redirect && redirect !== '/' && redirect !== '/login' && redirect !== '/register') {
           navigate(redirect);
         } else if (user.role === 'superadmin') {
           navigate('/superadmin');
@@ -460,7 +460,11 @@ export default function Login() {
       localStorage.setItem('ubt_token', 'mock_jwt_token_' + Math.random().toString(36).substr(2, 9));
       localStorage.setItem('ubt_user', JSON.stringify(dummyUser));
       const redirect = searchParams.get('redirect');
-      navigate(redirect || '/dashboard');
+      if (redirect && redirect !== '/' && redirect !== '/login' && redirect !== '/register') {
+        navigate(redirect);
+      } else {
+        navigate('/dashboard');
+      }
     }, 1200);
   };
 

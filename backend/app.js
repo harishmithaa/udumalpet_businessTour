@@ -66,6 +66,7 @@ app.use('/api/queries', require('./routes/queries'));
 app.use('/api/plans', require('./routes/plans'));
 app.use('/api/newsletter', require('./routes/newsletter'));
 app.use('/api/leads', require('./routes/leads'));
+app.use('/api/menu', require('./routes/menu'));
 
 // Root & Health Status Check
 app.get('/', (req, res) => {

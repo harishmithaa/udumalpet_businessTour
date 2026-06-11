@@ -629,9 +629,8 @@ export default function AddBusiness() {
           setError("Business found, but we couldn't automatically retrieve its pincode. Please select the correct pincode manually to verify.");
         }
 
-        setLogoFile('google_autofill_logo.png');
-        setCoverFile('google_autofill_cover.png');
-        setGalleryFiles(['gallery1.png', 'gallery2.png', 'gallery3.png']);
+        // Removed mock image presets so it starts blank
+
 
         setToastMessage("Business information imported successfully.");
         setTimeout(() => {
@@ -774,9 +773,8 @@ export default function AddBusiness() {
           setError("Business found, but we couldn't automatically retrieve its pincode. Please select the correct pincode manually to verify.");
         }
 
-        setBranchLogoFile('google_autofill_logo.png');
-        setBranchCoverFile('google_autofill_cover.png');
-        setBranchGalleryFiles(['gallery1.png', 'gallery2.png', 'gallery3.png']);
+        // Removed mock image presets so it starts blank
+
 
         setToastMessage("Branch information imported successfully.");
         setTimeout(() => {
@@ -1426,26 +1424,7 @@ export default function AddBusiness() {
                   />
                 </div>
 
-                {/* Imported Reviews Preview */}
-                {gmbImportedReviews.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wide">📥 Imported Google Reviews</span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{gmbImportedReviews.length} reviews</span>
-                    </div>
-                    <div className="flex flex-col gap-2 max-h-44 overflow-y-auto pr-1">
-                      {gmbImportedReviews.map((r, i) => (
-                        <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-extrabold text-slate-800">{r.authorName}</span>
-                            <span className="text-xs font-bold text-amber-500">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2">{r.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
 
                 <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs text-slate-500 leading-relaxed font-semibold">
                   <span className="font-extrabold text-slate-700 block mb-0.5">ℹ️ Google Business Profile Verification</span>
@@ -1468,18 +1447,74 @@ export default function AddBusiness() {
                     <ArrowLeft className="h-4 w-4" /> Back
                   </button>
                   <button
-                    onClick={() => {
+                    disabled={autofillLoading}
+                    onClick={async () => {
                       if (!formData.googleBusinessLink) {
                         setError("Please enter your Google Business Profile link.");
                         return;
                       }
                       setError("");
-                      setIsPincodeVerified(true);
-                      saveDraft({ ...formData });
+                      setAutofillLoading(true);
+                      try {
+                        const res = await fetch('http://localhost:5000/api/businesses/google-autofill-link', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ link: formData.googleBusinessLink })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          const d = data.data;
+                          const allowedPincodes = [
+                            '642126', '642207', '642154', '642112', '642205', 
+                            '642122', '642204', '642201', '642203', '642102', 
+                            '642128', '642113', '642206', '642132', '642111'
+                          ];
+                          let placePincode = d.pincode ? d.pincode.replace(/\s+/g, '').slice(0, 6) : '';
+                          if (placePincode && !allowedPincodes.includes(placePincode)) {
+                            setError(`The selected business is located in pincode ${placePincode}, which is outside the eligible Udumalpet region.`);
+                            setAutofillLoading(false);
+                            return;
+                          }
+
+                          const updated = {
+                            ...formData,
+                            name: d.name || formData.name,
+                            address: d.address || formData.address,
+                            phone: d.phone || formData.phone,
+                            whatsapp: d.phone || formData.whatsapp,
+                            email: d.email || formData.email,
+                            website: d.website || formData.website || '',
+                            locality: d.locality || formData.locality,
+                            pincode: placePincode || formData.pincode,
+                            isAddressVerified: true,
+                            googlePlaceId: d.googlePlaceId || '',
+                            googleRating: d.googleRating || 0,
+                            googleReviewsCount: d.googleReviewsCount || 0,
+                            googleReviews: d.googleReviews || [],
+                            coordinates: {
+                              lat: d.latitude || d.coordinates?.lat || 10.585,
+                              lng: d.longitude || d.coordinates?.lng || 77.251
+                            },
+                            timings: d.timings || d.openingHours || formData.timings,
+                          };
+                          setFormData(updated);
+                          setIsPincodeVerified(true);
+                          setGmbAutofillSuccess(true);
+                          setToastMessage("Business information imported from link successfully.");
+                          setTimeout(() => setToastMessage(''), 4000);
+                          saveDraft(updated);
+                        } else {
+                          setError(data.message || "Could not autofill from link. Please enter details manually.");
+                        }
+                      } catch (err) {
+                        setError("Could not autofill from link. Please enter details manually.");
+                      } finally {
+                        setAutofillLoading(false);
+                      }
                     }}
-                    className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center justify-center gap-1.5 flex-grow"
+                    className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center justify-center gap-1.5 flex-grow disabled:opacity-50"
                   >
-                    Verify &amp; Proceed
+                    {autofillLoading ? 'Importing Details...' : 'Verify & Proceed'}
                   </button>
                 </div>
               </div>
@@ -1704,26 +1739,7 @@ export default function AddBusiness() {
                   />
                 </div>
 
-                {/* Imported Reviews Preview */}
-                {branchImportedReviews.length > 0 && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wide">📥 Imported Google Reviews</span>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">{branchImportedReviews.length} reviews</span>
-                    </div>
-                    <div className="flex flex-col gap-2 max-h-44 overflow-y-auto pr-1">
-                      {branchImportedReviews.map((r, i) => (
-                        <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col gap-1">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-extrabold text-slate-800">{r.authorName}</span>
-                            <span className="text-xs font-bold text-amber-500">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-relaxed line-clamp-2">{r.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
 
                 <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs text-slate-500 leading-relaxed font-semibold">
                   <span className="font-extrabold text-slate-700 block mb-0.5">ℹ️ Google Business Profile Verification</span>
@@ -1746,17 +1762,73 @@ export default function AddBusiness() {
                     <ArrowLeft className="h-4 w-4" /> Back
                   </button>
                   <button
-                    onClick={() => {
+                    disabled={branchAutofillLoading}
+                    onClick={async () => {
                       if (!branchForm.googleBusinessLink) {
                         setError("Please enter your Google Business Profile link.");
                         return;
                       }
                       setError("");
-                      setIsBranchEligibilityVerified(true);
+                      setBranchAutofillLoading(true);
+                      try {
+                        const res = await fetch('http://localhost:5000/api/businesses/google-autofill-link', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ link: branchForm.googleBusinessLink })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          const d = data.data;
+                          const allowedPincodes = [
+                            '642126', '642207', '642154', '642112', '642205', 
+                            '642122', '642204', '642201', '642203', '642102', 
+                            '642128', '642113', '642206', '642132', '642111'
+                          ];
+                          let placePincode = d.pincode ? d.pincode.replace(/\s+/g, '').slice(0, 6) : '';
+                          if (placePincode && !allowedPincodes.includes(placePincode)) {
+                            setError(`The selected branch is located in pincode ${placePincode}, which is outside the eligible Udumalpet region.`);
+                            setBranchAutofillLoading(false);
+                            return;
+                          }
+
+                          const updated = {
+                            ...branchForm,
+                            name: d.name || branchForm.name,
+                            address: d.address || branchForm.address,
+                            phone: d.phone || branchForm.phone,
+                            whatsapp: d.phone || branchForm.whatsapp,
+                            email: d.email || branchForm.email,
+                            website: d.website || branchForm.website || '',
+                            locality: d.locality || branchForm.locality,
+                            pincode: placePincode || branchForm.pincode,
+                            isAddressVerified: true,
+                            googlePlaceId: d.googlePlaceId || '',
+                            googleRating: d.googleRating || 0,
+                            googleReviewsCount: d.googleReviewsCount || 0,
+                            googleReviews: d.googleReviews || [],
+                            coordinates: {
+                              lat: d.latitude || d.coordinates?.lat || 10.585,
+                              lng: d.longitude || d.coordinates?.lng || 77.251
+                            },
+                            timings: d.timings || d.openingHours || branchForm.timings,
+                          };
+                          setBranchForm(updated);
+                          setIsBranchEligibilityVerified(true);
+                          setBranchAutofillSuccess(true);
+                          setToastMessage("Branch information imported from link successfully.");
+                          setTimeout(() => setToastMessage(''), 4000);
+                        } else {
+                          setError(data.message || "Could not autofill from link. Please enter details manually.");
+                        }
+                      } catch (err) {
+                        setError("Could not autofill from link. Please enter details manually.");
+                      } finally {
+                        setBranchAutofillLoading(false);
+                      }
                     }}
-                    className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center justify-center gap-1.5 flex-grow"
+                    className="py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-700/20 cursor-pointer flex items-center justify-center gap-1.5 flex-grow disabled:opacity-50"
                   >
-                    Verify &amp; Proceed
+                    {branchAutofillLoading ? 'Importing Details...' : 'Verify & Proceed'}
                   </button>
                 </div>
               </div>

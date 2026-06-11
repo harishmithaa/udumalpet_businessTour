@@ -491,7 +491,7 @@ function BusinessesList() {
         results = results.filter(b => b.locality === loc);
       }
       if (verifiedFilter) {
-        results = results.filter(b => (b.googlePlaceId && b.googlePlaceId !== '') || (b.googleBusinessLink && b.googleBusinessLink !== '') || b.googleLinked);
+        results = results.filter(b => b.isAddressVerified || (b.googlePlaceId && b.googlePlaceId !== '') || (b.googleBusinessLink && b.googleBusinessLink !== '') || b.googleLinked);
       }
       if (premiumFilter) {
         results = results.filter(b => b.isPremium);
@@ -1278,18 +1278,13 @@ function BusinessesList() {
                                         <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider">Premium</span>
                                       </div>
                                     )}
-                                    {((biz.googlePlaceId && biz.googlePlaceId !== '') || (biz.googleBusinessLink && biz.googleBusinessLink !== '') || biz.googleLinked) && (
+                                    {(biz.isAddressVerified || (biz.googlePlaceId && biz.googlePlaceId !== '') || (biz.googleBusinessLink && biz.googleBusinessLink !== '') || biz.googleLinked) && (
                                       <div className="bg-white border border-emerald-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
-                                        <ShieldCheck className="h-3.5 w-3.5 text-[#027244]" />
+                                         <svg className="h-3.5 w-3.5 text-[#027244] shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                           <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                                           <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                         </svg>
                                         <span className="text-[9px] font-black text-[#027244] uppercase tracking-wider font-sans">UDT Verified</span>
-                                      </div>
-                                    )}
-                                    {biz.googlePlaceId && (
-                                      <div className="bg-white border border-blue-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
-                                        <svg className="h-3.5 w-3.5 text-blue-500 fill-current" viewBox="0 0 24 24">
-                                          <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 12.24 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.746-.08-1.32-.176-1.886H12.24z"/>
-                                        </svg>
-                                        <span className="text-[9px] font-black text-blue-600 uppercase tracking-wider font-sans">Google Linked</span>
                                       </div>
                                     )}
                                   </div>
@@ -1786,19 +1781,13 @@ function BusinessesList() {
                             </div>
                           )}
                           
-                          {((biz.googlePlaceId && biz.googlePlaceId !== '') || (biz.googleBusinessLink && biz.googleBusinessLink !== '') || biz.googleLinked) && (
+                          {(biz.isAddressVerified || (biz.googlePlaceId && biz.googlePlaceId !== '') || (biz.googleBusinessLink && biz.googleBusinessLink !== '') || biz.googleLinked) && (
                             <div className="bg-white border border-emerald-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
-                              <ShieldCheck className="h-3.5 w-3.5 text-[#027244]" />
+                               <svg className="h-3.5 w-3.5 text-[#027244] shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                 <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
+                                 <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                               </svg>
                               <span className="text-[9px] font-black text-[#027244] uppercase tracking-wider font-sans">UDT Verified</span>
-                            </div>
-                          )}
-
-                          {biz.googlePlaceId && (
-                            <div className="bg-white border border-blue-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
-                              <svg className="h-3.5 w-3.5 text-blue-500 fill-current" viewBox="0 0 24 24">
-                                <path d="M12.24 10.285V13.4h6.887c-.275 1.565-1.88 4.604-6.887 4.604-4.33 0-7.859-3.578-7.859-8s3.53-8 7.859-8c2.46 0 4.105 1.025 5.047 1.926l2.427-2.334C17.955 2.192 15.34 1 12.24 1 6.033 1 12.24 6.033 1 12.24s5.033 11.24 11.24 11.24c6.478 0 10.793-4.537 10.793-10.986 0-.746-.08-1.32-.176-1.886H12.24z"/>
-                              </svg>
-                              <span className="text-[9px] font-black text-blue-600 uppercase tracking-wider font-sans">Google Linked</span>
                             </div>
                           )}
                         </div>

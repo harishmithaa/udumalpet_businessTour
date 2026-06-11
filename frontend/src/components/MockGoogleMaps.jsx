@@ -196,14 +196,12 @@ export default function MockGoogleMaps({ pincode, onAddressSelect, initialAddres
         <input
           type="text"
           value={addressInput}
-          onChange={handleInputChange}
-          placeholder="Type address manually or search on Google..."
-          className={`w-full py-2.5 pl-3 pr-28 text-sm bg-white border rounded shadow-sm focus:outline-none focus:ring-2 transition-all ${
+          readOnly
+          placeholder="Address populated automatically via Google Import Autofill..."
+          className={`w-full py-2.5 pl-3 pr-28 text-sm bg-slate-50 border rounded shadow-sm focus:outline-none cursor-not-allowed ${
             isVerified 
-              ? 'border-emerald-500 focus:ring-emerald-200' 
-              : error 
-                ? 'border-red-500 focus:ring-red-200' 
-                : 'border-slate-300 focus:ring-emerald-100 focus:border-emerald-500'
+              ? 'border-emerald-500' 
+              : 'border-slate-200'
           }`}
         />
         
