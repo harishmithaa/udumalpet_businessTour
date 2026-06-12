@@ -7,6 +7,9 @@ const errorHandler = require('./middleware/errorMiddleware');
 
 const app = express();
 
+// Trust reverse proxy for rate limiter (Render, Heroku, etc.)
+app.set('trust proxy', 1);
+
 // Security Middlewares
 app.use(helmet({
   crossOriginResourcePolicy: false

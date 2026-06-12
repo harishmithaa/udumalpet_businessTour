@@ -53,6 +53,20 @@ const Category = mongoose.model('Category', CategorySchema);
 const seedDefaultCategories = async () => {
   try {
     console.log('Syncing and seeding local category classification...');
+    
+    // Auto-repair any legacy categories with null or missing slugs to avoid unique index crashes
+    const legacyCategories = await Category.find({ $or: [{ slug: null }, { slug: { $exists: false } }] });
+    for (const cat of legacyCategories) {
+      if (cat.categoryName) {
+        cat.slug = cat.categoryName
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        await cat.save();
+      }
+    }
     const list = [
       // Retail & Shopping (Parent: Shopping)
       { categoryName: 'Grocery Stores', parentCategory: 'Shopping', icon: 'ShoppingBag', description: 'Local grocery and department stores' },
@@ -186,10 +200,18 @@ const seedDefaultCategories = async () => {
       const exists = await Category.findOne({ categoryName: item.categoryName });
       const seededViews = Math.floor(Math.random() * 800) + 150;
       
+      const slug = item.categoryName
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
       const updateFields = {
         parentCategory: item.parentCategory, 
         icon: item.icon, 
-        description: item.description 
+        description: item.description,
+        slug
       };
       
       if (!exists || !exists.views) {
