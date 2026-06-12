@@ -190,6 +190,7 @@ export default function SuperAdminDashboard() {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [revenueAnalytics, setRevenueAnalytics] = useState(null);
   const [revenueLoading, setRevenueLoading] = useState(false);
+  const [revenueGraphType, setRevenueGraphType] = useState('total'); // total | subscription | event
 
   // System activities logs
   const [systemLogs, setSystemLogs] = useState([
@@ -1641,9 +1642,12 @@ export default function SuperAdminDashboard() {
   const getMonthlyRevenueData = () => {
     return getLast5Months().map(m => {
       const matched = revenueAnalytics?.monthlyRevenue?.find(r => r._id.year === m.year && r._id.month === m.month);
+      let val = matched?.total || 0;
+      if (revenueGraphType === 'subscription') val = matched?.subscriptionTotal || 0;
+      if (revenueGraphType === 'event') val = matched?.eventTotal || 0;
       return {
-        label: `${m.label} (${formatAmountShort(matched?.total || 0)})`,
-        val: matched?.total || 0
+        label: `${m.label} (${formatAmountShort(val)})`,
+        val
       };
     });
   };
@@ -4523,12 +4527,45 @@ export default function SuperAdminDashboard() {
 
               {/* TAB 10: REVENUE */}
               {activeTab === 'Revenue' && (
-                <div className="flex flex-col gap-6 text-left animate-fadeIn">
+                <div className="flex flex-col gap-8 text-left animate-fadeIn font-sans">
+                  
+                  {/* Top Stats Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className={`border shadow-xs rounded-[24px] p-6 flex flex-col justify-between ${
+                      themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                    }`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Platform Revenue</span>
+                      <h3 className="text-2xl font-black mt-2">₹{revenueAnalytics?.totalRevenue?.toLocaleString('en-IN') || 0}</h3>
+                      <span className="text-[10.5px] text-slate-550 font-semibold mt-1">Direct merchant sales</span>
+                    </div>
+                    <div className={`border shadow-xs rounded-[24px] p-6 flex flex-col justify-between ${
+                      themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                    }`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Subscription Earnings</span>
+                      <h3 className="text-2xl font-black text-emerald-600 mt-2">₹{revenueAnalytics?.subscriptionRevenue?.toLocaleString('en-IN') || 0}</h3>
+                      <span className="text-[10.5px] text-slate-550 font-semibold mt-1">Monthly/Yearly premium plans</span>
+                    </div>
+                    <div className={`border shadow-xs rounded-[24px] p-6 flex flex-col justify-between ${
+                      themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                    }`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Event Postings Revenue</span>
+                      <h3 className="text-2xl font-black text-blue-500 mt-2">₹{revenueAnalytics?.eventRevenue?.toLocaleString('en-IN') || 0}</h3>
+                      <span className="text-[10.5px] text-slate-550 font-semibold mt-1">₹99 per event postings fee</span>
+                    </div>
+                    <div className={`border shadow-xs rounded-[24px] p-6 flex flex-col justify-between ${
+                      themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                    }`}>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 font-sans">Referral Discounts</span>
+                      <h3 className="text-2xl font-black text-orange-600 mt-2">₹{revenueAnalytics?.referralDiscountTotal?.toLocaleString('en-IN') || 0}</h3>
+                      <span className="text-[10.5px] text-slate-550 font-semibold mt-1">Points redeemed at checkout</span>
+                    </div>
+                  </div>
+
                   <div className={`border shadow-xs rounded-[28px] p-6 ${
                     themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
                   }`}>
                     <h3 className="font-extrabold text-base leading-tight font-sans">Premium Billing Analytics</h3>
-                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block">Monthly income growth and total listing subscriptions sales.</span>
+                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block">Monthly income growth, plan split distributions, and transaction records.</span>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-sans">
@@ -4536,9 +4573,23 @@ export default function SuperAdminDashboard() {
                     <div className={`border rounded-[28px] p-6 shadow-sm flex flex-col gap-6 font-sans ${
                       themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
                     }`}>
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                         <span className="font-extrabold text-xs uppercase tracking-wider text-slate-400">Monthly Revenue Graph (₹)</span>
-                        <span className="text-sm font-black text-[#027244]">Success rate: 98.6%</span>
+                        <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl w-fit border border-slate-200 dark:border-slate-800">
+                          {['total', 'subscription', 'event'].map(type => (
+                            <button
+                              key={type}
+                              onClick={() => setRevenueGraphType(type)}
+                              className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border-none ${
+                                revenueGraphType === type
+                                  ? 'bg-[#027244] text-white shadow-xs'
+                                  : 'bg-transparent text-slate-400 hover:text-slate-650'
+                              }`}
+                            >
+                              {type}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       <div className="w-full h-64 shrink-0 relative flex items-end">
@@ -4592,6 +4643,79 @@ export default function SuperAdminDashboard() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Transaction Logs Table */}
+                  <div className={`border rounded-[28px] p-6 shadow-sm flex flex-col gap-4 font-sans ${
+                    themeMode === 'dark' ? 'bg-slate-900/40 border-slate-800 text-white' : 'bg-white border-slate-200 text-[#001c41]'
+                  }`}>
+                    <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-450">Recent Platform Transactions</h3>
+                    <div className="overflow-x-auto border border-slate-200/60 rounded-2xl">
+                      <table className="w-full border-collapse text-left text-xs font-semibold text-slate-650">
+                        <thead className={`uppercase text-[9px] font-black tracking-wider border-b ${
+                          themeMode === 'dark' ? 'bg-slate-950/40 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-450'
+                        }`}>
+                          <tr>
+                            <th className="p-4">Billing Date</th>
+                            <th className="p-4">User / Merchant</th>
+                            <th className="p-4">Business / Description</th>
+                            <th className="p-4">Order & Payment IDs</th>
+                            <th className="p-4">Amount</th>
+                            <th className="p-4">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className={`divide-y font-medium ${themeMode === 'dark' ? 'divide-slate-800' : 'divide-slate-100'}`}>
+                          {revenueAnalytics?.paymentsLog?.map(p => {
+                            const userName = p.userId?.fullName || p.userId?.name || 'Unknown';
+                            const userEmail = p.userId?.email || '';
+                            const bizName = p.businessId?.name || (p.eventId ? 'Event Posting Fee' : 'Platform Payment');
+                            const isPaid = p.paymentStatus === 'Paid' || p.status === 'Paid' || p.status === 'captured';
+
+                            return (
+                              <tr key={p._id} className={themeMode === 'dark' ? 'hover:bg-slate-900/30' : 'hover:bg-slate-50/50'}>
+                                <td className={`p-4 ${themeMode === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString() : 'N/A'}
+                                </td>
+                                <td className="p-4 flex flex-col text-left">
+                                  <span className={`font-extrabold text-xs sm:text-[13px] ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>{userName}</span>
+                                  {userEmail && <span className="text-[10px] text-slate-400 font-semibold mt-0.5">{userEmail}</span>}
+                                </td>
+                                <td className="p-4">
+                                  <div className="flex flex-col text-left">
+                                    <span className={themeMode === 'dark' ? 'text-slate-300' : 'text-slate-700'}>{bizName}</span>
+                                    {p.eventId && <span className="text-[9px] text-emerald-600 font-black uppercase">Event listing</span>}
+                                  </div>
+                                </td>
+                                <td className="p-4 font-mono text-[10px] text-slate-500">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span>O: {p.orderId || p.razorpayOrderId}</span>
+                                    {p.paymentId && <span>P: {p.paymentId || p.razorpayPaymentId}</span>}
+                                  </div>
+                                </td>
+                                <td className={`p-4 font-black ${themeMode === 'dark' ? 'text-white' : 'text-slate-800'}`}>₹{p.amount}</td>
+                                <td className="p-4">
+                                  <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${
+                                    isPaid 
+                                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-450' 
+                                      : 'bg-red-500/10 border-red-500/20 text-red-550'
+                                  }`}>
+                                    {isPaid ? 'Paid' : 'Failed'}
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {(!revenueAnalytics?.paymentsLog || revenueAnalytics.paymentsLog.length === 0) && (
+                            <tr>
+                              <td colSpan="6" className="p-8 text-center text-slate-400 text-xs font-bold leading-normal">
+                                No recent platform transaction logs found.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                 </div>
               )}
 

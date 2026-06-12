@@ -120,9 +120,21 @@ const deployPlan = async (req, res, next) => {
  */
 const getRevenueAnalytics = async (req, res, next) => {
   try {
-    const payments = await Payment.find().sort({ paidAt: -1 });
+    const payments = await Payment.find({ paymentStatus: 'Paid' })
+      .populate('userId', 'name fullName email')
+      .populate('businessId', 'name')
+      .populate('eventId', 'title')
+      .sort({ paidAt: -1 });
 
     const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+
+    const subscriptionRevenue = payments
+      .filter(p => p.subscriptionId || !p.eventId)
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    const eventRevenue = payments
+      .filter(p => p.eventId)
+      .reduce((sum, p) => sum + p.amount, 0);
 
     // Group paid payments by month
     const monthlyRevenue = await Payment.aggregate([
@@ -133,7 +145,27 @@ const getRevenueAnalytics = async (req, res, next) => {
             year: { $year: '$paidAt' },
             month: { $month: '$paidAt' }
           },
-          total: { $sum: '$amount' }
+          total: { $sum: '$amount' },
+          subscriptionTotal: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    { $ifNull: ['$subscriptionId', false] },
+                    { $and: [
+                      { $eq: [{ $ifNull: ['$eventId', null] }, null] },
+                      { $eq: [{ $ifNull: ['$subscriptionId', null] }, null] }
+                    ]}
+                  ]
+                },
+                '$amount',
+                0
+              ]
+            }
+          },
+          eventTotal: {
+            $sum: { $cond: [{ $ifNull: ['$eventId', false] }, '$amount', 0] }
+          }
         }
       },
       { $sort: { '_id.year': 1, '_id.month': 1 } }
@@ -141,20 +173,31 @@ const getRevenueAnalytics = async (req, res, next) => {
 
     // Dynamic stats mapping
     const planCounts = await Subscription.aggregate([
-      { $group: { _id: '$plan', count: { $sum: 1 }, totalSales: { $sum: '$amount' } } }
+      { $group: { _id: '$planName', count: { $sum: 1 }, totalSales: { $sum: '$amountPaid' } } }
     ]);
 
     const activeSubscriptions = await Subscription.countDocuments({ status: 'active' });
     const expiredSubscriptions = await Subscription.countDocuments({ status: 'expired' });
+    const pendingSubscriptions = await Subscription.countDocuments({ status: 'pending' });
     const totalListedBusinesses = await Business.countDocuments();
+
+    // Get referral credits applied
+    const referralDiscountStats = await Subscription.aggregate([
+      { $group: { _id: null, totalDiscount: { $sum: '$referralDiscount' } } }
+    ]);
+    const referralDiscountTotal = referralDiscountStats[0]?.totalDiscount || 0;
 
     return sendSuccess(res, 200, 'Platform revenue telemetry compiled successfully', {
       totalRevenue,
+      subscriptionRevenue,
+      eventRevenue,
       activeSubscriptions,
       expiredSubscriptions,
+      pendingSubscriptions,
       totalListedBusinesses,
       planCounts,
       monthlyRevenue,
+      referralDiscountTotal,
       paymentsLog: payments.slice(0, 15) // Return last 15 payments
     });
   } catch (err) {

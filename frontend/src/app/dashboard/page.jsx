@@ -111,6 +111,10 @@ function DashboardContent() {
   const [monthlyPrice, setMonthlyPrice] = useState(99);
   const [yearlyPrice, setYearlyPrice] = useState(999);
   
+  // My Payment History states
+  const [myPayments, setMyPayments] = useState([]);
+  const [myPaymentsLoading, setMyPaymentsLoading] = useState(false);
+  
   // Referral states
   const [referralStats, setReferralStats] = useState(null);
   const [referralsLoading, setReferralsLoading] = useState(false);
@@ -208,9 +212,13 @@ function DashboardContent() {
   const handleApplyReferralPointsToggle = (checked) => {
     setApplyReferralPoints(checked);
     if (checked) {
+      const planPrice = getSelectedPlanPrice();
+      const maxDiscountRupees = Math.round(planPrice * 0.1);
+      const maxPointsAllowed = maxDiscountRupees * 10;
+      
       const maxRed = referralStats ? Math.min(
         referralStats.referralPoints || 0,
-        getSelectedPlanPrice() * 10
+        maxPointsAllowed
       ) : 0;
       setRedeemPointsAmount(maxRed);
     } else {
@@ -221,9 +229,13 @@ function DashboardContent() {
   const handlePlanSelect = (plan) => {
     setSelectedPlan(plan);
     if (applyReferralPoints) {
+      const planPrice = paymentPlans.find(p => p.name === plan || p.type === plan)?.price || 99;
+      const maxDiscountRupees = Math.round(planPrice * 0.1);
+      const maxPointsAllowed = maxDiscountRupees * 10;
+      
       const maxRed = referralStats ? Math.min(
         referralStats.referralPoints || 0,
-        getSelectedPlanPrice() * 10
+        maxPointsAllowed
       ) : 0;
       setRedeemPointsAmount(prev => Math.min(prev, maxRed));
     }
@@ -231,9 +243,13 @@ function DashboardContent() {
 
   const handleRedeemPointsChange = (e) => {
     const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+    const planPrice = getSelectedPlanPrice();
+    const maxDiscountRupees = Math.round(planPrice * 0.1);
+    const maxPointsAllowed = maxDiscountRupees * 10;
+    
     const maxRed = referralStats ? Math.min(
       referralStats.referralPoints || 0,
-      getSelectedPlanPrice() * 10
+      maxPointsAllowed
     ) : 0;
     
     if (e.target.value === '') {
@@ -754,6 +770,32 @@ function DashboardContent() {
       console.error('Failed to fetch notifications:', err);
     }
   };
+
+  const fetchMyPayments = async () => {
+    const activeToken = token || localStorage.getItem('ubt_token');
+    if (!activeToken) return;
+    setMyPaymentsLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/payments/my-history', {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMyPayments(data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching payment history:', err);
+    } finally {
+      setMyPaymentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const activeToken = token || localStorage.getItem('ubt_token');
+    if (activeToken && activeTab === 'Subscription & Billing') {
+      fetchMyPayments();
+    }
+  }, [token, activeTab]);
 
   const markAllRead = async () => {
     if (!token) return;
@@ -2534,6 +2576,7 @@ function DashboardContent() {
               if (verifyData.success) {
                 setCompleteEventPaymentStatus('Paid');
                 fetchUserEvents();
+                fetchMyPayments();
                 if (completeEvent && completeEvent.status === 'Approved') {
                   setCompleteEventStep(2);
                 } else {
@@ -2589,6 +2632,7 @@ function DashboardContent() {
         if (verifyData.success) {
           setCompleteEventPaymentStatus('Paid');
           fetchUserEvents();
+          fetchMyPayments();
           if (completeEvent && completeEvent.status === 'Approved') {
             setCompleteEventStep(2);
           } else {
@@ -3032,6 +3076,7 @@ function DashboardContent() {
             setPaymentSuccess(true);
             setShowRenewModal(false);
             fetchReferralStats();
+            fetchMyPayments();
             setTimeout(() => setPaymentSuccess(false), 4000);
           } else {
             setError('Payment verification failed.');
@@ -3077,6 +3122,7 @@ function DashboardContent() {
           setPaymentSuccess(true);
           setShowRenewModal(false);
           fetchReferralStats();
+          fetchMyPayments();
           setTimeout(() => setPaymentSuccess(false), 4000);
         } else {
           setError(verifyData.message || 'Sandbox payment verification failed.');
@@ -3134,7 +3180,7 @@ function DashboardContent() {
       { label: 'Photos & Media', icon: <ImageIcon className="h-4 w-4" /> },
       { label: 'Reviews & Reputation', icon: <Star className="h-4 w-4" /> },
       { label: 'Leads & Enquiries', icon: <Mail className="h-4 w-4" />, badge: 18 },
-      { label: 'Subscription & Billing', icon: <CreditCard className="h-4 w-4" />, onClick: () => setShowRenewModal(true) },
+      { label: 'Subscription & Billing', icon: <CreditCard className="h-4 w-4" /> },
       { label: 'Offers & Promotions', icon: <Sparkles className="h-4 w-4" /> },
       { label: 'Referral & Rewards', icon: <Gift className="h-4 w-4" /> }
     ] : [
@@ -7417,6 +7463,196 @@ function DashboardContent() {
               </div>
             </div>
           )}
+
+          {activeTab === 'Subscription & Billing' && (
+            <div className="flex flex-col gap-8 animate-fadeIn text-left font-sans text-[#001c41]">
+              
+              {/* Subscription Status Hero Banner */}
+              <div className="bg-gradient-to-r from-[#001c41] to-[#027244] rounded-[32px] p-8 text-white relative overflow-hidden shadow flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800 animate-fadeIn">
+                <div className="absolute inset-0 bg-slate-900/10 pointer-events-none" />
+                <div className="flex flex-col gap-2.5 max-w-xl z-10 text-left">
+                  <span className="bg-white/10 border border-white/20 text-emerald-300 font-extrabold text-[10px] uppercase tracking-wider px-3 py-1 rounded-full w-fit">
+                    Subscription Details
+                  </span>
+                  <h2 className="text-3xl font-black tracking-tight leading-tight">
+                    Manage Your Business Subscription
+                  </h2>
+                  <p className="text-xs md:text-sm text-slate-200 font-medium leading-relaxed mt-1">
+                    Your premium subscription ensures that your business listing is active, visible to customers, and allows you to post events for free.
+                  </p>
+                </div>
+                
+                {/* Subscription Badge */}
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-5 flex flex-col items-center justify-center shrink-0 min-w-[210px] z-10 shadow-md">
+                  <CreditCard className="h-7 w-7 text-amber-300 mb-1.5" />
+                  <span className="text-[9px] uppercase font-black text-slate-300 tracking-wider">Status</span>
+                  <span className={`text-xl font-black mt-1 uppercase ${business?.subscriptionStatus === 'active' ? 'text-emerald-300 animate-pulse' : 'text-red-300'}`}>
+                    {business?.subscriptionStatus === 'active' ? 'Active Pro' : 'Expired / Inactive'}
+                  </span>
+                  {business?.subscriptionExpiry && (
+                    <span className="text-[11px] font-bold text-slate-200 mt-1">
+                      {isExpired ? 'Expired' : `${daysLeft} Days Remaining`}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Status details & billing renew trigger */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Plan Overview Card */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col gap-4 text-left">
+                  <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Plan Summary</h3>
+                  <div className="flex flex-col gap-2 mt-1">
+                    <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                      <span className="text-xs font-semibold text-slate-500">Plan Name</span>
+                      <span className="text-xs font-extrabold text-slate-800 uppercase">
+                        {business?.subscriptionPlan || (business?.subscriptionStatus === 'active' ? 'Pro Plan' : 'No Active Plan')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                      <span className="text-xs font-semibold text-slate-500">Start Date</span>
+                      <span className="text-xs font-extrabold text-slate-800">
+                        {business?.subscriptionStart ? new Date(business.subscriptionStart).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2.5 border-b border-slate-100">
+                      <span className="text-xs font-semibold text-slate-500">Expiry Date</span>
+                      <span className="text-xs font-extrabold text-slate-800">
+                        {business?.subscriptionExpiry ? new Date(business.subscriptionExpiry).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2.5">
+                      <span className="text-xs font-semibold text-slate-500">Billing Interval</span>
+                      <span className="text-xs font-extrabold text-slate-800">
+                        {business?.subscriptionPlan?.toLowerCase().includes('year') ? 'Yearly' : 'Monthly'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Benefits / Pricing rules summary */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col gap-4 text-left">
+                  <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Active Benefits</h3>
+                  <ul className="flex flex-col gap-2.5 text-xs text-slate-650 font-semibold mt-1">
+                    <li className="flex items-center gap-2">
+                      <span className="h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black shrink-0">✓</span>
+                      <span>Premium business public listing</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black shrink-0">✓</span>
+                      <span className="text-emerald-700 font-extrabold">Free Event Postings (Normally ₹99/Event)</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black shrink-0">✓</span>
+                      <span>WhatsApp Click-To-Chat Lead generation</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="h-5 w-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black shrink-0">✓</span>
+                      <span>Review collection & Business Dashboards</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Quick actions panel */}
+                <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col justify-between text-left gap-4">
+                  <div>
+                    <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Renew or Upgrade</h3>
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed mt-2">
+                      Renew your current plan or upgrade to get longer period validity. Apply your earned referral points at checkout to receive up to 10% discount.
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setShowRenewModal(true)}
+                    className="w-full py-3 bg-[#027244] hover:bg-[#005934] text-white text-xs font-extrabold rounded-xl transition-all shadow-sm cursor-pointer active:scale-98 text-center flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    <span>Renew / Upgrade Subscription</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment history log */}
+              <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6 flex flex-col gap-4 text-left">
+                <h3 className="font-extrabold text-[#001c41] text-sm md:text-base tracking-tight">Billing & Payment History</h3>
+                
+                {myPaymentsLoading ? (
+                  <div className="py-8 text-center text-slate-450 flex flex-col items-center justify-center gap-2">
+                    <RefreshCw className="h-6 w-6 animate-spin text-[#027244]" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Loading payment history...</span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                    <table className="w-full border-collapse text-left text-xs font-semibold text-slate-650">
+                      <thead className="bg-slate-50 border-b border-slate-200 uppercase text-[9px] font-black text-slate-450 tracking-wider">
+                        <tr>
+                          <th className="p-4">Billing Date</th>
+                          <th className="p-4">Plan / Description</th>
+                          <th className="p-4">Amount Paid</th>
+                          <th className="p-4">Discount</th>
+                          <th className="p-4">Order & Payment IDs</th>
+                          <th className="p-4">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {myPayments?.map(p => {
+                          const isSuccess = p.paymentStatus === 'Paid' || p.status === 'Paid' || p.status === 'captured';
+                          
+                          return (
+                            <tr key={p._id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4 text-slate-500 font-bold">
+                                {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex flex-col text-left">
+                                  <span className="font-extrabold text-slate-800 text-xs sm:text-[13px] uppercase">
+                                    {p.subscriptionId?.planName || p.subscriptionId?.plan || (p.eventId ? 'Event Posting Fee' : 'Business Listing Subscription')}
+                                  </span>
+                                  {p.eventId && (
+                                    <span className="text-[10px] text-slate-400 font-semibold mt-0.5 truncate max-w-xs">
+                                      Event: {p.eventId.title}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-4 font-black text-slate-800">
+                                ₹{p.amount || 0}
+                              </td>
+                              <td className="p-4 text-emerald-600 font-bold">
+                                {p.subscriptionId?.referralDiscount ? `₹${p.subscriptionId.referralDiscount}` : '₹0'}
+                              </td>
+                              <td className="p-4 font-mono text-[10px] text-slate-500">
+                                <div className="flex flex-col gap-0.5">
+                                  <span>O: {p.orderId || p.razorpayOrderId}</span>
+                                  {p.paymentId && <span>P: {p.paymentId || p.razorpayPaymentId}</span>}
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <span className={`px-2.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
+                                  isSuccess
+                                    ? 'bg-emerald-50 border-emerald-250 text-emerald-700'
+                                    : 'bg-red-50 border-red-200 text-red-650'
+                                }`}>
+                                  {isSuccess ? 'Paid Success' : 'Failed'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {(!myPayments || myPayments.length === 0) && (
+                          <tr>
+                            <td colSpan="6" className="p-8 text-center text-slate-400 text-xs font-bold leading-normal">
+                              No billing history records found.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -7522,13 +7758,12 @@ function DashboardContent() {
                         <span className="text-[10px] text-slate-400 font-semibold">discount</span>
                       </div>
                     </div>
-                    
                     <div className="flex items-center gap-3">
                       <div className="relative flex-grow">
                         <input
                           type="number"
                           min="0"
-                          max={referralStats ? Math.min(referralStats.referralPoints, getSelectedPlanPrice() * 10) : 0}
+                          max={referralStats ? Math.min(referralStats.referralPoints, Math.round(getSelectedPlanPrice() * 0.1) * 10) : 0}
                           value={redeemPointsAmount}
                           onChange={handleRedeemPointsChange}
                           className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs font-extrabold text-slate-800 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-500/30 transition-all shadow-inner"
@@ -7536,7 +7771,7 @@ function DashboardContent() {
                         <button
                           type="button"
                           onClick={() => {
-                            const maxRed = referralStats ? Math.min(referralStats.referralPoints, getSelectedPlanPrice() * 10) : 0;
+                            const maxRed = referralStats ? Math.min(referralStats.referralPoints, Math.round(getSelectedPlanPrice() * 0.1) * 10) : 0;
                             setRedeemPointsAmount(maxRed);
                           }}
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-250/40 text-[#027244] text-[9.5px] font-black px-2 py-1 rounded-lg uppercase tracking-wide transition-colors cursor-pointer"
@@ -7547,7 +7782,7 @@ function DashboardContent() {
                     </div>
 
                     <span className="text-[9.5px] text-slate-400 font-semibold leading-relaxed text-left block">
-                      You can redeem up to {referralStats ? Math.min(referralStats.referralPoints, getSelectedPlanPrice() * 10) : 0} points for this plan. (1 point = ₹0.10)
+                      You can redeem up to {referralStats ? Math.min(referralStats.referralPoints, Math.round(getSelectedPlanPrice() * 0.1) * 10) : 0} points for this plan. (1 point = ₹0.10)
                     </span>
                   </div>
                 )}

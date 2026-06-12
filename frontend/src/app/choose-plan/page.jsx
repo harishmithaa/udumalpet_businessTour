@@ -150,10 +150,14 @@ export default function ChoosePlan({ isStep = false, onNext = null, initialBusin
   const handleApplyReferralPointsToggle = (checked) => {
     setApplyReferralPoints(checked);
     if (checked && referralStats) {
-      // Default to max possible points redeemable
+      // Limit to max 10% of selected plan value in Rupees
+      const planPrice = getSelectedPlanPrice();
+      const maxDiscountRupees = Math.round(planPrice * 0.1);
+      const maxPointsAllowed = maxDiscountRupees * 10;
+      
       const maxRedeem = Math.min(
         referralStats.referralPoints,
-        getSelectedPlanPrice() * 10
+        maxPointsAllowed
       );
       setRedeemPointsAmount(maxRedeem);
     } else {
@@ -164,9 +168,13 @@ export default function ChoosePlan({ isStep = false, onNext = null, initialBusin
   const handleRedeemPointsChange = (e) => {
     const val = Number(e.target.value);
     if (referralStats) {
+      const planPrice = getSelectedPlanPrice();
+      const maxDiscountRupees = Math.round(planPrice * 0.1);
+      const maxPointsAllowed = maxDiscountRupees * 10;
+
       const maxRedeem = Math.min(
         referralStats.referralPoints,
-        getSelectedPlanPrice() * 10
+        maxPointsAllowed
       );
       if (val > maxRedeem) {
         setRedeemPointsAmount(maxRedeem);
@@ -510,7 +518,7 @@ export default function ChoosePlan({ isStep = false, onNext = null, initialBusin
                     <input
                       type="number"
                       min="0"
-                      max={Math.min(referralStats.referralPoints, getSelectedPlanPrice() * 10)}
+                      max={Math.min(referralStats.referralPoints, Math.round(getSelectedPlanPrice() * 0.1) * 10)}
                       value={redeemPointsAmount}
                       onChange={handleRedeemPointsChange}
                       className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3.5 text-xs font-extrabold text-slate-800 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-500/30 transition-all shadow-inner"
@@ -518,7 +526,7 @@ export default function ChoosePlan({ isStep = false, onNext = null, initialBusin
                     <button
                       type="button"
                       onClick={() => {
-                        const maxRed = Math.min(referralStats.referralPoints, getSelectedPlanPrice() * 10);
+                        const maxRed = Math.min(referralStats.referralPoints, Math.round(getSelectedPlanPrice() * 0.1) * 10);
                         setRedeemPointsAmount(maxRed);
                       }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 bg-emerald-5 hover:bg-emerald-100 border border-emerald-250/40 text-[#027244] text-[9.5px] font-black px-2 py-1 rounded-lg uppercase tracking-wide transition-colors cursor-pointer"
@@ -529,7 +537,7 @@ export default function ChoosePlan({ isStep = false, onNext = null, initialBusin
                 </div>
 
                 <span className="text-[9.5px] text-slate-400 font-semibold leading-relaxed text-left block">
-                  You can redeem up to {Math.min(referralStats.referralPoints, getSelectedPlanPrice() * 10)} points. (1 point = ₹0.10)
+                  You can redeem up to {Math.min(referralStats.referralPoints, Math.round(getSelectedPlanPrice() * 0.1) * 10)} points. (1 point = ₹0.10)
                 </span>
               </div>
             )}

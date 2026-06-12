@@ -53,6 +53,8 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [subscriptionTab, setSubscriptionTab] = useState('override');
   const [notifications, setNotifications] = useState([]);
   const [reportsData, setReportsData] = useState({});
   const [pendingCategories, setPendingCategories] = useState([]);
@@ -533,7 +535,34 @@ export default function AdminDashboard() {
       ];
 
       setReviews(mockReviews);
-      setSubscriptions(mockSubs);
+      
+      // Fetch admin subscriptions
+      try {
+        const subRes = await fetch('http://localhost:5000/api/subscriptions/admin/all', { headers });
+        const subData = await subRes.json();
+        if (subData.success) {
+          setSubscriptions(subData.data);
+        } else {
+          setSubscriptions([]);
+        }
+      } catch (subErr) {
+        console.error('Error loading admin subscriptions:', subErr);
+        setSubscriptions([]);
+      }
+
+      // Fetch admin payments
+      try {
+        const payRes = await fetch('http://localhost:5000/api/payments/admin/all', { headers });
+        const payData = await payRes.json();
+        if (payData.success) {
+          setPayments(payData.data);
+        } else {
+          setPayments([]);
+        }
+      } catch (payErr) {
+        console.error('Error loading admin payments:', payErr);
+        setPayments([]);
+      }
 
       // Auto-calculate stats
       setReportsData({
@@ -2269,114 +2298,318 @@ export default function AdminDashboard() {
 
               {/* TAB: SUBSCRIPTIONS */}
               {activeTab === 'Subscriptions' && (
-                <div className="flex flex-col gap-6 text-left">
-                  <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6">
-                    <h3 className="font-extrabold text-[#001c41] text-base">Subscription Billings & Billing Audit</h3>
-                    <span className="text-[10px] text-slate-450 font-semibold mt-0.5">Review active premium accounts, manually activate plans, or suspend exipries</span>
+                <div className="flex flex-col gap-8 text-left animate-fadeIn">
+                  
+                  {/* Statistics Widgets Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4.5">
+                    <div className="bg-white border border-slate-200/80 shadow-xs rounded-2xl p-4.5 flex flex-col text-left">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Subscriptions</span>
+                      <span className="text-xl font-black text-[#001c41] mt-1.5">{subscriptions.length} Records</span>
+                    </div>
+                    <div className="bg-white border border-slate-200/80 shadow-xs rounded-2xl p-4.5 flex flex-col text-left">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Plans</span>
+                      <span className="text-xl font-black text-emerald-600 mt-1.5">
+                        {subscriptions.filter(s => s.status === 'active').length} Active
+                      </span>
+                    </div>
+                    <div className="bg-white border border-slate-200/80 shadow-xs rounded-2xl p-4.5 flex flex-col text-left">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-sans">Admin Revenue</span>
+                      <span className="text-xl font-black text-[#001c41] mt-1.5">
+                        ₹{payments.reduce((acc, p) => p.paymentStatus === 'Paid' || p.status === 'Paid' || p.status === 'captured' ? acc + p.amount : acc, 0)}
+                      </span>
+                    </div>
+                    <div className="bg-white border border-slate-200/80 shadow-xs rounded-2xl p-4.5 flex flex-col text-left">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-sans">Points Discounted</span>
+                      <span className="text-xl font-black text-orange-650 mt-1.5">
+                        ₹{subscriptions.reduce((acc, s) => acc + (s.referralDiscount || 0), 0)}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200 shadow-sm rounded-3xl overflow-hidden">
-                    <table className="w-full text-left text-xs font-semibold text-slate-600">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-[9px] font-black text-slate-450 uppercase tracking-widest">
-                        <tr>
-                          <th className="p-4">Business Name</th>
-                          <th className="p-4">Plan Type</th>
-                          <th className="p-4">Price</th>
-                          <th className="p-4">Status</th>
-                          <th className="p-4">Expiry Date</th>
-                          <th className="p-4">Days Unsubscribed</th>
-                          <th className="p-4 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 font-medium">
-                        {businesses.map(b => {
-                          const getDaysUnsubscribed = (biz) => {
-                            if (biz.subscriptionStatus === 'active') return 'N/A (Active)';
-                            const dateToCompare = biz.subscriptionExpiry ? new Date(biz.subscriptionExpiry) : new Date(biz.createdAt || Date.now());
-                            const diffDays = Math.floor((new Date() - dateToCompare) / (1000 * 60 * 60 * 24));
-                            if (diffDays <= 0) return '0 days';
-                            return `${diffDays} days${biz.subscriptionExpiry ? '' : ' (since registration)'}`;
-                          };
+                  <div className="bg-white border border-slate-200 shadow-sm rounded-3xl p-6">
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                      <div className="flex flex-col">
+                        <h3 className="font-extrabold text-[#001c41] text-base">Subscription Billings & Billing Audit</h3>
+                        <span className="text-[10px] text-slate-450 font-semibold mt-0.5">Review active premium accounts, inspect transaction histories, or manually override validity</span>
+                      </div>
+                    </div>
 
-                          return (
-                            <tr key={b._id} className="hover:bg-slate-50/50">
-                              <td className="p-4 flex items-center gap-3">
-                                <div className="h-9 w-9 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-200">
-                                  <img src={b.coverImageUrl} className="h-full w-full object-cover" alt={b.name} />
-                                </div>
-                                <div className="flex flex-col text-left">
-                                  <span className="font-extrabold text-slate-800 text-xs leading-none">{b.name}</span>
-                                  <a 
-                                    href={`/businesses/${b._id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-[#027244] hover:text-[#005934] hover:underline font-black text-[10px] mt-1.5 flex items-center gap-1 w-fit cursor-pointer leading-none"
-                                  >
-                                    View Profile →
-                                  </a>
-                                </div>
-                              </td>
-                              <td className="p-4">{b.subscriptionStatus === 'active' ? 'Premium Package' : 'Basic Tier'}</td>
-                              <td className="p-4 font-extrabold text-slate-800">
-                                {b.subscriptionStatus === 'active' ? '₹499 / Mon' : '₹0'}
-                              </td>
-                              <td className="p-4">
-                                <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide border ${
-                                  b.subscriptionStatus === 'active' 
-                                    ? 'bg-emerald-50 border-emerald-250 text-emerald-700' 
-                                    : (b.subscriptionStatus === 'suspended' ? 'bg-rose-50 border-rose-250 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-400')
-                                }`}>
-                                  {b.subscriptionStatus}
-                                </span>
-                              </td>
-                              <td className="p-4 font-bold text-slate-500">
-                                {b.subscriptionExpiry ? new Date(b.subscriptionExpiry).toLocaleDateString() : 'N/A'}
-                              </td>
-                              <td className="p-4 font-bold text-slate-550">
-                                {getDaysUnsubscribed(b)}
-                              </td>
-                              <td className="p-4 text-right">
-                                <div className="flex gap-2 justify-end">
-                                  <a 
-                                    href={`/businesses/${b._id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[9.5px] font-extrabold text-center leading-none shadow-xs flex items-center justify-center"
-                                  >
-                                    View Profile
-                                  </a>
-                                  {user?.role === 'superadmin' && (
-                                    <button 
-                                      onClick={() => handleManualSubscription(b._id)}
-                                      disabled={b.subscriptionStatus === 'active'}
-                                      className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[9.5px] rounded-lg cursor-pointer disabled:opacity-40 shadow-xs border-none"
-                                    >
-                                      Activate 30 Days
-                                    </button>
-                                  )}
-                                  <button 
-                                    onClick={() => handleSuspendSubscription(b._id)}
-                                    className={`px-2.5 py-1.5 font-extrabold text-[9.5px] rounded-lg cursor-pointer shadow-xs border-none text-white ${
-                                      b.subscriptionStatus === 'suspended' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-rose-600 hover:bg-rose-700'
-                                    }`}
-                                  >
-                                    {b.subscriptionStatus === 'suspended' ? 'Reactivate' : 'Suspend'}
-                                  </button>
-                                  {b.subscriptionStatus !== 'active' && (
-                                    <button 
-                                      onClick={() => handleSendReminder(b._id)}
-                                      className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[9.5px] rounded-lg cursor-pointer shadow-xs border-none"
-                                    >
-                                      Send Reminder
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                    {/* Navigation bar for sub-tabs */}
+                    <div className="flex gap-4 border-b border-slate-200 pb-3 mt-5">
+                      <button 
+                        onClick={() => setSubscriptionTab('override')}
+                        className={`pb-2 text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer border-b-2 px-1 border-solid ${
+                          subscriptionTab === 'override' 
+                            ? 'border-[#027244] text-[#027244]' 
+                            : 'border-transparent text-slate-400 hover:text-slate-650'
+                        }`}
+                      >
+                        Business Licenses (Override)
+                      </button>
+                      <button 
+                        onClick={() => setSubscriptionTab('subscriptions')}
+                        className={`pb-2 text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer border-b-2 px-1 border-solid ${
+                          subscriptionTab === 'subscriptions' 
+                            ? 'border-[#027244] text-[#027244]' 
+                            : 'border-transparent text-slate-400 hover:text-slate-650'
+                        }`}
+                      >
+                        Platform Subscriptions
+                      </button>
+                      <button 
+                        onClick={() => setSubscriptionTab('payments')}
+                        className={`pb-2 text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer border-b-2 px-1 border-solid ${
+                          subscriptionTab === 'payments' 
+                            ? 'border-[#027244] text-[#027244]' 
+                            : 'border-transparent text-slate-400 hover:text-slate-650'
+                        }`}
+                      >
+                        Payment Transactions
+                      </button>
+                    </div>
+
+                    <div className="mt-5">
+                      {/* SUBTAB 1: OVERRIDE */}
+                      {subscriptionTab === 'override' && (
+                        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                          <table className="w-full text-left text-xs font-semibold text-slate-650">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-[9px] font-black text-slate-450 uppercase tracking-widest">
+                              <tr>
+                                <th className="p-4">Business Name</th>
+                                <th className="p-4">Plan Type</th>
+                                <th className="p-4">Price</th>
+                                <th className="p-4">Status</th>
+                                <th className="p-4">Expiry Date</th>
+                                <th className="p-4">Days Unsubscribed</th>
+                                <th className="p-4 text-right">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 font-medium">
+                              {businesses.map(b => {
+                                const getDaysUnsubscribed = (biz) => {
+                                  if (biz.subscriptionStatus === 'active') return 'N/A (Active)';
+                                  const dateToCompare = biz.subscriptionExpiry ? new Date(biz.subscriptionExpiry) : new Date(biz.createdAt || Date.now());
+                                  const diffDays = Math.floor((new Date() - dateToCompare) / (1000 * 60 * 60 * 24));
+                                  if (diffDays <= 0) return '0 days';
+                                  return `${diffDays} days${biz.subscriptionExpiry ? '' : ' (since registration)'}`;
+                                };
+
+                                return (
+                                  <tr key={b._id} className="hover:bg-slate-50/50">
+                                    <td className="p-4 flex items-center gap-3">
+                                      <div className="h-9 w-9 bg-slate-100 rounded-xl overflow-hidden shrink-0 border border-slate-200">
+                                        <img src={b.coverImageUrl} className="h-full w-full object-cover" alt={b.name} />
+                                      </div>
+                                      <div className="flex flex-col text-left">
+                                        <span className="font-extrabold text-slate-800 text-xs leading-none">{b.name}</span>
+                                        <a 
+                                          href={`/businesses/${b._id}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-[#027244] hover:text-[#005934] hover:underline font-black text-[10px] mt-1.5 flex items-center gap-1 w-fit cursor-pointer leading-none"
+                                        >
+                                          View Profile →
+                                        </a>
+                                      </div>
+                                    </td>
+                                    <td className="p-4">{b.subscriptionStatus === 'active' ? 'Premium Package' : 'Basic Tier'}</td>
+                                    <td className="p-4 font-extrabold text-slate-800">
+                                      {b.subscriptionStatus === 'active' ? '₹499 / Mon' : '₹0'}
+                                    </td>
+                                    <td className="p-4">
+                                      <span className={`px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wide border ${
+                                        b.subscriptionStatus === 'active' 
+                                          ? 'bg-emerald-50 border-emerald-250 text-emerald-700' 
+                                          : (b.subscriptionStatus === 'suspended' ? 'bg-rose-50 border-rose-250 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-400')
+                                      }`}>
+                                        {b.subscriptionStatus}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 font-bold text-slate-500">
+                                      {b.subscriptionExpiry ? new Date(b.subscriptionExpiry).toLocaleDateString() : 'N/A'}
+                                    </td>
+                                    <td className="p-4 font-bold text-slate-550">
+                                      {getDaysUnsubscribed(b)}
+                                    </td>
+                                    <td className="p-4 text-right">
+                                      <div className="flex gap-2 justify-end">
+                                        <a 
+                                          href={`/businesses/${b._id}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[9.5px] font-extrabold text-center leading-none shadow-xs flex items-center justify-center"
+                                        >
+                                          View Profile
+                                        </a>
+                                        {user?.role === 'superadmin' && (
+                                          <button 
+                                            onClick={() => handleManualSubscription(b._id)}
+                                            disabled={b.subscriptionStatus === 'active'}
+                                            className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[9.5px] rounded-lg cursor-pointer disabled:opacity-40 shadow-xs border-none"
+                                          >
+                                            Activate 30 Days
+                                          </button>
+                                        )}
+                                        <button 
+                                          onClick={() => handleSuspendSubscription(b._id)}
+                                          className={`px-2.5 py-1.5 font-extrabold text-[9.5px] rounded-lg cursor-pointer shadow-xs border-none text-white ${
+                                            b.subscriptionStatus === 'suspended' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-rose-600 hover:bg-rose-700'
+                                          }`}
+                                        >
+                                          {b.subscriptionStatus === 'suspended' ? 'Reactivate' : 'Suspend'}
+                                        </button>
+                                        {b.subscriptionStatus !== 'active' && (
+                                          <button 
+                                            onClick={() => handleSendReminder(b._id)}
+                                            className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-[9.5px] rounded-lg cursor-pointer shadow-xs border-none"
+                                          >
+                                            Send Reminder
+                                          </button>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* SUBTAB 2: SUBSCRIPTIONS LIST */}
+                      {subscriptionTab === 'subscriptions' && (
+                        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                          <table className="w-full text-left text-xs font-semibold text-slate-650">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-[9px] font-black text-slate-450 uppercase tracking-widest">
+                              <tr>
+                                <th className="p-4">Owner / Merchant</th>
+                                <th className="p-4">Business</th>
+                                <th className="p-4">Plan Name</th>
+                                <th className="p-4">Amount Paid</th>
+                                <th className="p-4">Discount Applied</th>
+                                <th className="p-4">Validity Dates</th>
+                                <th className="p-4">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 font-medium">
+                              {subscriptions.map(sub => {
+                                const ownerName = sub.ownerId?.fullName || sub.ownerId?.name || 'Unknown';
+                                const ownerEmail = sub.ownerId?.email || '';
+                                const bizName = sub.businessId?.name || sub.businessId?.businessName || 'N/A';
+                                const isActive = sub.status === 'active';
+                                const isPending = sub.status === 'pending';
+                                
+                                return (
+                                  <tr key={sub._id} className="hover:bg-slate-50/50">
+                                    <td className="p-4 flex flex-col text-left">
+                                      <span className="font-extrabold text-slate-800 text-xs sm:text-[13px]">{ownerName}</span>
+                                      {ownerEmail && <span className="text-[10px] text-slate-400 font-semibold mt-0.5">{ownerEmail}</span>}
+                                    </td>
+                                    <td className="p-4 font-bold text-slate-700">{bizName}</td>
+                                    <td className="p-4 uppercase text-[10px] font-extrabold text-slate-800">{sub.planName || sub.plan}</td>
+                                    <td className="p-4 font-black text-slate-800">₹{sub.amountPaid || sub.amount}</td>
+                                    <td className="p-4 text-emerald-600 font-extrabold">₹{sub.referralDiscount || 0}</td>
+                                    <td className="p-4 font-bold text-slate-500">
+                                      <div className="flex flex-col text-[10.5px]">
+                                        <span>S: {sub.startDate ? new Date(sub.startDate).toLocaleDateString() : 'N/A'}</span>
+                                        <span>E: {sub.expiryDate || sub.endDate ? new Date(sub.expiryDate || sub.endDate).toLocaleDateString() : 'N/A'}</span>
+                                      </div>
+                                    </td>
+                                    <td className="p-4">
+                                      <span className={`px-2.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
+                                        isActive 
+                                          ? 'bg-emerald-50 border-emerald-250 text-emerald-700' 
+                                          : isPending 
+                                            ? 'bg-amber-50 border-amber-250 text-amber-600'
+                                            : 'bg-rose-50 border-rose-250 text-rose-700'
+                                      }`}>
+                                        {sub.status}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              {subscriptions.length === 0 && (
+                                <tr>
+                                  <td colSpan="7" className="p-8 text-center text-slate-400 text-xs font-bold leading-normal">
+                                    No platform subscription records found.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+
+                      {/* SUBTAB 3: PAYMENTS LIST */}
+                      {subscriptionTab === 'payments' && (
+                        <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+                          <table className="w-full text-left text-xs font-semibold text-slate-650">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-[9px] font-black text-slate-450 uppercase tracking-widest">
+                              <tr>
+                                <th className="p-4">Billing Date</th>
+                                <th className="p-4">User / Merchant</th>
+                                <th className="p-4">Business</th>
+                                <th className="p-4">Order / Payment ID</th>
+                                <th className="p-4">Amount</th>
+                                <th className="p-4">Method</th>
+                                <th className="p-4">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 font-medium">
+                              {payments.map(pay => {
+                                const userName = pay.userId?.fullName || pay.userId?.name || 'Unknown';
+                                const userEmail = pay.userId?.email || '';
+                                const bizName = pay.businessId?.name || pay.businessId?.businessName || (pay.eventId ? 'Event Posting Fee' : 'Platform Payment');
+                                const isPaid = pay.paymentStatus === 'Paid' || pay.status === 'Paid' || pay.status === 'captured';
+                                
+                                return (
+                                  <tr key={pay._id} className="hover:bg-slate-50/50">
+                                    <td className="p-4 text-slate-500 font-bold font-sans">
+                                      {pay.paymentDate ? new Date(pay.paymentDate).toLocaleDateString() : 'N/A'}
+                                    </td>
+                                    <td className="p-4 flex flex-col text-left">
+                                      <span className="font-extrabold text-slate-800 text-xs sm:text-[13px]">{userName}</span>
+                                      {userEmail && <span className="text-[10px] text-slate-400 font-semibold mt-0.5">{userEmail}</span>}
+                                    </td>
+                                    <td className="p-4">
+                                      <div className="flex flex-col text-left">
+                                        <span className="font-bold text-slate-700">{bizName}</span>
+                                        {pay.eventId && <span className="text-[9px] text-[#027244] font-black uppercase">Event listing</span>}
+                                      </div>
+                                    </td>
+                                    <td className="p-4 font-mono text-[10px] text-slate-500">
+                                      <div className="flex flex-col gap-0.5">
+                                        <span>O: {pay.orderId || pay.razorpayOrderId}</span>
+                                        {pay.paymentId && <span>P: {pay.paymentId || pay.razorpayPaymentId}</span>}
+                                      </div>
+                                    </td>
+                                    <td className="p-4 font-black text-slate-800">₹{pay.amount}</td>
+                                    <td className="p-4 text-slate-650">{pay.paymentMethod || 'UPI'}</td>
+                                    <td className="p-4">
+                                      <span className={`px-2.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-wide border ${
+                                        isPaid 
+                                          ? 'bg-emerald-50 border-emerald-250 text-emerald-700' 
+                                          : 'bg-rose-50 border-rose-250 text-rose-700'
+                                      }`}>
+                                        {isPaid ? 'Paid' : 'Failed'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                              {payments.length === 0 && (
+                                <tr>
+                                  <td colSpan="7" className="p-8 text-center text-slate-400 text-xs font-bold leading-normal">
+                                    No platform transaction records found.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
