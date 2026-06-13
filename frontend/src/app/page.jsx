@@ -577,15 +577,16 @@ export default function Home() {
       {/* 1. Hero Section (Pixel Perfect Layout with User Uploaded Thirumoorthy Hills BG) */}
       <section className="w-full relative min-h-[620px] bg-[#F8FAFC] flex items-center justify-center pt-6 pb-28 px-4 md:px-8 overflow-hidden z-0">
         
-        {/* Background Image rendered at its native 1024x576 size to prevent any scaling blur */}
-        <img 
-          src="/thirumoorthy_dam.png" 
-          alt="Thirumoorthy Hills Background"
-          className="absolute right-0 top-0 h-full w-auto object-contain lg:h-auto lg:w-[1024px] lg:max-h-[576px] lg:top-1/2 lg:-translate-y-1/2 pointer-events-none select-none z-0"
-        />
-
-        {/* Dynamic Gradient Overlay that smoothly blends image to transparent without washing details */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC] to-[#F8FAFC]/0 z-10 pointer-events-none select-none" style={{ background: "linear-gradient(to right, rgba(248, 250, 252, 1) 15%, rgba(248, 250, 252, 0.7) 25%, rgba(248, 250, 252, 0) 35%)" }} />
+        {/* Background Image wrapper to prevent scaling blur on ultra-wide screens */}
+        <div className="absolute inset-0 max-w-[1440px] mx-auto w-full h-full z-0 overflow-hidden">
+          <img 
+            src="/thirumoorthy_dam.png" 
+            alt="Thirumoorthy Hills Background"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+          />
+          {/* Dynamic Gradient Overlay that smoothly blends image to transparent without washing details */}
+          <div className="absolute inset-0 z-10 pointer-events-none select-none" style={{ background: "linear-gradient(to right, rgba(248, 250, 252, 0.35) 0%, rgba(248, 250, 252, 0.05) 70%, rgba(248, 250, 252, 0) 100%)" }} />
+        </div>
 
         {/* Hero main body */}
         <div className="relative max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-center z-20">

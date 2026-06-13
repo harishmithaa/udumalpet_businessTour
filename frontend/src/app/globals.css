@@ -4,6 +4,18 @@
   --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-heading: "Plus Jakarta Sans", "Inter", sans-serif;
   --font-logo: "Plus Jakarta Sans", "Inter", sans-serif;
+
+  /* Increased Font Sizes Everywhere */
+  --text-xs: 0.85rem;   /* default 0.75rem */
+  --text-sm: 0.95rem;   /* default 0.875rem */
+  --text-base: 1.1rem;  /* default 1rem */
+  --text-lg: 1.25rem;   /* default 1.125rem */
+  --text-xl: 1.45rem;   /* default 1.25rem */
+  --text-2xl: 1.7rem;   /* default 1.5rem */
+  --text-3xl: 2.1rem;   /* default 1.875rem */
+  --text-4xl: 2.6rem;   /* default 2.25rem */
+  --text-5xl: 3.4rem;   /* default 3rem */
+  --text-6xl: 4.2rem;   /* default 3.75rem */
 }
 
 :root {
@@ -18,6 +30,7 @@
 
 body {
   font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 1.05rem; /* slightly larger default font size */
   background-color: var(--background);
   color: var(--foreground);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
@@ -254,9 +267,7 @@ button:active, .btn-active-press:active, a.btn:active {
 
 /* Sticky Navbar Glass Backdrop Blur */
 .navbar-glass {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: #ffffff;
   transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
