@@ -2340,7 +2340,7 @@ Please confirm availability and delivery time.`;
                   style={{ border: 0 }}
                   loading="lazy"
                   src={`https://www.openstreetmap.org/export/embed.html?bbox=${(business.coordinates?.lng || 77.2412) - 0.012},${(business.coordinates?.lat || 10.5891) - 0.012},${(business.coordinates?.lng || 77.2412) + 0.012},${(business.coordinates?.lat || 10.5891) + 0.012}&layer=mapnik&marker=${business.coordinates?.lat || 10.5891},${business.coordinates?.lng || 77.2412}`}
-                  className="absolute inset-0 w-full h-full opacity-95 border-0"
+                  className="absolute top-0 left-0 w-full h-[calc(100%+28px)] opacity-95 border-0"
                 />
                 
                 {/* Floating Location Details Card */}

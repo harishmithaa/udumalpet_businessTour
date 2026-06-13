@@ -4932,7 +4932,7 @@ function DashboardContent() {
                               style={{ border: 0 }}
                               loading="lazy"
                               src={`https://www.openstreetmap.org/export/embed.html?bbox=${(business.coordinates?.lng || 77.2412) - 0.01},${(business.coordinates?.lat || 10.5891) - 0.01},${(business.coordinates?.lng || 77.2412) + 0.01},${(business.coordinates?.lat || 10.5891) + 0.01}&layer=mapnik&marker=${business.coordinates?.lat || 10.5891},${business.coordinates?.lng || 77.2412}`}
-                              className="absolute inset-0 w-full h-full opacity-95"
+                              className="absolute top-0 left-0 w-full h-[calc(100%+28px)] opacity-95 border-0"
                             />
                           </div>
                           <div className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-4">
