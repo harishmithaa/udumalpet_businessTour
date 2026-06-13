@@ -19,6 +19,7 @@ import BlogDetail from './app/blogs/[id]/page';
 import AboutPage from './app/about/page';
 import UserProfile from './app/profile/page';
 import ReferralModal from './components/ReferralModal';
+import UpdatePopup from './components/UpdatePopup';
 
 function AppContent() {
   const location = useLocation();
@@ -74,6 +75,7 @@ function AppContent() {
       </main>
       {!hideNavAndFooter && <Footer />}
       <ReferralModal isOpen={isReferralModalOpen} onClose={() => setIsReferralModalOpen(false)} />
+      {!hideNavAndFooter && <UpdatePopup />}
     </div>
   );
 }
