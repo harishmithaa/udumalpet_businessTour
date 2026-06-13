@@ -286,6 +286,13 @@ function BusinessesList() {
   const [contactError, setContactError] = useState('');
 
   const getParentCategory = (subName) => {
+    if (!subName) return 'Others';
+    // 1. Check database categories first
+    const dbCat = dbCategories.find(c => c.categoryName.toLowerCase() === subName.toLowerCase());
+    if (dbCat && dbCat.parentCategory) {
+      return dbCat.parentCategory;
+    }
+    // 2. Check static mapping
     for (const [parent, subs] of Object.entries(parentCategoryMapping)) {
       if (subs.some(sub => sub.toLowerCase() === subName.toLowerCase())) {
         return parent;
@@ -296,6 +303,10 @@ function BusinessesList() {
       if (parent.toLowerCase().includes(subName.toLowerCase()) || subName.toLowerCase().includes(parent.toLowerCase())) {
         return parent;
       }
+    }
+    // 3. If it exists in db and has no parentCategory, it is a main category itself
+    if (dbCat && !dbCat.parentCategory) {
+      return dbCat.categoryName;
     }
     return 'Others';
   };
@@ -373,48 +384,31 @@ function BusinessesList() {
         const data = await res.json();
         if (data.success) {
           setAllBusinesses(data.data);
-          const counts = {};
-          availableCategories.forEach(c => {
-            counts[c] = 0;
-          });
-          data.data.forEach(biz => {
-            const parentCat = getParentCategory(biz.category || '');
-            if (counts[parentCat] !== undefined) {
-              counts[parentCat]++;
-            } else {
-              counts[parentCat] = 1;
-            }
-          });
-          setCategoryCounts(counts);
         }
       } catch (err) {
         console.warn('API error, using mockup standard fallback counts.');
         setAllBusinesses(staticData);
-        const mockCounts = {
-          'Automotive': 125,
-          'Beauty & Wellness': 98,
-          'Education': 87,
-          'Electronics': 112,
-          'Food & Restaurants': 156,
-          'Health & Medical': 84,
-          'Home Services': 142,
-          'Real Estate': 76,
-          'Shopping': 138,
-          'Manufacturing': 64,
-          'Professional Services': 118,
-          'Travel & Hospitality': 61,
-          'Construction': 92,
-          'Agriculture': 53,
-          'Finance & Insurance': 49,
-          'Events & Entertainment': 57,
-          'Sports & Fitness': 41,
-          'Others': 38
-        };
-        setCategoryCounts(mockCounts);
       }
     };
     fetchAllCounts();
   }, []);
+
+  useEffect(() => {
+    const counts = {};
+    availableCategories.forEach(c => {
+      counts[c] = 0;
+    });
+    dbCategories.forEach(cat => {
+      if (!cat.parentCategory) {
+        counts[cat.categoryName] = 0;
+      }
+    });
+    allBusinesses.forEach(biz => {
+      const parentCat = getParentCategory(biz.category || '');
+      counts[parentCat] = (counts[parentCat] || 0) + 1;
+    });
+    setCategoryCounts(counts);
+  }, [allBusinesses, dbCategories]);
 
   useEffect(() => {
     // Populate checked category if passed in url params
@@ -661,7 +655,7 @@ function BusinessesList() {
   };
 
   // Filter lists based on text searches
-  const filteredCategories = availableCategories.filter(c => 
+  const filteredCategories = dynamicAvailableCategories.filter(c => 
     c.toLowerCase().includes(categorySearchText.toLowerCase())
   );
   
@@ -990,6 +984,19 @@ function BusinessesList() {
     { name: 'Sports & Fitness', icon: <Dumbbell className="h-4.5 w-4.5 text-emerald-500" />, bg: 'bg-emerald-50' },
     { name: 'Others', icon: <Grid className="h-4.5 w-4.5 text-slate-500" />, bg: 'bg-slate-50' }
   ];
+  const dynamicCategoryDetails = [...categoryDetails];
+  const dynamicAvailableCategories = [...availableCategories];
+
+  dbCategories.forEach(cat => {
+    if (!cat.parentCategory && !categoryDetails.some(c => c.name.toLowerCase() === cat.categoryName.toLowerCase())) {
+      dynamicCategoryDetails.push({
+        name: cat.categoryName,
+        icon: renderCategoryIcon(cat.icon || 'Store', "h-4.5 w-4.5 text-emerald-500"),
+        bg: 'bg-emerald-50'
+      });
+      dynamicAvailableCategories.push(cat.categoryName);
+    }
+  });
 
   if (isCategoriesView) {
     const hotCategories = [...dbCategories]
@@ -1131,7 +1138,7 @@ function BusinessesList() {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 text-left animate-fadeIn">
-                      {categoryDetails.map((cat, idx) => {
+                      {dynamicCategoryDetails.map((cat, idx) => {
                         const count = categoryCounts[cat.name] || 0;
                         return (
                           <div 
@@ -1531,7 +1538,7 @@ function BusinessesList() {
                 className="w-full bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
               >
                 <option>All Categories</option>
-                {availableCategories.map(c => (
+                {dynamicAvailableCategories.map(c => (
                   <option key={c}>{c}</option>
                 ))}
               </select>

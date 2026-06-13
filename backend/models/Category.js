@@ -39,12 +39,16 @@ const CategorySchema = new mongoose.Schema({
 
 CategorySchema.pre('save', async function() {
   if (this.isModified('categoryName') || !this.slug) {
-    this.slug = this.categoryName
+    let generatedSlug = this.categoryName
       .toLowerCase()
       .trim()
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_]+/g, '-')
       .replace(/^-+|-+$/g, '');
+    if (!generatedSlug) {
+      generatedSlug = 'cat-' + Math.random().toString(36).substring(2, 8);
+    }
+    this.slug = generatedSlug;
   }
 });
 

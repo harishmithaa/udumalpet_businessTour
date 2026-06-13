@@ -1190,7 +1190,7 @@ export default function SuperAdminDashboard() {
     navigate('/login');
   };
 
-  const resolveCategoryRequest = async (businessId, action, categoryId = null, newCategoryName = null, icon = null) => {
+  const resolveCategoryRequest = async (businessId, action, categoryId = null, newCategoryName = null, icon = null, parentCategory = null) => {
     try {
       const res = await fetch('http://localhost:5000/api/superadmin/category-review/resolve', {
         method: 'POST',
@@ -1198,7 +1198,7 @@ export default function SuperAdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('ubt_token')}`
         },
-        body: JSON.stringify({ businessId, action, categoryId, newCategoryName, icon })
+        body: JSON.stringify({ businessId, action, categoryId, newCategoryName, icon, parentCategory })
       });
       const data = await res.json();
       if (data.success) {
@@ -3289,11 +3289,34 @@ export default function SuperAdminDashboard() {
                                       <option key={c._id} value={c._id}>{c.categoryName}</option>
                                     ))}
                                   </select>
+
+                                  <select
+                                    id={`parent-select-${biz._id}`}
+                                    className={`py-1.5 px-3 border rounded-xl text-[10px] font-extrabold cursor-pointer transition-colors outline-none ${
+                                      themeMode === 'dark'
+                                        ? 'bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-850'
+                                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                    }`}
+                                  >
+                                    <option value="None">-- Separate Main Category --</option>
+                                    {[
+                                      'Automotive', 'Beauty & Wellness', 'Education', 'Electronics',
+                                      'Food & Restaurants', 'Health & Medical', 'Home Services', 'Real Estate',
+                                      'Shopping', 'Professional Services', 'Travel & Hospitality', 'Construction',
+                                      'Agriculture', 'Finance & Insurance', 'Events & Entertainment', 'Sports & Fitness',
+                                      'Others'
+                                    ].map(c => (
+                                      <option key={c} value={c}>Parent: {c}</option>
+                                    ))}
+                                  </select>
+
                                   <button
                                     onClick={() => {
-                                      const isCreate = confirm(`Create genuinely new category "${biz.customCategoryName}"? It will auto-resolve the business mapping.`);
+                                      const parentVal = document.getElementById(`parent-select-${biz._id}`).value;
+                                      const parentText = parentVal === 'None' ? 'a Separate Main Category' : `a subcategory under "${parentVal}"`;
+                                      const isCreate = confirm(`Create genuinely new category "${biz.customCategoryName}" as ${parentText}? It will auto-resolve the business mapping.`);
                                       if (isCreate) {
-                                        resolveCategoryRequest(biz._id, 'create', null, biz.customCategoryName);
+                                        resolveCategoryRequest(biz._id, 'create', null, biz.customCategoryName, null, parentVal);
                                       }
                                     }}
                                     className="py-1.5 px-3 bg-[#027244] hover:bg-[#005934] text-white text-[10px] font-extrabold rounded-xl transition-colors cursor-pointer shadow-sm shadow-emerald-800/10"

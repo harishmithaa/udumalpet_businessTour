@@ -1351,7 +1351,7 @@ const getPendingCategoryReviews = async (req, res, next) => {
 
 const resolveCategoryReview = async (req, res, next) => {
   try {
-    const { businessId, action, categoryId, newCategoryName, icon } = req.body;
+    const { businessId, action, categoryId, newCategoryName, icon, parentCategory } = req.body;
     const business = await Business.findById(businessId);
     if (!business) {
       return sendError(res, 404, 'Business directory listing not found');
@@ -1399,12 +1399,19 @@ const resolveCategoryReview = async (req, res, next) => {
       // Create new category
       const suggestedIcon = icon || mapKeywordToIcon(finalName);
       const suggestedImage = mapKeywordToImage(finalName);
-      const newCat = await Category.create({
+      
+      const categoryData = {
         categoryName: finalName.trim(),
         icon: suggestedIcon,
         image: suggestedImage,
         description: `Custom category dynamically approved by administrator for ${business.name}`
-      });
+      };
+      
+      if (parentCategory && parentCategory !== 'None') {
+        categoryData.parentCategory = parentCategory.trim();
+      }
+
+      const newCat = await Category.create(categoryData);
 
       business.categoryId = newCat._id;
       business.category = newCat.categoryName;
