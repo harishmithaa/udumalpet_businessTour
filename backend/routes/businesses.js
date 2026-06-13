@@ -510,63 +510,85 @@ router.get('/', async (req, res) => {
     // Only return approved or active businesses unless requested by owner/admin
     query.status = 'Approved';
 
+    const conditions = [];
+
     // Search query (matches name, description, services, brands)
     if (q) {
-      query.$or = [
-        { name: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } },
-        { services: { $elemMatch: { $regex: q, $options: 'i' } } },
-        { brands: { $elemMatch: { $regex: q, $options: 'i' } } },
-      ];
+      conditions.push({
+        $or: [
+          { name: { $regex: q, $options: 'i' } },
+          { description: { $regex: q, $options: 'i' } },
+          { services: { $elemMatch: { $regex: q, $options: 'i' } } },
+          { brands: { $elemMatch: { $regex: q, $options: 'i' } } },
+        ]
+      });
     }
 
     // Category filter
     if (category && category !== 'All' && category !== 'All Categories') {
-      const subcats = await Category.find({ parentCategory: category });
-      if (subcats.length > 0) {
-        const subcatNames = subcats.map(c => c.categoryName);
-        query.category = { $in: [category, ...subcatNames] };
-      } else {
-        query.category = category;
+      const categoryList = category.split(',');
+      let allCategoriesToQuery = [...categoryList];
+      for (const cat of categoryList) {
+        const subcats = await Category.find({ parentCategory: cat });
+        if (subcats.length > 0) {
+          allCategoriesToQuery.push(...subcats.map(c => c.categoryName));
+        }
       }
+      conditions.push({ category: { $in: allCategoriesToQuery } });
     }
 
     // Locality / Pincode filter
     if (locality && locality !== 'All' && locality !== 'Udumalpet') {
-      query.$or = [
-        { locality: { $regex: locality, $options: 'i' } },
-        { pincode: locality },
-      ];
+      const localityList = locality.split(',');
+      const orConditions = [];
+      localityList.forEach(loc => {
+        orConditions.push({ locality: { $regex: loc.trim(), $options: 'i' } });
+        orConditions.push({ pincode: loc.trim() });
+      });
+      
+      if (orConditions.length > 0) {
+        conditions.push({ $or: orConditions });
+      }
     }
 
     // Verified check
     if (verified === 'true') {
-      query.$or = [
-        { googlePlaceId: { $exists: true, $ne: '' } },
-        { googleBusinessLink: { $exists: true, $ne: '' } },
-        { googleLinked: true }
-      ];
+      conditions.push({
+        $or: [
+          { googlePlaceId: { $exists: true, $ne: '' } },
+          { googleBusinessLink: { $exists: true, $ne: '' } },
+          { googleLinked: true }
+        ]
+      });
     }
 
     // Business type (Premium / Verified)
     if (type === 'Premium') {
-      query.isPremium = true;
+      conditions.push({ isPremium: true });
     } else if (type === 'Verified') {
-      query.$or = [
-        { googlePlaceId: { $exists: true, $ne: '' } },
-        { googleBusinessLink: { $exists: true, $ne: '' } },
-        { googleLinked: true }
-      ];
+      conditions.push({
+        $or: [
+          { googlePlaceId: { $exists: true, $ne: '' } },
+          { googleBusinessLink: { $exists: true, $ne: '' } },
+          { googleLinked: true }
+        ]
+      });
+    }
+
+    // Rating check (Database level)
+    if (rating) {
+      const minRating = parseFloat(rating);
+      if (!isNaN(minRating)) {
+        conditions.push({ googleRating: { $gte: minRating } });
+      }
+    }
+
+    if (conditions.length > 0) {
+      query.$and = conditions;
     }
 
     // Execute query
     let businesses = await Business.find(query);
-
-    // Apply client-side/manual rating filter if specified (since rating is calculated or synced)
-    if (rating) {
-      const minRating = parseFloat(rating);
-      businesses = businesses.filter(b => b.googleRating >= minRating);
-    }
 
     // Update active vs expired subscriptions on the fly, inherit parent subscription for branches, and attach branchCount
     const now = new Date();
@@ -1357,6 +1379,7 @@ router.post('/', protect, async (req, res) => {
       coordinates,
       timings,
       customCategoryName,
+      requestedParentCategory,
       categoryStatus,
       offers,
       menuUrls,
@@ -1485,6 +1508,7 @@ router.post('/', protect, async (req, res) => {
       subscriptionStatus: business ? (business.subscriptionStatus || 'none') : 'none',
       isPremium: business ? (business.isPremium || false) : false,
       customCategoryName: customCategoryName || undefined,
+      requestedParentCategory: requestedParentCategory || undefined,
       categoryStatus: categoryStatus || undefined,
       offers: offers || [],
     };

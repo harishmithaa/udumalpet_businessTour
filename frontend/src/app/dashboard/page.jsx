@@ -9,6 +9,91 @@ import {
   FileEdit, BookOpen, Heart, Eye, Calendar, Clock, MapPin, LogOut, Facebook, Instagram, Phone, Users, Move, Utensils
 } from 'lucide-react';
 
+const parentCategoryMapping = {
+  'Shopping': [
+    'Grocery Stores', 'Supermarkets', 'Vegetable & Fruit Shops', 'Textile & Garments', 
+    'Footwear Shops', 'Jewelry Shops', 'Gift Shops', 'Stationery & Book Stores', 
+    'Furniture Shops', 'Hardware Stores', 'Paint Stores', 'Pet Shops', 'Cosmetic Stores'
+  ],
+  'Electronics': [
+    'Mobile Stores', 'Computer & Laptop Stores', 'Electronics & Appliances'
+  ],
+  'Food & Restaurants': [
+    'Restaurants', 'Hotels & Lodges', 'Bakeries', 'Cafes & Tea Shops', 
+    'Sweet Shops', 'Fast Food Centers', 'Catering Services', 'Juice & Ice Cream Parlors'
+  ],
+  'Health & Medical': [
+    'Hospitals', 'Clinics', 'Dental Clinics', 'Pharmacies', 
+    'Diagnostic Labs', 'Physiotherapy Centers', 'Veterinary Clinics'
+  ],
+  'Beauty & Wellness': [
+    'Beauty Parlours', 'Salons & Barbers', 'Spa & Wellness Centers'
+  ],
+  'Education': [
+    'Schools', 'Colleges', 'Tuition Centers', 'Coaching Institutes', 
+    'Computer Training Centers', 'Driving Schools'
+  ],
+  'Automotive': [
+    'Car Showrooms', 'Bike Showrooms', 'Automobile Service Centers', 
+    'Car Wash Services', 'Tyre Shops', 'Spare Parts Dealers', 'Petrol Bunks'
+  ],
+  'Home Services': [
+    'Electricians', 'Plumbers', 'Carpenters', 'AC Service & Repair', 
+    'Home Cleaning Services', 'Interior Designers', 'Pest Control Services'
+  ],
+  'Real Estate': [
+    'Real Estate Agencies'
+  ],
+  'Construction': [
+    'Builders & Contractors', 'Construction Material Suppliers', 'Cement & Steel Dealers', 
+    'Architects', 'Borewell Services'
+  ],
+  'Agriculture': [
+    'Farm Equipment Dealers', 'Coconut Traders', 'Fertilizer & Pesticide Shops', 
+    'Dairy Farms', 'Poultry Farms', 'Agricultural Consultants', 'Irrigation Equipment Suppliers'
+  ],
+  'Professional Services': [
+    'Chartered Accountants', 'Auditors', 'Advocates / Lawyers', 'Tax Consultants'
+  ],
+  'Finance & Insurance': [
+    'Insurance Agents', 'Financial Advisors'
+  ],
+  'Events & Entertainment': [
+    'Event Organizers', 'Wedding Planners', 'Photography & Videography', 
+    'Decoration Services', 'Sound & Lighting Services', 'Printing & Flex Services'
+  ],
+  'Travel & Hospitality': [
+    'Travel Agencies', 'Tours & Travels', 'Vehicle Rentals', 'Taxi Services', 'Bus Operators'
+  ],
+  'Sports & Fitness': [
+    'Gyms', 'Yoga Centers', 'Sports Academies', 'Sports Equipment Stores'
+  ],
+  'Others': [
+    'Temples', 'Marriage Halls', 'Community Halls', 'Trusts & NGOs', 'Others'
+  ]
+};
+
+const availableCategories = [
+  'Automotive',
+  'Beauty & Wellness',
+  'Education',
+  'Electronics',
+  'Food & Restaurants',
+  'Health & Medical',
+  'Home Services',
+  'Real Estate',
+  'Shopping',
+  'Manufacturing',
+  'Professional Services',
+  'Travel & Hospitality',
+  'Construction',
+  'Agriculture',
+  'Finance & Insurance',
+  'Events & Entertainment',
+  'Sports & Fitness',
+  'Others'
+];
+
 const getEventDefaultImage = (category) => {
   return 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&q=80';
 };
@@ -108,6 +193,7 @@ function DashboardContent() {
   const [showRenewModal, setShowRenewModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('Monthly');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const [monthlyPrice, setMonthlyPrice] = useState(99);
   const [yearlyPrice, setYearlyPrice] = useState(999);
   
@@ -381,10 +467,28 @@ function DashboardContent() {
   // Quick Edit states
   const [showEditModal, setShowEditModal] = useState(false);
   const [editTab, setEditTab] = useState('general'); // general | contact | specs | services
+  const [modalMarginTop, setModalMarginTop] = useState(20);
+
+  const openModalAtClickLevel = (e, modalSetter, estimatedHeight = 550) => {
+    if (e && e.currentTarget) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const buttonTop = rect.top;
+      const viewportHeight = window.innerHeight;
+      const maxMargin = Math.max(20, viewportHeight - estimatedHeight - 40);
+      const margin = Math.max(20, Math.min(buttonTop - 50, maxMargin));
+      setModalMarginTop(margin);
+    } else {
+      setModalMarginTop(20);
+    }
+    modalSetter(true);
+  };
   const [editFields, setEditFields] = useState({
     name: '',
     category: 'Services',
     type: '',
+    requestedParentCategory: '',
+    customCategoryName: '',
+    categoryStatus: 'Normal',
     description: '',
     highlights: '',
     phone: '',
@@ -797,6 +901,24 @@ function DashboardContent() {
     }
   }, [token, activeTab]);
 
+  useEffect(() => {
+    const businessTabs = [
+      'Dashboard', 
+      'Business Details', 
+      'Branches', 
+      'Menu', 
+      'Photos & Media', 
+      'Reviews & Reputation', 
+      'Leads & Enquiries', 
+      'Subscription & Billing', 
+      'Offers & Promotions', 
+      'Referral & Rewards'
+    ];
+    if (!loading && !business && businessTabs.includes(activeTab)) {
+      setActiveTab('My Business');
+    }
+  }, [business, activeTab, loading]);
+
   const markAllRead = async () => {
     if (!token) return;
     try {
@@ -891,6 +1013,9 @@ function DashboardContent() {
             name: userBiz.name || '',
             category: userBiz.category || 'Services',
             type: userBiz.type || '',
+            requestedParentCategory: userBiz.requestedParentCategory || '',
+            customCategoryName: userBiz.customCategoryName || '',
+            categoryStatus: userBiz.categoryStatus || 'Normal',
             description: userBiz.description || '',
             highlights: Array.isArray(userBiz.highlights) ? userBiz.highlights.join(', ') : '',
             phone: userBiz.phone || '',
@@ -985,6 +1110,9 @@ function DashboardContent() {
         name: mockBiz.name || '',
         category: mockBiz.category || 'Services',
         type: mockBiz.type || '',
+        requestedParentCategory: mockBiz.requestedParentCategory || '',
+        customCategoryName: mockBiz.customCategoryName || '',
+        categoryStatus: mockBiz.categoryStatus || 'Normal',
         description: mockBiz.description || '',
         highlights: Array.isArray(mockBiz.highlights) ? mockBiz.highlights.join(', ') : '',
         phone: mockBiz.phone || '',
@@ -1195,6 +1323,9 @@ function DashboardContent() {
       name: targetBiz.name || '',
       category: targetBiz.category || 'Services',
       type: targetBiz.type || '',
+      requestedParentCategory: targetBiz.requestedParentCategory || '',
+      customCategoryName: targetBiz.customCategoryName || '',
+      categoryStatus: targetBiz.categoryStatus || 'Normal',
       description: targetBiz.description || '',
       highlights: Array.isArray(targetBiz.highlights) ? targetBiz.highlights.join(', ') : '',
       phone: targetBiz.phone || '',
@@ -2841,6 +2972,9 @@ function DashboardContent() {
       name: editFields.name,
       category: editFields.category,
       type: editFields.type,
+      requestedParentCategory: editFields.requestedParentCategory,
+      customCategoryName: editFields.customCategoryName,
+      categoryStatus: editFields.categoryStatus,
       description: editFields.description,
       phone: editFields.phone,
       whatsapp: editFields.whatsapp,
@@ -2978,6 +3112,8 @@ function DashboardContent() {
     if (!business) return;
 
     const planToUse = planOverride || selectedPlan;
+    setPaymentLoading(true);
+    setError('');
 
     try {
       // 1. Create order on backend
@@ -2998,6 +3134,7 @@ function DashboardContent() {
       
       if (!orderData.success) {
         setError('Failed to initialize Razorpay checkout.');
+        setPaymentLoading(false);
         return;
       }
 
@@ -3029,6 +3166,7 @@ function DashboardContent() {
         } else {
           setError(verifyData.message || 'Points redemption failed.');
         }
+        setPaymentLoading(false);
         return;
       }
 
@@ -3053,33 +3191,40 @@ function DashboardContent() {
         description: `${planToUse} Premium Subscription`,
         order_id: orderData.orderId,
         handler: async function (response) {
-          // 2. Verify payment on backend
-          const verifyRes = await fetch('http://localhost:5000/api/payments/verify-payment', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              businessId: business._id,
-              planType: planToUse,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-              applyReferralPoints: applyReferralPoints,
-              redeemPointsAmount: Number(redeemPointsAmount || 0)
-            }),
-          });
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            setBusiness(verifyData.business);
-            setPaymentSuccess(true);
-            setShowRenewModal(false);
-            fetchReferralStats();
-            fetchMyPayments();
-            setTimeout(() => setPaymentSuccess(false), 4000);
-          } else {
-            setError('Payment verification failed.');
+          try {
+            // 2. Verify payment on backend
+            const verifyRes = await fetch('http://localhost:5000/api/payments/verify-payment', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                businessId: business._id,
+                planType: planToUse,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                applyReferralPoints: applyReferralPoints,
+                redeemPointsAmount: Number(redeemPointsAmount || 0)
+              }),
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              setBusiness(verifyData.business);
+              setPaymentSuccess(true);
+              setShowRenewModal(false);
+              fetchReferralStats();
+              fetchMyPayments();
+              setTimeout(() => setPaymentSuccess(false), 4000);
+            } else {
+              setError('Payment verification failed.');
+            }
+          } catch (verifyErr) {
+            console.error('Error verifying payment:', verifyErr);
+            setError('Payment verification server error.');
+          } finally {
+            setPaymentLoading(false);
           }
         },
         prefill: {
@@ -3090,6 +3235,11 @@ function DashboardContent() {
         theme: {
           color: '#027244', 
         },
+        modal: {
+          ondismiss: function() {
+            setPaymentLoading(false);
+          }
+        }
       };
 
       const rzp1 = new window.Razorpay(options);
@@ -3127,8 +3277,11 @@ function DashboardContent() {
         } else {
           setError(verifyData.message || 'Sandbox payment verification failed.');
         }
-      } catch (innerErr) {
-        setError('Sandbox payment verification connection failed.');
+      } catch (mockErr) {
+        console.error('Mock verification error:', mockErr);
+        setError('Sandbox verification failed.');
+      } finally {
+        setPaymentLoading(false);
       }
     }
   };
@@ -3143,6 +3296,16 @@ function DashboardContent() {
     navigator.clipboard.writeText('https://g.page/r/CfLKj12345ABC/review');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyProfileLink = () => {
+    if (!business || !business._id) {
+      alert("Business details not loaded yet.");
+      return;
+    }
+    const url = `${window.location.origin}/businesses/${business._id}`;
+    navigator.clipboard.writeText(url);
+    alert("Business profile link copied to clipboard!");
   };
 
   if (loading) {
@@ -3306,7 +3469,7 @@ function DashboardContent() {
               Get more visibility, leads and grow your business faster.
             </p>
             <button 
-              onClick={() => setShowRenewModal(true)}
+              onClick={(e) => openModalAtClickLevel(e, setShowRenewModal, 650)}
               className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-extrabold rounded-xl transition-all shadow-md shadow-emerald-950/20 cursor-pointer mt-1"
             >
               Upgrade Now
@@ -3566,7 +3729,7 @@ function DashboardContent() {
                 </div>
               </div>
               <button 
-                onClick={() => setShowRenewModal(true)} 
+                onClick={(e) => openModalAtClickLevel(e, setShowRenewModal, 650)} 
                 className="bg-white text-red-700 font-extrabold text-[10.5px] py-2 px-5 rounded-xl hover:bg-slate-100 transition-colors uppercase shrink-0 cursor-pointer shadow-sm"
               >
                 Renew Subscription
@@ -3964,11 +4127,10 @@ function DashboardContent() {
 
                     <div className="flex flex-col gap-2.5">
                       {[
-                        { label: 'Edit Business Details', icon: <Edit3 className="h-4 w-4 text-emerald-600" />, desc: 'Update your business information', action: () => setShowEditModal(true) },
-                        { label: 'Upload Photos', icon: <ImageIcon className="h-4 w-4 text-blue-600" />, desc: 'Add or update photos & videos', action: () => setShowUploadModal(true) },
-                        { label: 'Add Offer / Promotion', icon: <Sparkles className="h-4 w-4 text-amber-500" />, desc: 'Create new offers for customers', action: () => setShowEditModal(true) },
-                        { label: 'Share Your Profile', icon: <Globe className="h-4 w-4 text-purple-600" />, desc: 'Share your profile with customers', action: copyReviewLink },
-                        { label: 'Get Google Reviews', icon: <Star className="h-4 w-4 text-red-500 animate-pulse fill-current" />, desc: 'Request reviews from customers', action: copyReviewLink }
+                        { label: 'Edit Business Details', icon: <Edit3 className="h-4 w-4 text-emerald-600" />, desc: 'Update your business information', action: (e) => { setEditTab('general'); openModalAtClickLevel(e, setShowEditModal, 650); } },
+                        { label: 'Upload Photos', icon: <ImageIcon className="h-4 w-4 text-blue-600" />, desc: 'Add or update photos & videos', action: (e) => openModalAtClickLevel(e, setShowUploadModal, 400) },
+                        { label: 'Add Offer / Promotion', icon: <Sparkles className="h-4 w-4 text-amber-500" />, desc: 'Create new offers for customers', action: () => { setSearchParams({ tab: 'Offers & Promotions' }); setShowAddOffer(true); } },
+                        { label: 'Share Your Profile', icon: <Globe className="h-4 w-4 text-purple-600" />, desc: 'Share your profile with customers', action: copyProfileLink }
                       ].map((act, idx) => (
                         <button 
                           key={idx}
@@ -4044,7 +4206,7 @@ function DashboardContent() {
                     </div>
 
                     <button 
-                      onClick={() => setShowRenewModal(true)}
+                      onClick={(e) => openModalAtClickLevel(e, setShowRenewModal, 650)}
                       className="w-full mt-2 py-3 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl shadow-md transition-all shadow-emerald-700/10 cursor-pointer"
                     >
                       Manage Subscription
@@ -7315,7 +7477,7 @@ function DashboardContent() {
                   </div>
 
                   <button 
-                    onClick={() => setShowRenewModal(true)}
+                    onClick={(e) => openModalAtClickLevel(e, setShowRenewModal, 650)}
                     className="w-full py-3 bg-[#001c41] hover:bg-[#002d62] text-white text-xs font-extrabold rounded-xl transition-all shadow-sm cursor-pointer active:scale-98"
                   >
                     Redeem Available Credit
@@ -7563,7 +7725,7 @@ function DashboardContent() {
                     </p>
                   </div>
                   <button 
-                    onClick={() => setShowRenewModal(true)}
+                    onClick={(e) => openModalAtClickLevel(e, setShowRenewModal, 650)}
                     className="w-full py-3 bg-[#027244] hover:bg-[#005934] text-white text-xs font-extrabold rounded-xl transition-all shadow-sm cursor-pointer active:scale-98 text-center flex items-center justify-center gap-2"
                   >
                     <CreditCard className="h-4 w-4" />
@@ -7662,8 +7824,11 @@ function DashboardContent() {
 
       {/* MODAL 1: Subscription Renewal with Razorpay */}
       {(showRenewModal || isMandatorySubscription) && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="max-w-4xl w-full bg-white border border-slate-200 shadow-2xl rounded-[32px] p-6 md:p-8 flex flex-col gap-6 animate-scaleUp text-left max-h-[90vh] overflow-y-auto scrollbar-none relative">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div 
+            style={{ marginTop: `${modalMarginTop}px` }}
+            className="max-w-4xl w-full bg-white border border-slate-200 shadow-2xl rounded-[32px] p-6 md:p-8 flex flex-col gap-6 animate-scaleUp text-left max-h-[90vh] overflow-y-auto scrollbar-none relative"
+          >
             
             {/* Close button */}
             {!isMandatorySubscription && (
@@ -8020,8 +8185,11 @@ function DashboardContent() {
 
       {/* MODAL 2: Edit Profile Details Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full bg-white border border-slate-200 shadow-2xl rounded-[32px] p-6 md:p-8 flex flex-col gap-5 animate-scaleUp text-left max-h-[85vh] overflow-y-auto scrollbar-none font-sans">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div 
+            style={{ marginTop: `${modalMarginTop}px` }}
+            className="max-w-2xl w-full bg-white border border-slate-200 shadow-2xl rounded-[32px] p-6 md:p-8 flex flex-col gap-5 animate-scaleUp text-left max-h-[85vh] overflow-y-auto scrollbar-none font-sans"
+          >
             <div className="flex justify-between items-start border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-extrabold text-slate-800 text-base">Edit Business Details</h3>
@@ -8071,33 +8239,112 @@ function DashboardContent() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Main Category */}
                     <div className="flex flex-col gap-1">
-                      <label className="text-[9.5px] font-black text-slate-450 uppercase tracking-widest">Primary Category</label>
+                      <label className="text-[9.5px] font-black text-slate-450 uppercase tracking-widest">Main Category</label>
                       <select 
-                        value={editFields.category}
-                        onChange={(e) => setEditFields({ ...editFields, category: e.target.value })}
+                        value={availableCategories.includes(editFields.requestedParentCategory) ? editFields.requestedParentCategory : (editFields.requestedParentCategory ? 'Others' : '')}
+                        onChange={(e) => {
+                          const parentVal = e.target.value;
+                          let subVal = '';
+                          
+                          if (parentVal && parentVal !== 'Others') {
+                            const subs = parentCategoryMapping[parentVal] || [];
+                            subVal = subs[0] || '';
+                          } else if (parentVal === 'Others') {
+                            subVal = 'Others';
+                          }
+
+                          setEditFields({
+                            ...editFields,
+                            requestedParentCategory: parentVal === 'Others' ? '' : parentVal,
+                            category: subVal,
+                            customCategoryName: '',
+                            categoryStatus: parentVal === 'Others' ? 'Pending Review' : 'Normal'
+                          });
+                        }}
                         className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-100 bg-slate-50/20 cursor-pointer"
                       >
-                        <option value="Services">Services</option>
-                        <option value="Shops">Shops</option>
-                        <option value="Food & Drinks">Food & Drinks</option>
-                        <option value="Healthcare">Healthcare</option>
-                        <option value="Education">Education</option>
+                        <option value="">-- Choose Main Category --</option>
+                        {availableCategories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
                       </select>
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[9.5px] font-black text-slate-450 uppercase tracking-widest">Subcategory / Business Type</label>
-                      <input 
-                        type="text" 
-                        value={editFields.type}
-                        onChange={(e) => setEditFields({ ...editFields, type: e.target.value })}
-                        placeholder="e.g. Electrical Services"
-                        required
-                        className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-100 bg-slate-50/20"
-                      />
-                    </div>
+                    {/* Subcategory */}
+                    {editFields.requestedParentCategory !== '' && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9.5px] font-black text-slate-450 uppercase tracking-widest">Subcategory</label>
+                        <select 
+                          value={(parentCategoryMapping[availableCategories.includes(editFields.requestedParentCategory) ? editFields.requestedParentCategory : 'Others'] || []).includes(editFields.category) ? editFields.category : (editFields.category ? 'Others' : '')}
+                          onChange={(e) => {
+                            const subVal = e.target.value;
+                            const isCustomParent = !availableCategories.includes(editFields.requestedParentCategory);
+                            setEditFields({
+                              ...editFields,
+                              category: subVal,
+                              customCategoryName: '',
+                              categoryStatus: (subVal === 'Others' || isCustomParent) ? 'Pending Review' : 'Normal'
+                            });
+                          }}
+                          className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-100 bg-slate-50/20 cursor-pointer"
+                        >
+                          <option value="">-- Choose Subcategory --</option>
+                          {(parentCategoryMapping[availableCategories.includes(editFields.requestedParentCategory) ? editFields.requestedParentCategory : 'Others'] || []).map(sub => (
+                            <option key={sub} value={sub}>{sub}</option>
+                          ))}
+                          <option value="Others">Others (Custom Category)</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Custom Input Rows if selected "Others" */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Specify Custom Main Category */}
+                    {(editFields.requestedParentCategory === '' || !availableCategories.includes(editFields.requestedParentCategory)) && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9.5px] font-black text-slate-450 uppercase tracking-widest">Specify Custom Main Category</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Tourism Services"
+                          value={availableCategories.includes(editFields.requestedParentCategory) ? '' : editFields.requestedParentCategory}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditFields({
+                              ...editFields,
+                              requestedParentCategory: val,
+                              category: 'Others',
+                              categoryStatus: 'Pending Review'
+                            });
+                          }}
+                          className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-100 bg-slate-50/20"
+                        />
+                      </div>
+                    )}
+
+                    {/* Specify Custom Subcategory */}
+                    {editFields.category === 'Others' && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9.5px] font-black text-slate-450 uppercase tracking-widest">Specify Custom Subcategory</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. EV Charging Station"
+                          value={editFields.customCategoryName || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditFields({
+                              ...editFields,
+                              customCategoryName: val,
+                              categoryStatus: 'Pending Review'
+                            });
+                          }}
+                          className="w-full border border-slate-200/70 p-3 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#027244] focus:ring-1 focus:ring-emerald-100 bg-slate-50/20"
+                        />
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -8502,20 +8749,49 @@ function DashboardContent() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 mt-4 border-t border-slate-100 pt-4">
+              <div className="flex items-center justify-between mt-4 border-t border-slate-100 pt-4">
                 <button 
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="py-3 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-[11px] rounded-xl cursor-pointer"
+                  className="py-3 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-[11px] rounded-xl cursor-pointer uppercase tracking-wide transition-colors"
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit"
-                  className="py-3 px-7 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[11px] rounded-xl cursor-pointer shadow-md shadow-emerald-800/10"
-                >
-                  Save Business Details
-                </button>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={editTab === 'general'}
+                    onClick={() => {
+                      const tabs = ['general', 'about', 'contact', 'specs', 'services'];
+                      const idx = tabs.indexOf(editTab);
+                      if (idx > 0) setEditTab(tabs[idx - 1]);
+                    }}
+                    className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-[11px] rounded-xl cursor-pointer uppercase tracking-wide transition-all flex items-center gap-1"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" /> Back
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={editTab === 'services'}
+                    onClick={() => {
+                      const tabs = ['general', 'about', 'contact', 'specs', 'services'];
+                      const idx = tabs.indexOf(editTab);
+                      if (idx < tabs.length - 1) setEditTab(tabs[idx + 1]);
+                    }}
+                    className="py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed font-extrabold text-[11px] rounded-xl cursor-pointer uppercase tracking-wide transition-all flex items-center gap-1"
+                  >
+                    Next <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button 
+                    type="submit"
+                    className="py-3 px-6 bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[11px] rounded-xl cursor-pointer shadow-md shadow-emerald-800/10 uppercase tracking-wide transition-colors"
+                  >
+                    Save Details
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -8699,8 +8975,11 @@ function DashboardContent() {
 
       {/* MODAL 3: Photos Gallery & Upload Modal */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="max-w-lg w-full bg-white border border-slate-200 shadow-2xl rounded-3xl p-6 flex flex-col gap-5 animate-scaleUp text-left">
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div 
+            style={{ marginTop: `${modalMarginTop}px` }}
+            className="max-w-lg w-full bg-white border border-slate-200 shadow-2xl rounded-3xl p-6 flex flex-col gap-5 animate-scaleUp text-left"
+          >
             <div className="flex justify-between items-start border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-extrabold text-slate-800 text-base">Upload Photos & Media</h3>

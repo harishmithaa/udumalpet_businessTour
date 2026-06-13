@@ -61,6 +61,7 @@ const businessSchema = Joi.object({
   galleryImages: Joi.array().items(Joi.string().uri()).optional(),
   openingHours: Joi.object().optional(),
   customCategoryName: Joi.string().trim().allow('').optional(),
+  requestedParentCategory: Joi.string().trim().allow('').optional(),
   categoryStatus: Joi.string().trim().valid('Normal', 'Pending Review').optional()
 });
 

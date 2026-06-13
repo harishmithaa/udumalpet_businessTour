@@ -87,3 +87,5 @@ backend/test_analytics.js
 backend/test_superadmin.js
 backend/seed_active_subscriptions.js
 backend/check_blogs.js
+backend/scratch/
+

@@ -28,7 +28,7 @@ export default function Login() {
 
     if (fromParam === 'events') {
       return (
-        <div className="lg:w-[45%] bg-[#F0FDF4]/80 text-[#001c41] p-10 flex flex-col justify-between relative border-r border-slate-100">
+        <div className="order-2 lg:order-1 lg:w-[45%] bg-[#F0FDF4]/80 text-[#001c41] p-10 flex flex-col justify-between relative border-b lg:border-b-0 lg:border-r border-slate-100">
           <div className="flex flex-col gap-5">
             <h2 className="text-3xl font-black tracking-tight text-[#001c41]">Welcome Back!</h2>
             <p className="text-slate-505 text-sm font-semibold max-w-xs leading-relaxed">
@@ -125,7 +125,7 @@ export default function Login() {
 
     if (fromParam === 'blogs') {
       return (
-        <div className="lg:w-[45%] bg-[#F0FDF4]/80 text-[#001c41] p-10 flex flex-col justify-between relative border-r border-slate-100">
+        <div className="order-2 lg:order-1 lg:w-[45%] bg-[#F0FDF4]/80 text-[#001c41] p-10 flex flex-col justify-between relative border-b lg:border-b-0 lg:border-r border-slate-100">
           <div className="flex flex-col gap-5">
             <h2 className="text-3xl font-black tracking-tight text-[#001c41]">Welcome Back!</h2>
             <p className="text-slate-505 text-sm font-semibold max-w-xs leading-relaxed">
@@ -211,7 +211,7 @@ export default function Login() {
     }
 
     return (
-      <div className="lg:w-[45%] bg-[#F0FDF4]/80 text-[#001c41] p-10 flex flex-col justify-between relative border-r border-slate-100">
+      <div className="order-2 lg:order-1 lg:w-[45%] bg-[#F0FDF4]/80 text-[#001c41] p-10 flex flex-col justify-between relative border-b lg:border-b-0 lg:border-r border-slate-100">
         <div className="flex flex-col gap-5">
           <h2 className="text-3xl font-black tracking-tight text-[#001c41]">Welcome Back!</h2>
           <p className="text-slate-505 text-sm font-semibold max-w-xs leading-relaxed">
@@ -487,7 +487,7 @@ export default function Login() {
         {renderSidebar()}
 
         {/* Right Side Panel: Form Card Panel */}
-        <div className="lg:w-[55%] p-8 md:p-12 flex flex-col justify-center bg-white font-sans">
+        <div className="order-1 lg:order-2 lg:w-[55%] p-8 md:p-12 flex flex-col justify-center bg-white font-sans">
           <div className="w-full flex flex-col gap-6 max-w-sm mx-auto">
             
             {/* Header text */}

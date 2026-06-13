@@ -59,6 +59,16 @@ export default function AdminDashboard() {
   const [reportsData, setReportsData] = useState({});
   const [pendingCategories, setPendingCategories] = useState([]);
   const [presetCategories, setPresetCategories] = useState([]);
+  const [resolutionActionMap, setResolutionActionMap] = useState({});
+  const [resolutionTargetCatMap, setResolutionTargetCatMap] = useState({});
+  const [resolutionCustomSubcatMap, setResolutionCustomSubcatMap] = useState({});
+  const [resolutionParentCatMap, setResolutionParentCatMap] = useState({});
+
+  // Preset Category creation state variables
+  const [presetTypeMode, setPresetTypeMode] = useState('main'); // 'main' or 'sub'
+  const [presetNewMainName, setPresetNewMainName] = useState('');
+  const [presetNewSubName, setPresetNewSubName] = useState('');
+  const [presetSelectedMain, setPresetSelectedMain] = useState('');
 
   // Slide-over Modal State
   const [selectedBiz, setSelectedBiz] = useState(null);
@@ -3142,8 +3152,8 @@ export default function AdminDashboard() {
                         ) : (
                           <div className="flex flex-col gap-4">
                             {pendingCategories.map(biz => (
-                              <div key={biz._id} className="border border-slate-200 rounded-2xl p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
-                                <div className="flex flex-col text-left">
+                              <div key={biz._id} className="border border-slate-200 rounded-2xl p-5 flex flex-col justify-between gap-4 bg-slate-50/50 text-left">
+                                <div className="flex flex-col text-left font-sans">
                                   <div className="flex items-center gap-2">
                                     <span className="bg-amber-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded shadow-sm">Custom category request</span>
                                     <span className="text-[9px] font-extrabold text-slate-400">Biz Status: {biz.status}</span>
@@ -3151,57 +3161,169 @@ export default function AdminDashboard() {
                                   <span className="font-black text-sm mt-2 text-[#001c41]">"{biz.customCategoryName}"</span>
                                   <span className="text-[10.5px] text-slate-400 font-semibold mt-1">Requested by business: <b className="text-slate-555">{biz.name}</b> ({biz.ownerId?.fullName || 'Owner'})</span>
                                 </div>
-                                <div className="flex flex-wrap gap-2 items-center">
-                                  <select
-                                    onChange={(e) => {
-                                      const catId = e.target.value;
-                                      if (!catId) return;
-                                      const matched = presetCategories.find(c => c._id === catId);
-                                      if (matched) {
-                                        const confirmed = confirm(`Assign existing category "${matched.categoryName}" for "${biz.customCategoryName}"?`);
-                                        if (confirmed) {
-                                          resolveCategoryRequest(biz._id, 'assign', matched._id);
-                                        }
-                                      }
-                                      e.target.value = "";
-                                    }}
-                                    className="py-1.5 px-3 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 rounded-xl text-[10px] font-extrabold cursor-pointer transition-colors outline-none font-sans"
-                                  >
-                                    <option value="">-- Assign Existing Category --</option>
-                                    {presetCategories.map(c => (
-                                      <option key={c._id} value={c._id}>{c.categoryName}</option>
-                                    ))}
-                                  </select>
-
-                                  <select
-                                    id={`parent-select-2-${biz._id}`}
-                                    className="py-1.5 px-3 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 rounded-xl text-[10px] font-extrabold cursor-pointer transition-colors outline-none font-sans"
-                                  >
-                                    <option value="None">-- Separate Main Category --</option>
+                                
+                                <div className="flex flex-col gap-4 mt-2 bg-slate-100/50 p-4 rounded-2xl w-full font-sans">
+                                  <div className="flex gap-2 border-b border-slate-200 pb-2.5">
                                     {[
-                                      'Automotive', 'Beauty & Wellness', 'Education', 'Electronics',
-                                      'Food & Restaurants', 'Health & Medical', 'Home Services', 'Real Estate',
-                                      'Shopping', 'Professional Services', 'Travel & Hospitality', 'Construction',
-                                      'Agriculture', 'Finance & Insurance', 'Events & Entertainment', 'Sports & Fitness',
-                                      'Others'
-                                    ].map(c => (
-                                      <option key={c} value={c}>Parent: {c}</option>
-                                    ))}
-                                  </select>
+                                      { id: 'assign', label: 'Map to Existing' },
+                                      { id: 'create_main', label: 'Add as New Main Category' },
+                                      { id: 'create_sub', label: 'Map to Existing Main & Add Sub' }
+                                    ].map(opt => {
+                                      const isSelected = (resolutionActionMap[biz._id] || 'assign') === opt.id;
+                                      return (
+                                        <button
+                                          key={opt.id}
+                                          type="button"
+                                          onClick={() => setResolutionActionMap(prev => ({ ...prev, [biz._id]: opt.id }))}
+                                          className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-wide border transition-all cursor-pointer ${
+                                            isSelected 
+                                              ? 'bg-[#027244] border-[#027244] text-white shadow-xs' 
+                                              : 'border-slate-200 bg-white text-slate-550 hover:bg-slate-200/40'
+                                          }`}
+                                        >
+                                          {opt.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
 
-                                  <button
-                                    onClick={() => {
-                                      const parentVal = document.getElementById(`parent-select-2-${biz._id}`).value;
-                                      const parentText = parentVal === 'None' ? 'a Separate Main Category' : `a subcategory under "${parentVal}"`;
-                                      const isCreate = confirm(`Create genuinely new category "${biz.customCategoryName}" as ${parentText}? It will auto-resolve the business mapping.`);
-                                      if (isCreate) {
-                                        resolveCategoryRequest(biz._id, 'create', null, biz.customCategoryName, null, parentVal);
-                                      }
-                                    }}
-                                    className="py-1.5 px-3 bg-[#027244] hover:bg-[#005934] text-white text-[10px] font-extrabold rounded-xl transition-colors cursor-pointer shadow-sm shadow-emerald-800/10 font-sans"
-                                  >
-                                    Create & Map
-                                  </button>
+                                  <div className="flex flex-wrap items-center gap-3 w-full">
+                                    {/* Option 1: Map to Existing */}
+                                    {(resolutionActionMap[biz._id] || 'assign') === 'assign' && (
+                                      <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                                        <select
+                                          value={resolutionTargetCatMap[biz._id] || ''}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setResolutionTargetCatMap(prev => ({ ...prev, [biz._id]: val }));
+                                          }}
+                                          className="py-1.5 px-3 border border-slate-200 bg-white text-slate-705 hover:bg-slate-50 rounded-xl text-[10.5px] font-extrabold cursor-pointer transition-colors outline-none w-full sm:w-64"
+                                        >
+                                          <option value="">-- Select Existing Category --</option>
+                                          {presetCategories.map(c => (
+                                            <option key={c._id} value={c._id}>{c.categoryName} ({c.parentCategory || 'Main'})</option>
+                                          ))}
+                                        </select>
+                                        <button
+                                          onClick={() => {
+                                            const catId = resolutionTargetCatMap[biz._id];
+                                            if (!catId) {
+                                              alert("Please select a target category.");
+                                              return;
+                                            }
+                                            const matched = presetCategories.find(c => c._id === catId);
+                                            if (matched) {
+                                              const confirmed = confirm(`Map custom request to existing category "${matched.categoryName}"?`);
+                                              if (confirmed) {
+                                                resolveCategoryRequest(biz._id, 'assign', matched._id);
+                                              }
+                                            }
+                                          }}
+                                          className="py-1.5 px-4 bg-[#027244] hover:bg-[#005934] text-white text-[10px] font-extrabold rounded-xl transition-colors cursor-pointer shadow-sm shadow-emerald-800/10"
+                                        >
+                                          Map to Existing
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {/* Option 2: Add as New Main Category */}
+                                    {(resolutionActionMap[biz._id] || 'assign') === 'create_main' && (
+                                      <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 w-full">
+                                        <div className="flex-1 flex flex-col text-left gap-1">
+                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">New Main Category Name</span>
+                                          <input
+                                            type="text"
+                                            disabled
+                                            value={biz.customCategoryName}
+                                            className="py-2 px-3 border border-slate-200 bg-slate-100 rounded-xl text-xs font-extrabold outline-none w-full text-slate-400"
+                                          />
+                                        </div>
+                                        <div className="flex-1 flex flex-col text-left gap-1">
+                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Specify Required Subcategory</span>
+                                          <input
+                                            type="text"
+                                            required
+                                            placeholder="e.g. General, Services, custom sub..."
+                                            value={resolutionCustomSubcatMap[biz._id] || ''}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setResolutionCustomSubcatMap(prev => ({ ...prev, [biz._id]: val }));
+                                            }}
+                                            className="py-2 px-3 border border-slate-200 bg-white rounded-xl text-xs font-semibold outline-none w-full text-slate-705"
+                                          />
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            const subcatName = resolutionCustomSubcatMap[biz._id]?.trim();
+                                            if (!subcatName) {
+                                              alert("Please specify a subcategory name.");
+                                              return;
+                                            }
+                                            const confirmed = confirm(`Create new Main Category "${biz.customCategoryName}" with Subcategory "${subcatName}"?`);
+                                            if (confirmed) {
+                                              resolveCategoryRequest(biz._id, 'create', null, subcatName, null, biz.customCategoryName);
+                                            }
+                                          }}
+                                          className="py-2.5 px-4 bg-[#027244] hover:bg-[#005934] text-white text-[10.5px] font-extrabold rounded-xl transition-colors cursor-pointer shadow-sm shadow-emerald-800/10 shrink-0 self-end"
+                                        >
+                                          Create Main Category
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {/* Option 3: Map to Already Existing Main but Add New Subcategory */}
+                                    {(resolutionActionMap[biz._id] || 'assign') === 'create_sub' && (
+                                      <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 w-full">
+                                        <div className="flex-1 flex flex-col text-left gap-1">
+                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Select Existing Main Category</span>
+                                          <select
+                                            value={resolutionParentCatMap[biz._id] || ''}
+                                            onChange={(e) => {
+                                              const val = e.target.value;
+                                              setResolutionParentCatMap(prev => ({ ...prev, [biz._id]: val }));
+                                            }}
+                                            className="py-2 px-3 border border-slate-200 bg-white text-slate-705 hover:bg-slate-50 rounded-xl text-xs font-extrabold cursor-pointer transition-colors outline-none w-full"
+                                          >
+                                            <option value="">-- Select Main Category --</option>
+                                            {[
+                                              'Automotive', 'Beauty & Wellness', 'Education', 'Electronics',
+                                              'Food & Restaurants', 'Health & Medical', 'Home Services', 'Real Estate',
+                                              'Shopping', 'Professional Services', 'Travel & Hospitality', 'Construction',
+                                              'Agriculture', 'Finance & Insurance', 'Events & Entertainment', 'Sports & Fitness',
+                                              'Others'
+                                            ].map(c => (
+                                              <option key={c} value={c}>{c}</option>
+                                            ))}
+                                          </select>
+                                        </div>
+                                        <div className="flex-1 flex flex-col text-left gap-1">
+                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">New Subcategory Name</span>
+                                          <input
+                                            type="text"
+                                            disabled
+                                            value={biz.customCategoryName}
+                                            className="py-2 px-3 border border-slate-200 bg-slate-100 rounded-xl text-xs font-extrabold outline-none w-full text-slate-400"
+                                          />
+                                        </div>
+                                        <button
+                                          onClick={() => {
+                                            const parentVal = resolutionParentCatMap[biz._id];
+                                            if (!parentVal) {
+                                              alert("Please select a parent category.");
+                                              return;
+                                            }
+                                            const confirmed = confirm(`Add "${biz.customCategoryName}" as a new Subcategory under existing Main category "${parentVal}"?`);
+                                            if (confirmed) {
+                                              resolveCategoryRequest(biz._id, 'create', null, biz.customCategoryName, null, parentVal);
+                                            }
+                                          }}
+                                          className="py-2.5 px-4 bg-[#027244] hover:bg-[#005934] text-white text-[10.5px] font-extrabold rounded-xl transition-colors cursor-pointer shadow-sm shadow-emerald-800/10 shrink-0 self-end"
+                                        >
+                                          Create Subcategory
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -3232,7 +3354,8 @@ export default function AdminDashboard() {
                                   </div>
                                   <div className="flex flex-col text-left min-w-0">
                                     <span className="font-extrabold text-xs truncate text-slate-800">{cat.categoryName}</span>
-                                    <span className="text-[9px] text-slate-400 mt-1 font-semibold truncate leading-none">Slug: {cat.slug || cat.categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}</span>
+                                    <span className="text-[9.5px] text-slate-450 font-bold mt-1 leading-none">Main: {cat.parentCategory || 'Others'}</span>
+                                    <span className="text-[9px] text-slate-400 mt-1.5 font-semibold truncate leading-none">Slug: {cat.slug || cat.categoryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}</span>
                                     <span className="text-[9.5px] text-emerald-650 font-black mt-2 leading-none">{count} active businesses</span>
                                   </div>
                                 </div>
@@ -3278,18 +3401,60 @@ export default function AdminDashboard() {
                           <span className="text-[10px] text-slate-400 font-semibold leading-relaxed">Add a new standard business classification instantly. Includes Levenshtein duplicate prevention warning.</span>
                         </div>
 
+                        {/* Interactive Pill Tabs */}
+                        <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPresetTypeMode('main')}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer text-center ${
+                              presetTypeMode === 'main'
+                                ? 'bg-[#027244] text-white shadow-xs'
+                                : 'text-slate-400 hover:text-slate-500 bg-transparent'
+                            }`}
+                          >
+                            Add Main Category
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPresetTypeMode('sub')}
+                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer text-center ${
+                              presetTypeMode === 'sub'
+                                ? 'bg-[#027244] text-white shadow-xs'
+                                : 'text-slate-400 hover:text-slate-500 bg-transparent'
+                            }`}
+                          >
+                            Add Subcategory
+                          </button>
+                        </div>
+
                         <form
                           onSubmit={async (e) => {
                             e.preventDefault();
-                            const targetName = e.target.categoryName.value.trim();
-                            if (!targetName) return;
+                            let targetCategoryName = '';
+                            let parentCategoryName = '';
+
+                            if (presetTypeMode === 'main') {
+                              parentCategoryName = presetNewMainName.trim();
+                              targetCategoryName = presetNewSubName.trim();
+                              if (!parentCategoryName || !targetCategoryName) {
+                                alert("Please fill in both Main Category Name and Subcategory Name.");
+                                return;
+                              }
+                            } else {
+                              parentCategoryName = presetSelectedMain;
+                              targetCategoryName = presetNewSubName.trim();
+                              if (!parentCategoryName || !targetCategoryName) {
+                                alert("Please select a Main Category and specify the Subcategory Name.");
+                                return;
+                              }
+                            }
 
                             try {
-                              // Duplicate prevention fuzzy check
+                              // Duplicate prevention fuzzy check on the subcategory
                               const dupRes = await fetch('http://localhost:5000/api/categories/check-duplicate', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ categoryName: targetName })
+                                body: JSON.stringify({ categoryName: targetCategoryName })
                               });
                               const dupData = await dupRes.json();
                               if (dupData.success && dupData.isDuplicate) {
@@ -3304,12 +3469,22 @@ export default function AdminDashboard() {
                                   'Content-Type': 'application/json',
                                   'Authorization': `Bearer ${localStorage.getItem('ubt_token')}`
                                 },
-                                body: JSON.stringify({ categoryName: targetName, description: 'Preset category created manually' })
+                                body: JSON.stringify({
+                                  categoryName: targetCategoryName,
+                                  parentCategory: parentCategoryName,
+                                  description: 'Preset category created manually'
+                                })
                               });
                               if (createRes.ok) {
-                                alert(`Category "${targetName}" created successfully!`);
-                                e.target.reset();
+                                alert(`Category with Subcategory "${targetCategoryName}" under Main Category "${parentCategoryName}" created successfully!`);
+                                // Reset form values
+                                setPresetNewMainName('');
+                                setPresetNewSubName('');
+                                setPresetSelectedMain('');
                                 loadPlatformRealData();
+                              } else {
+                                const errData = await createRes.json();
+                                alert(errData.message || 'Failed to create category.');
                               }
                             } catch (err) {
                               console.error(err);
@@ -3317,16 +3492,82 @@ export default function AdminDashboard() {
                           }}
                           className="flex flex-col gap-4 text-left"
                         >
-                          <div className="flex flex-col gap-1.5">
-                            <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest leading-none">Category Name *</label>
-                            <input
-                              type="text"
-                              name="categoryName"
-                              required
-                              placeholder="e.g. Solar Solutions"
-                              className="w-full border border-slate-200 px-3 py-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244] bg-slate-50/50 text-[#001c41]"
-                            />
-                          </div>
+                          {presetTypeMode === 'main' ? (
+                            <>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest leading-none">New Main Category Name *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={presetNewMainName}
+                                  onChange={(e) => setPresetNewMainName(e.target.value)}
+                                  placeholder="e.g. Entertainment"
+                                  className="w-full border border-slate-200 px-3 py-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244] bg-slate-50/50 text-[#001c41]"
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest leading-none">Initial Subcategory Name *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={presetNewSubName}
+                                  onChange={(e) => setPresetNewSubName(e.target.value)}
+                                  placeholder="e.g. Cinema (or General)"
+                                  className="w-full border border-slate-200 px-3 py-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244] bg-slate-50/50 text-[#001c41]"
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest leading-none">Select Main Category *</label>
+                                <select
+                                  required
+                                  value={presetSelectedMain}
+                                  onChange={(e) => setPresetSelectedMain(e.target.value)}
+                                  className="w-full border border-slate-200 px-3 py-2.5 rounded-xl text-xs font-bold focus:outline-none focus:border-[#027244] cursor-pointer bg-slate-50/50 text-[#001c41] hover:bg-slate-50"
+                                >
+                                  <option value="">-- Choose Main Category --</option>
+                                  {Array.from(
+                                    new Set([
+                                      'Automotive',
+                                      'Beauty & Wellness',
+                                      'Education',
+                                      'Electronics',
+                                      'Food & Restaurants',
+                                      'Health & Medical',
+                                      'Home Services',
+                                      'Real Estate',
+                                      'Shopping',
+                                      'Manufacturing',
+                                      'Professional Services',
+                                      'Travel & Hospitality',
+                                      'Construction',
+                                      'Agriculture',
+                                      'Finance & Insurance',
+                                      'Events & Entertainment',
+                                      'Sports & Fitness',
+                                      'Others',
+                                      ...presetCategories.map(cat => cat.parentCategory).filter(Boolean)
+                                    ])
+                                  ).sort().map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label className="text-[9.5px] font-black text-slate-500 uppercase tracking-widest leading-none">New Subcategory Name *</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={presetNewSubName}
+                                  onChange={(e) => setPresetNewSubName(e.target.value)}
+                                  placeholder="e.g. Solar Solutions"
+                                  className="w-full border border-slate-200 px-3 py-2.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-[#027244] bg-slate-50/50 text-[#001c41]"
+                                />
+                              </div>
+                            </>
+                          )}
 
                           <button
                             type="submit"

@@ -20,6 +20,103 @@ const branchSteps = [
   { id: 4, name: 'Photos & Media' },
 ];
 
+const parentCategoryMapping = {
+  'Shopping': [
+    'Grocery Stores', 'Supermarkets', 'Vegetable & Fruit Shops', 'Textile & Garments', 
+    'Footwear Shops', 'Jewelry Shops', 'Gift Shops', 'Stationery & Book Stores', 
+    'Furniture Shops', 'Hardware Stores', 'Paint Stores', 'Pet Shops', 'Cosmetic Stores'
+  ],
+  'Electronics': [
+    'Mobile Stores', 'Computer & Laptop Stores', 'Electronics & Appliances'
+  ],
+  'Food & Restaurants': [
+    'Restaurants', 'Hotels & Lodges', 'Bakeries', 'Cafes & Tea Shops', 
+    'Sweet Shops', 'Fast Food Centers', 'Catering Services', 'Juice & Ice Cream Parlors'
+  ],
+  'Health & Medical': [
+    'Hospitals', 'Clinics', 'Dental Clinics', 'Pharmacies', 
+    'Diagnostic Labs', 'Physiotherapy Centers', 'Veterinary Clinics'
+  ],
+  'Beauty & Wellness': [
+    'Beauty Parlours', 'Salons & Barbers', 'Spa & Wellness Centers'
+  ],
+  'Education': [
+    'Schools', 'Colleges', 'Tuition Centers', 'Coaching Institutes', 
+    'Computer Training Centers', 'Driving Schools'
+  ],
+  'Automotive': [
+    'Car Showrooms', 'Bike Showrooms', 'Automobile Service Centers', 
+    'Car Wash Services', 'Tyre Shops', 'Spare Parts Dealers', 'Petrol Bunks'
+  ],
+  'Home Services': [
+    'Electricians', 'Plumbers', 'Carpenters', 'AC Service & Repair', 
+    'Home Cleaning Services', 'Interior Designers', 'Pest Control Services'
+  ],
+  'Real Estate': [
+    'Real Estate Agencies'
+  ],
+  'Construction': [
+    'Builders & Contractors', 'Construction Material Suppliers', 'Cement & Steel Dealers', 
+    'Architects', 'Borewell Services'
+  ],
+  'Agriculture': [
+    'Farm Equipment Dealers', 'Coconut Traders', 'Fertilizer & Pesticide Shops', 
+    'Dairy Farms', 'Poultry Farms', 'Agricultural Consultants', 'Irrigation Equipment Suppliers'
+  ],
+  'Professional Services': [
+    'Chartered Accountants', 'Auditors', 'Advocates / Lawyers', 'Tax Consultants'
+  ],
+  'Finance & Insurance': [
+    'Insurance Agents', 'Financial Advisors'
+  ],
+  'Events & Entertainment': [
+    'Event Organizers', 'Wedding Planners', 'Photography & Videography', 
+    'Decoration Services', 'Sound & Lighting Services', 'Printing & Flex Services'
+  ],
+  'Travel & Hospitality': [
+    'Travel Agencies', 'Tours & Travels', 'Vehicle Rentals', 'Taxi Services', 'Bus Operators'
+  ],
+  'Sports & Fitness': [
+    'Gyms', 'Yoga Centers', 'Sports Academies', 'Sports Equipment Stores'
+  ],
+  'Others': [
+    'Temples', 'Marriage Halls', 'Community Halls', 'Trusts & NGOs', 'Others'
+  ]
+};
+
+const availableCategories = [
+  'Automotive',
+  'Beauty & Wellness',
+  'Education',
+  'Electronics',
+  'Food & Restaurants',
+  'Health & Medical',
+  'Home Services',
+  'Real Estate',
+  'Shopping',
+  'Manufacturing',
+  'Professional Services',
+  'Travel & Hospitality',
+  'Construction',
+  'Agriculture',
+  'Finance & Insurance',
+  'Events & Entertainment',
+  'Sports & Fitness',
+  'Others'
+];
+
+const availableLocalities = [
+  'Gandhi Nagar', 
+  'Pollachi Road', 
+  'Palladam Road', 
+  'Coimbatore Road', 
+  'Madathukulam Road',
+  'Dharapuram Road',
+  'Palani Road',
+  'Dhali Road',
+  'Kaniyur Road'
+];
+
 const isFoodRelated = (category, customCategoryName) => {
   if (!category) return false;
   const foodCategories = [
@@ -101,6 +198,7 @@ export default function AddBusiness() {
     name: '',
     category: 'Grocery Stores',
     customCategoryName: '',
+    requestedParentCategory: 'Shopping',
     categoryStatus: 'Normal',
     type: 'Individual / Sole Proprietor',
     description: '',
@@ -141,6 +239,30 @@ export default function AddBusiness() {
     },
     branches: [],
   });
+
+  const [isCustomLocality, setIsCustomLocality] = useState(false);
+  const [isBranchCustomLocality, setIsBranchCustomLocality] = useState(false);
+
+  // Sync locality type classification based on value borders
+  useEffect(() => {
+    if (formData.locality) {
+      if (!availableLocalities.includes(formData.locality)) {
+        setIsCustomLocality(true);
+      } else {
+        setIsCustomLocality(false);
+      }
+    }
+  }, [formData.locality]);
+
+  useEffect(() => {
+    if (branchForm.locality) {
+      if (!availableLocalities.includes(branchForm.locality)) {
+        setIsBranchCustomLocality(true);
+      } else {
+        setIsBranchCustomLocality(false);
+      }
+    }
+  }, [branchForm.locality]);
 
   const [isPincodeVerified, setIsPincodeVerified] = useState(false);
   const [eligibilityMethod, setEligibilityMethod] = useState('google'); // 'google' | 'pincode'
@@ -1049,8 +1171,16 @@ export default function AddBusiness() {
         setError('You must select and validate a valid Udumalpet area pincode to proceed.');
         return false;
       }
+      if (!formData.requestedParentCategory || !formData.requestedParentCategory.trim()) {
+        setError('Please select a main category.');
+        return false;
+      }
+      if (!formData.category || !formData.category.trim()) {
+        setError('Please select a subcategory.');
+        return false;
+      }
       if (formData.category === 'Others' && (!formData.customCategoryName || !formData.customCategoryName.trim())) {
-        setError('Please enter your custom business category name.');
+        setError('Please specify your custom subcategory name.');
         return false;
       }
     } else if (currentStep === 3) {
@@ -1937,131 +2067,130 @@ export default function AddBusiness() {
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1.5 relative">
-                      <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Business Category <span className="text-red-500">*</span></label>
-                      
-                      <div className="relative">
+                    {/* Main Category Selector */}
+                    <div className="flex flex-col gap-1.5 text-left">
+                      <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Main Category <span className="text-red-500">*</span></label>
+                      <select
+                        name="requestedParentCategory"
+                        value={availableCategories.includes(formData.requestedParentCategory) ? formData.requestedParentCategory : (formData.requestedParentCategory ? 'Others' : '')}
+                        onChange={(e) => {
+                          const parentVal = e.target.value;
+                          let subVal = '';
+                          
+                          if (parentVal && parentVal !== 'Others') {
+                            const subs = parentCategoryMapping[parentVal] || [];
+                            subVal = subs[0] || '';
+                          } else if (parentVal === 'Others') {
+                            subVal = 'Others';
+                          }
+
+                          const updated = {
+                            ...formData,
+                            requestedParentCategory: parentVal === 'Others' ? '' : parentVal,
+                            category: subVal,
+                            customCategoryName: parentVal === 'Others' ? '' : '',
+                            categoryStatus: parentVal === 'Others' ? 'Pending Review' : 'Normal'
+                          };
+                          setFormData(updated);
+                          saveDraft(updated);
+                        }}
+                        className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 cursor-pointer"
+                      >
+                        <option value="">-- Choose Main Category --</option>
+                        {availableCategories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Custom Main Category Input */}
+                    {(formData.requestedParentCategory === '' || !availableCategories.includes(formData.requestedParentCategory)) && 
+                     (formData.requestedParentCategory !== undefined) && (
+                      <div className="flex flex-col gap-1.5 text-left animate-fadeIn">
+                        <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Specify Custom Main Category <span className="text-red-500">*</span></label>
                         <input
                           type="text"
-                          value={categorySearchQuery}
-                          onFocus={() => setShowCategoryDropdown(true)}
-                          onChange={(e) => handleCategorySearchChange(e.target.value)}
-                          placeholder="Search or type a new custom category..."
-                          className="w-full py-2.5 pl-3.5 pr-10 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                          placeholder="e.g. Tourism Services, Logistics"
+                          value={availableCategories.includes(formData.requestedParentCategory) ? '' : formData.requestedParentCategory}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = {
+                              ...formData,
+                              requestedParentCategory: val,
+                              category: 'Others',
+                              categoryStatus: 'Pending Review'
+                            };
+                            setFormData(updated);
+                            saveDraft(updated);
+                          }}
+                          className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
                         />
-                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none text-slate-400">
-                          <Search className="h-4 w-4" />
+                      </div>
+                    )}
+
+                    {/* Subcategory Selector */}
+                    {formData.requestedParentCategory !== '' && (
+                      <div className="flex flex-col gap-1.5 text-left animate-fadeIn">
+                        <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Subcategory <span className="text-red-500">*</span></label>
+                        <select
+                          name="category"
+                          value={(parentCategoryMapping[availableCategories.includes(formData.requestedParentCategory) ? formData.requestedParentCategory : 'Others'] || []).includes(formData.category) ? formData.category : (formData.category ? 'Others' : '')}
+                          onChange={(e) => {
+                            const subVal = e.target.value;
+                            const isCustomParent = !availableCategories.includes(formData.requestedParentCategory);
+                            const updated = {
+                              ...formData,
+                              category: subVal,
+                              customCategoryName: subVal === 'Others' ? '' : '',
+                              categoryStatus: (subVal === 'Others' || isCustomParent) ? 'Pending Review' : 'Normal'
+                            };
+                            setFormData(updated);
+                            saveDraft(updated);
+                          }}
+                          className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 cursor-pointer"
+                        >
+                          <option value="">-- Choose Subcategory --</option>
+                          {(parentCategoryMapping[availableCategories.includes(formData.requestedParentCategory) ? formData.requestedParentCategory : 'Others'] || []).map(sub => (
+                            <option key={sub} value={sub}>{sub}</option>
+                          ))}
+                          <option value="Others">Others (Custom Category)</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Custom Subcategory Input */}
+                    {formData.category === 'Others' && (
+                      <div className="flex flex-col gap-1.5 text-left animate-fadeIn">
+                        <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Specify Custom Subcategory <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          placeholder="e.g. EV Charging Station, Solar Solutions"
+                          value={formData.customCategoryName || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const updated = {
+                              ...formData,
+                              customCategoryName: val,
+                              categoryStatus: 'Pending Review'
+                            };
+                            setFormData(updated);
+                            saveDraft(updated);
+                          }}
+                          className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
+                        />
+                        <div className="bg-blue-50/50 border border-blue-200 rounded-2xl p-4 mt-2 flex flex-col gap-1.5 text-xs text-left animate-fadeIn">
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-blue-900">Category Status:</span>
+                            <span className="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide">
+                              Pending Review
+                            </span>
+                          </div>
+                          <p className="text-blue-750 font-semibold leading-relaxed">
+                            "Your custom category request will be dynamically verified and approved/linked by superadmin upon publication."
+                          </p>
                         </div>
                       </div>
-
-                      {showCategoryDropdown && (
-                        <>
-                          <div className="fixed inset-0 z-20 cursor-default" onClick={() => setShowCategoryDropdown(false)} />
-                          
-                          <div className="absolute top-[100%] left-0 w-full bg-white border border-slate-200 rounded-xl shadow-xl mt-1 overflow-hidden z-30 flex flex-col max-h-60 overflow-y-auto animate-scaleUp">
-                            {allCategories.filter(cat => cat.toLowerCase().includes(categorySearchQuery.toLowerCase())).length > 0 ? (
-                              allCategories.filter(cat => cat.toLowerCase().includes(categorySearchQuery.toLowerCase())).map(cat => (
-                                <button
-                                  key={cat}
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = {
-                                      ...formData,
-                                      category: cat,
-                                      customCategoryName: cat === 'Others' ? (formData.customCategoryName || '') : '',
-                                      categoryStatus: cat === 'Others' && formData.customCategoryName?.trim() ? 'Pending Review' : 'Normal'
-                                    };
-                                    setFormData(updated);
-                                    saveDraft(updated);
-                                    setCategorySearchQuery(cat);
-                                    setCategorySuggestions([]);
-                                    setCategoryWarning('');
-                                    setShowCategoryDropdown(false);
-                                  }}
-                                  className="w-full text-left py-2.5 px-4 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center justify-between border-b border-slate-50 last:border-b-0 cursor-pointer"
-                                >
-                                  <span>{cat}</span>
-                                  <span className="text-[9px] text-slate-400 bg-slate-100 py-0.5 px-2.5 rounded-full font-bold">Select</span>
-                                </button>
-                              ))
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const updated = {
-                                    ...formData,
-                                    category: 'Others',
-                                    customCategoryName: categorySearchQuery,
-                                    categoryStatus: 'Pending Review'
-                                  };
-                                  setFormData(updated);
-                                  saveDraft(updated);
-                                  setCategorySearchQuery('Others');
-                                  setShowCategoryDropdown(false);
-                                }}
-                                className="w-full text-left py-2.5 px-4 hover:bg-blue-50/50 text-blue-700 text-xs font-bold transition-all flex items-center justify-between cursor-pointer border-none"
-                              >
-                                <div className="flex flex-col text-left">
-                                  <span className="text-[9px] text-blue-800 font-extrabold uppercase leading-none">Register as custom category</span>
-                                  <span className="text-xs font-black text-slate-800 mt-1">"{categorySearchQuery}"</span>
-                                </div>
-                                <span className="text-[9px] bg-blue-100 text-blue-800 font-extrabold px-2.5 py-0.5 rounded-full">Select</span>
-                              </button>
-                            )}
-                          </div>
-                        </>
-                      )}
-
-                      {formData.category === 'Others' && (
-                        <div className="flex flex-col gap-1.5 mt-2 animate-fadeIn relative text-left">
-                          <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Enter Your Custom Category <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            name="customCategoryName"
-                            value={formData.customCategoryName || ''}
-                            onChange={(e) => handleCustomCategoryChange(e.target.value)}
-                            placeholder="e.g. Drone Services, EV Charging Station, Solar Energy Solutions"
-                            className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
-                          />
-                          
-                          {categorySuggestions.length > 0 && (
-                            <div className="absolute top-[100%] left-0 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 overflow-hidden z-25 flex flex-col max-h-48 overflow-y-auto text-left">
-                              <span className="text-[10px] text-slate-400 font-extrabold uppercase bg-slate-50 py-1.5 px-3 border-b border-slate-100">Did you mean one of these existing categories?</span>
-                              {categorySuggestions.map(sug => (
-                                <button
-                                  key={sug._id}
-                                  type="button"
-                                  onClick={() => selectSuggestedCategory(sug.categoryName)}
-                                  className="w-full text-left py-2 px-3 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all flex items-center justify-between border-b border-slate-50 last:border-b-0 cursor-pointer"
-                                >
-                                  <span>{sug.categoryName}</span>
-                                  <span className="text-[10px] text-emerald-600 bg-emerald-50 py-0.5 px-2 rounded-full font-extrabold">Select</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-
-                          {categoryWarning && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 text-xs font-semibold flex items-center gap-2.5 mt-2 animate-fadeIn text-left">
-                              <AlertCircle className="h-4.5 w-4.5 text-red-500 shrink-0" />
-                              <span>{categoryWarning}</span>
-                            </div>
-                          )}
-
-                          <div className="bg-blue-50/50 border border-blue-200 rounded-2xl p-4 mt-3 flex flex-col gap-1.5 text-xs text-left animate-fadeIn">
-                            <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-blue-900">Category Status:</span>
-                              <span className="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide">
-                                Pending Review
-                              </span>
-                            </div>
-                            <p className="text-blue-750 font-semibold leading-relaxed">
-                              "Your custom category request will be dynamically verified and approved/linked by superadmin upon publication."
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    )}
 
                     <div className="flex flex-col gap-2">
                       <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Business Type <span className="text-red-500">*</span></label>
@@ -2332,16 +2461,42 @@ export default function AddBusiness() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="flex flex-col gap-1.5 md:col-span-2">
+                    <div className="flex flex-col gap-1.5 md:col-span-2 text-left">
                       <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Area / Locality <span className="text-red-500">*</span></label>
-                      <input
-                        type="text"
-                        name="locality"
-                        value={formData.locality}
-                        onChange={handleInputChange}
-                        placeholder="Enter area or locality"
-                        className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
-                      />
+                      <select
+                        value={isCustomLocality ? 'Others' : (formData.locality || '')}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'Others') {
+                            setIsCustomLocality(true);
+                            const updated = { ...formData, locality: '' };
+                            setFormData(updated);
+                            saveDraft(updated);
+                          } else {
+                            setIsCustomLocality(false);
+                            const updated = { ...formData, locality: val };
+                            setFormData(updated);
+                            saveDraft(updated);
+                          }
+                        }}
+                        className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 cursor-pointer"
+                      >
+                        <option value="">-- Choose Area / Locality --</option>
+                        {availableLocalities.map(loc => (
+                          <option key={loc} value={loc}>{loc}</option>
+                        ))}
+                        <option value="Others">Others (Custom Locality)</option>
+                      </select>
+                      {isCustomLocality && (
+                        <input
+                          type="text"
+                          name="locality"
+                          value={formData.locality}
+                          onChange={handleInputChange}
+                          placeholder="Enter custom locality"
+                          className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 mt-2 animate-fadeIn"
+                        />
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
@@ -2804,14 +2959,36 @@ export default function AddBusiness() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="flex flex-col gap-1.5 text-left">
                           <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">Area / Locality <span className="text-red-500">*</span></label>
-                          <input
-                            type="text"
-                            name="locality"
-                            value={branchForm.locality}
-                            onChange={handleBranchInputChange}
-                            placeholder="e.g. Gandhi Nagar"
-                            className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500"
-                          />
+                          <select
+                            value={isBranchCustomLocality ? 'Others' : (branchForm.locality || '')}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === 'Others') {
+                                setIsBranchCustomLocality(true);
+                                setBranchForm(prev => ({ ...prev, locality: '' }));
+                              } else {
+                                setIsBranchCustomLocality(false);
+                                setBranchForm(prev => ({ ...prev, locality: val }));
+                              }
+                            }}
+                            className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 cursor-pointer"
+                          >
+                            <option value="">-- Choose Area / Locality --</option>
+                            {availableLocalities.map(loc => (
+                              <option key={loc} value={loc}>{loc}</option>
+                            ))}
+                            <option value="Others">Others (Custom Locality)</option>
+                          </select>
+                          {isBranchCustomLocality && (
+                            <input
+                              type="text"
+                              name="locality"
+                              value={branchForm.locality}
+                              onChange={handleBranchInputChange}
+                              placeholder="Enter custom locality"
+                              className="w-full py-2.5 px-3.5 bg-white border border-slate-300 rounded-xl shadow-sm text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500 mt-2 animate-fadeIn"
+                            />
+                          )}
                         </div>
                         <div className="flex flex-col gap-1.5 text-left">
                           <label className="text-xs font-bold text-slate-700 tracking-wide uppercase">City / Town</label>

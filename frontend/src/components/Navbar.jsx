@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { MapPin, Menu, X, User, LogOut, Bell } from 'lucide-react';
+import { MapPin, Menu, X, User, LogOut, Bell, Home, Building2, LayoutGrid, Calendar, BookOpen, Users, Phone, Plus, Facebook, Instagram, Mail } from 'lucide-react';
 
 export default function Navbar() {
   const { pathname } = useLocation();
@@ -158,10 +158,23 @@ export default function Navbar() {
     );
   }
 
+  const getMenuIcon = (name) => {
+    switch (name) {
+      case 'Home': return <Home className="h-4.5 w-4.5" />;
+      case 'Businesses': return <Building2 className="h-4.5 w-4.5" />;
+      case 'Categories': return <LayoutGrid className="h-4.5 w-4.5" />;
+      case 'Events': return <Calendar className="h-4.5 w-4.5" />;
+      case 'Blogs': return <BookOpen className="h-4.5 w-4.5" />;
+      case 'About Us': return <Users className="h-4.5 w-4.5" />;
+      case 'Contact Us': return <Phone className="h-4.5 w-4.5" />;
+      default: return null;
+    }
+  };
+
   return (
     <header className="w-full flex flex-col z-50">
       {/* Top Banner Bar */}
-      <div className="w-full bg-slate-50 border-b border-slate-200 py-2 px-4 md:px-8 text-xs text-slate-600 flex justify-between items-center">
+      <div className="hidden lg:flex w-full bg-slate-50 border-b border-slate-200 py-2 px-4 md:px-8 text-xs text-slate-600 justify-between items-center">
         <div className="flex items-center gap-1.5 font-medium">
           <MapPin className="h-3.5 w-3.5 text-emerald-600" />
           <span>Udumalpet, Tamil Nadu</span>
@@ -274,30 +287,120 @@ export default function Navbar() {
             })}
           </div>
 
-          {/* Mobile Hamburger menu trigger */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2.5 text-slate-700 hover:text-emerald-600 cursor-pointer bg-transparent border-none"
-          >
-            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          {/* Mobile Actions in Header */}
+          <div className="flex items-center gap-2.5 lg:hidden">
+            {!user ? (
+              <>
+                <Link
+                  to={getNavbarAuthPath('/login')}
+                  className="text-xs font-bold text-slate-700 hover:text-[#027244] px-2 py-1.5 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  to={getNavbarAuthPath('/register')}
+                  className="text-xs font-extrabold bg-[#027244] hover:bg-[#005934] text-white px-3 py-1.5 rounded-lg transition-all shadow-xs"
+                >
+                  Register
+                </Link>
+              </>
+            ) : (
+              <Link
+                to={user.role === 'superadmin' ? '/superadmin' : (user.role === 'admin' ? '/admin' : '/dashboard')}
+                className="text-xs font-extrabold text-slate-700 hover:text-[#027244] flex items-center gap-1 border border-slate-200 bg-slate-50 px-2.5 py-1.5 rounded-lg shadow-3xs"
+              >
+                <User className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Link>
+            )}
+
+            {/* Mobile Hamburger menu trigger */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="p-2.5 text-slate-700 hover:text-emerald-600 cursor-pointer bg-transparent border-none"
+            >
+              {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation Drawer */}
         {isOpen && (
-          <div className="lg:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-slate-100 py-4 px-6 flex flex-col gap-4 animate-fadeIn">
+          <div className="lg:hidden absolute top-full left-0 w-full bg-white shadow-xl border-t border-slate-100 py-4 px-6 flex flex-col gap-4 animate-fadeIn text-left z-50">
             {menuItems.map((item) => (
               <Link
                 key={item.name}
                 to={item.path}
                 onClick={() => setIsOpen(false)}
-                className={`text-base font-semibold py-2 border-b border-slate-50 hover:text-emerald-600 transition-colors ${
+                className={`text-base font-semibold py-2.5 border-b border-slate-50 hover:text-emerald-600 transition-colors flex items-center gap-3 ${
                   isItemActive(item.path) ? 'text-emerald-600 font-bold' : 'text-slate-600'
                 }`}
               >
-                {item.name}
+                <span className="text-emerald-500 shrink-0">{getMenuIcon(item.name)}</span>
+                <span>{item.name}</span>
               </Link>
             ))}
+
+            {/* Divider */}
+            <div className="w-full border-t border-slate-100 my-1" />
+
+            {/* Auth actions for mobile */}
+            {/* Auth actions when logged in */}
+            {user && (
+              <div className="flex flex-col gap-3.5 mt-2">
+                <Link
+                  to={user.role === 'superadmin' ? '/superadmin' : (user.role === 'admin' ? '/admin' : '/dashboard')}
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 text-base font-semibold py-2.5 text-slate-600 hover:text-[#027244] transition-colors border-b border-slate-50"
+                >
+                  <User className="h-4.5 w-4.5 text-emerald-500 shrink-0" />
+                  <span>Dashboard</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                  className="flex items-center gap-3 text-base font-semibold py-2.5 text-red-600 hover:text-red-800 transition-colors border-none bg-transparent w-full text-left cursor-pointer"
+                >
+                  <LogOut className="h-4.5 w-4.5 text-red-400 shrink-0" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+
+            {/* Social connection & contact details */}
+            <div className="flex flex-col gap-4 mt-4 pt-4 border-t border-slate-100">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none">Connect With Us</span>
+              <div className="flex items-center gap-3 mt-1.5">
+                <a 
+                  href="https://www.facebook.com/profile.php?fb_profile_edit_entry_point=%7B%22click_point%22%3A%22edit_profile_button%22%2C%22feature%22%3A%22profile_header%22%7D&id=61590472206771&sk=about" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-9 w-9 rounded-xl border border-slate-200 hover:border-emerald-500 flex items-center justify-center hover:bg-[#027244] hover:text-white transition-all text-slate-500 bg-slate-50"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+                <a 
+                  href="https://www.instagram.com/udumalpet.co.in/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="h-9 w-9 rounded-xl border border-slate-200 hover:border-emerald-500 flex items-center justify-center hover:bg-[#027244] hover:text-white transition-all text-slate-500 bg-slate-50"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+              </div>
+              <div className="flex flex-col gap-2.5 text-xs font-semibold text-slate-600 mt-2">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-[#027244] shrink-0" />
+                  <span>+91 12345 67890</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-[#027244] shrink-0" />
+                  <a href="mailto:udumalpetbusinesstour@gmail.com" className="hover:text-[#027244] transition-colors break-all">udumalpetbusinesstour@gmail.com</a>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </nav>

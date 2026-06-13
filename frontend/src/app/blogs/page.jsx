@@ -126,8 +126,12 @@ export default function BlogsPage() {
   // Filtering & Sorting
   const [activeCategory, setActiveCategory] = useState('All');
   const [sortBy, setSortBy] = useState('Recent'); // Recent | Popular | Discussed
-  const [visibleCount, setVisibleCount] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, searchQuery, sortBy]);
 
   // Newsletter
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -413,6 +417,40 @@ export default function BlogsPage() {
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
+  const blogsPerPage = 6;
+  const totalBlogPages = Math.ceil(sortedBlogs.length / blogsPerPage);
+  const displayedBlogs = sortedBlogs.slice((currentPage - 1) * blogsPerPage, currentPage * blogsPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalBlogPages <= 7) {
+      for (let i = 1; i <= totalBlogPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalBlogPages - 1, currentPage + 1);
+      if (currentPage <= 3) {
+        end = 4;
+      }
+      if (currentPage >= totalBlogPages - 2) {
+        start = totalBlogPages - 3;
+      }
+      if (start > 2) {
+        pages.push('...');
+      }
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (end < totalBlogPages - 1) {
+        pages.push('...');
+      }
+      pages.push(totalBlogPages);
+    }
+    return pages;
+  };
+
   // Featured Blogs: take first 3 approved blogs
   const featuredBlogs = approvedBlogs.slice(0, 3);
 
@@ -426,8 +464,8 @@ export default function BlogsPage() {
       
       {/* 1. Header Banner */}
       <section 
-        className="w-full relative py-16 px-4 md:px-8 bg-cover bg-center text-white overflow-hidden shadow-md"
-        style={{ backgroundImage: "linear-gradient(to bottom, rgba(0, 28, 65, 0.82), rgba(0, 28, 65, 0.95)), url('/thirumoorthy_hills.png')" }}
+        className="w-full relative py-8 md:py-16 px-4 md:px-8 bg-cover bg-center text-white overflow-hidden shadow-md"
+        style={{ backgroundImage: "linear-gradient(to bottom, rgba(0, 28, 65, 0.8), rgba(0, 28, 65, 0.95)), url('/thirumoorthy_hills.png')" }}
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent opacity-60 pointer-events-none" />
         
@@ -448,7 +486,7 @@ export default function BlogsPage() {
             Discover helpful stories, local insights, business tips and updates from Udumalpet and beyond.
           </p>
 
-          <form onSubmit={handleSearchSubmit} className="mt-8 w-full bg-white border border-slate-200 shadow-xl rounded-2xl p-2.5 flex gap-2.5 max-w-3xl">
+          <form onSubmit={handleSearchSubmit} className="mt-8 w-full bg-white border border-slate-200 shadow-xl rounded-2xl p-2.5 flex flex-col sm:flex-row gap-2.5 max-w-3xl">
             <div className="flex-1 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
               <Search className="h-5 w-5 text-slate-400 shrink-0" />
               <input
@@ -459,19 +497,21 @@ export default function BlogsPage() {
                 className="w-full bg-transparent text-xs font-semibold text-slate-700 placeholder-slate-400 focus:outline-none"
               />
             </div>
-            <button 
-              type="submit"
-              className="bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-8 rounded-xl transition-all shadow-md shrink-0 cursor-pointer border-none"
-            >
-              Search
-            </button>
-            <button 
-              type="button"
-              onClick={handleWriteClick}
-              className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs py-3 px-6 rounded-xl transition-all shadow-md shrink-0 flex items-center gap-1.5 cursor-pointer border border-amber-600/10"
-            >
-              <Plus className="h-4 w-4" /> Write a Blog
-            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button 
+                type="submit"
+                className="flex-1 sm:flex-initial bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-6 rounded-xl transition-all shadow-md cursor-pointer border-none"
+              >
+                Search
+              </button>
+              <button 
+                type="button"
+                onClick={handleWriteClick}
+                className="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer border border-amber-600/10 whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4 shrink-0" /> Write a Blog
+              </button>
+            </div>
           </form>
         </div>
       </section>
@@ -535,7 +575,7 @@ export default function BlogsPage() {
                   {['All', ...STANDARD_CATEGORIES.slice(0, 4)].map(catName => (
                     <button
                       key={catName}
-                      onClick={() => { setActiveCategory(catName); setVisibleCount(5); }}
+                      onClick={() => { setActiveCategory(catName); setCurrentPage(1); }}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-black transition-all cursor-pointer ${
                         activeCategory === catName 
                           ? 'bg-[#027244] text-white shadow-xs' 
@@ -567,7 +607,7 @@ export default function BlogsPage() {
                               key={catName}
                               onClick={() => {
                                 setActiveCategory(catName);
-                                setVisibleCount(5);
+                                setCurrentPage(1);
                                 setIsMoreMenuOpen(false);
                               }}
                               className={`w-full text-left px-4 py-2 text-xs font-bold hover:bg-slate-50 flex items-center justify-between ${
@@ -627,7 +667,7 @@ export default function BlogsPage() {
               </div>
             ) : (
               <div className="flex flex-col gap-6 w-full">
-                {sortedBlogs.slice(0, visibleCount).map((blog) => {
+                {displayedBlogs.map((blog) => {
                   const words = (blog.content || '').split(' ').length;
                   const readTime = Math.max(Math.ceil(words / 150), 1);
 
@@ -721,18 +761,64 @@ export default function BlogsPage() {
                     </article>
                   );
                 })}
-              </div>
-            )}
 
-            {/* Load More Button */}
-            {sortedBlogs.length > visibleCount && (
-              <button
-                onClick={() => setVisibleCount(prev => prev + 5)}
-                className="py-3 bg-white border border-slate-200 hover:bg-slate-50 text-[#001c41] font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-2xs transition-transform hover:-translate-y-0.5 mt-2 w-full max-w-xs mx-auto"
-              >
-                <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
-                <span>Load More Articles</span>
-              </button>
+                {/* Pagination Component */}
+                {totalBlogPages > 1 && (
+                  <div className="flex justify-center items-center gap-1.5 mt-10 select-none">
+                    {/* Previous Button */}
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => {
+                        setCurrentPage(prev => Math.max(1, prev - 1));
+                        window.scrollTo({ top: 300, behavior: 'smooth' });
+                      }}
+                      className="px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Prev
+                    </button>
+
+                    {/* Page Number Buttons */}
+                    {getPageNumbers().map((page, idx) => {
+                      if (page === '...') {
+                        return (
+                          <span key={`ellipsis-${idx}`} className="text-slate-400 px-1.5 text-xs select-none">
+                            ...
+                          </span>
+                        );
+                      }
+                      const isActive = page === currentPage;
+                      return (
+                        <button
+                          key={`page-${page}`}
+                          onClick={() => {
+                            setCurrentPage(page);
+                            window.scrollTo({ top: 300, behavior: 'smooth' });
+                          }}
+                          className={`h-9 w-9 rounded-lg font-bold text-xs flex items-center justify-center transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-[#027244] text-white font-extrabold shadow'
+                              : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+
+                    {/* Next Button */}
+                    <button
+                      disabled={currentPage === totalBlogPages}
+                      onClick={() => {
+                        setCurrentPage(prev => Math.min(totalBlogPages, prev + 1));
+                        window.scrollTo({ top: 300, behavior: 'smooth' });
+                      }}
+                      className="px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
           </div>
@@ -753,7 +839,7 @@ export default function BlogsPage() {
                 {activeCategoriesList.map(cat => (
                   <button
                     key={cat}
-                    onClick={() => { setActiveCategory(cat); setVisibleCount(5); }}
+                    onClick={() => { setActiveCategory(cat); setCurrentPage(1); }}
                     className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-bold transition-all text-left ${
                       activeCategory === cat 
                         ? 'bg-emerald-50/50 text-[#027244] font-extrabold border border-emerald-100/50' 

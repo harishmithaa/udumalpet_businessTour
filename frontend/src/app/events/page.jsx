@@ -311,10 +311,10 @@ export default function EventsPage() {
   const [commentLoading, setCommentLoading] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [activeCommentsEvent, setActiveCommentsEvent] = useState(null);
-  const [visibleCount, setVisibleCount] = useState(3);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    setVisibleCount(3);
+    setCurrentPage(1);
   }, [searchKeyword, filterCategory, filterDate, activeTab]);
 
   useEffect(() => {
@@ -933,6 +933,40 @@ export default function EventsPage() {
   } else if (sortBy === 'Date (Latest)') {
     filteredEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
   }
+
+  const eventsPerPage = 6;
+  const totalEventPages = Math.ceil(filteredEvents.length / eventsPerPage);
+  const displayedEvents = filteredEvents.slice((currentPage - 1) * eventsPerPage, currentPage * eventsPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalEventPages <= 7) {
+      for (let i = 1; i <= totalEventPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalEventPages - 1, currentPage + 1);
+      if (currentPage <= 3) {
+        end = 4;
+      }
+      if (currentPage >= totalEventPages - 2) {
+        start = totalEventPages - 3;
+      }
+      if (start > 2) {
+        pages.push('...');
+      }
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (end < totalEventPages - 1) {
+        pages.push('...');
+      }
+      pages.push(totalEventPages);
+    }
+    return pages;
+  };
 
   // Visual Styling for Category Badges
   const getBadgeStyles = (cat) => {
@@ -1661,15 +1695,14 @@ export default function EventsPage() {
   // ----------------------------------------------------
   return (
     <div className="w-full flex flex-col items-center bg-[#F8FAFC]">
-      
       {/* 1. Header Scenic Banner Overlay */}
       <section 
-        className="w-full relative min-h-[260px] bg-slate-950 text-white py-10 px-4 md:px-8 border-b border-slate-800 bg-cover bg-center"
+        className="w-full relative min-h-[200px] md:min-h-[260px] bg-slate-950 text-white py-6 md:py-10 px-4 md:px-8 border-b border-slate-800 bg-cover bg-center"
         style={{ backgroundImage: "linear-gradient(to bottom, rgba(0, 28, 65, 0.8), rgba(0, 28, 65, 0.95)), url('/thirumoorthy_hills.png')" }}
       >
         <div className="relative max-w-7xl mx-auto flex flex-col items-center z-10">
           {/* Breadcrumbs */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-350 font-bold self-start mt-2">
+          <div className="flex items-center gap-1.5 text-xs text-slate-355 font-bold self-start mt-2">
             <Link to="/" className="hover:text-emerald-455 transition-colors">Home</Link>
             <span className="text-slate-500">&gt;</span>
             <span className="text-white">Events</span>
@@ -1698,7 +1731,7 @@ export default function EventsPage() {
               <Search className="h-4.5 w-4.5 text-slate-400 shrink-0" />
             </div>
 
-            <div className="md:w-48 flex items-center justify-between gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
+            <div className="w-full md:w-48 flex items-center justify-between gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
               <input
                 type={filterDate ? "date" : "text"}
                 placeholder="Select Date"
@@ -1711,7 +1744,7 @@ export default function EventsPage() {
               <Calendar className="h-4.5 w-4.5 text-slate-400 shrink-0 pointer-events-none" />
             </div>
 
-            <div className="md:w-48 flex items-center justify-between gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
+            <div className="w-full md:w-48 flex items-center justify-between gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
               <select
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
@@ -1731,7 +1764,7 @@ export default function EventsPage() {
 
             <button 
               type="submit" 
-              className="bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-8 rounded-xl transition-all shadow-md shrink-0 cursor-pointer"
+              className="w-full md:w-auto bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-8 rounded-xl transition-all shadow-md shrink-0 cursor-pointer border-none"
             >
               Search
             </button>
@@ -1813,194 +1846,240 @@ export default function EventsPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-5">
-              {filteredEvents.slice(0, visibleCount).map((evt) => {
-                const eventDate = new Date(evt.date);
-                const isMultiDay = evt.endDate && new Date(evt.endDate).getTime() !== eventDate.getTime();
-                
-                return (
-                  <div 
-                    key={evt._id}
-                    className="bg-white border border-slate-100 shadow-sm rounded-3xl overflow-hidden flex flex-col md:flex-row p-4 gap-6 transition-all duration-300 hover:shadow-md hover:border-slate-200/80"
-                  >
-                    {/* Cover Image Container */}
-                    <div className="shrink-0 overflow-hidden relative h-40 w-full md:w-52 rounded-2xl bg-slate-50 border border-slate-100">
-                      <div 
-                        className="h-full w-full bg-cover bg-center"
-                        style={{ backgroundImage: `url('${evt.coverImageUrl || getEventDefaultImage(evt.category)}')` }}
-                      />
-                    </div>
+              {displayedEvents.map((evt) => {
+                  const eventDate = new Date(evt.date);
+                  const isMultiDay = evt.endDate && new Date(evt.endDate).getTime() !== eventDate.getTime();
+                  
+                  return (
+                    <div 
+                      key={evt._id}
+                      className="bg-white border border-slate-100 shadow-sm rounded-3xl overflow-hidden flex flex-col md:flex-row p-4 gap-6 transition-all duration-300 hover:shadow-md hover:border-slate-200/80"
+                    >
+                      {/* Cover Image Container */}
+                      <div className="shrink-0 overflow-hidden relative h-40 w-full md:w-52 rounded-2xl bg-slate-50 border border-slate-100">
+                        <div 
+                          className="h-full w-full bg-cover bg-center"
+                          style={{ backgroundImage: `url('${evt.coverImageUrl || getEventDefaultImage(evt.category)}')` }}
+                        />
+                      </div>
 
-                    {/* Middle-Left Content Panel */}
-                    <div className="flex-1 flex flex-col justify-between gap-3 text-left">
-                      <div className="flex flex-col gap-2">
-                        
-                        {/* Category tag */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 border rounded-md ${getBadgeStyles(evt.category)}`}>
-                            {getCategoryIcon(evt.category)} {evt.category}
-                          </span>
-                          {evt.duration && (
-                            <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-slate-550">
-                              ⏱ {evt.duration}
+                      {/* Middle-Left Content Panel */}
+                      <div className="flex-1 flex flex-col justify-between gap-3 text-left">
+                        <div className="flex flex-col gap-2">
+                          
+                          {/* Category tag */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 border rounded-md ${getBadgeStyles(evt.category)}`}>
+                              {getCategoryIcon(evt.category)} {evt.category}
                             </span>
-                          )}
-                          <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 border border-emerald-100 rounded-md text-[#027244]">
-                            {evt.price === 0 ? 'FREE' : `₹${evt.price}`}
-                          </span>
-                          {new Date(evt.endDate || evt.date) < new Date() && (
-                            <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-red-50 border border-red-200 rounded-md text-red-700">
-                              Expired
+                            {evt.duration && (
+                              <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-slate-50 border border-slate-200 rounded-md text-slate-550">
+                                ⏱ {evt.duration}
+                              </span>
+                            )}
+                            <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 border border-emerald-100 rounded-md text-[#027244]">
+                              {evt.price === 0 ? 'FREE' : `₹${evt.price}`}
                             </span>
-                          )}
-                          {evt.paymentLink && (
-                            <a 
-                              href={evt.paymentLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 border border-emerald-250 text-[#027244] hover:bg-emerald-100 rounded-md flex items-center gap-1 transition-colors leading-none"
-                            >
-                              <span>Tickets</span>
-                              <ExternalLink className="h-2.5 w-2.5" />
-                            </a>
+                            {new Date(evt.endDate || evt.date) < new Date() && (
+                              <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-red-50 border border-red-200 rounded-md text-red-700">
+                                Expired
+                              </span>
+                            )}
+                            {evt.paymentLink && (
+                              <a 
+                                href={evt.paymentLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 bg-emerald-50 border border-emerald-250 text-[#027244] hover:bg-emerald-100 rounded-md flex items-center gap-1 transition-colors leading-none"
+                              >
+                                <span>Tickets</span>
+                                <ExternalLink className="h-2.5 w-2.5" />
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Title */}
+                          <h3 className="font-extrabold text-base text-[#001c41] leading-snug">
+                            {evt.title}
+                          </h3>
+
+                          {/* Venue locality */}
+                          <a 
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(evt.venue + ', Udumalpet')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-0.5 hover:text-emerald-500 transition-colors cursor-pointer group"
+                            onClick={(e) => e.stopPropagation()}
+                            title="View Venue on Google Maps"
+                          >
+                            <MapPin className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-500 shrink-0" />
+                            <span className="group-hover:underline">{evt.venue}</span>
+                          </a>
+
+                          <p className="text-xs text-slate-450 leading-relaxed font-medium mt-1 pr-4">
+                            {evt.description}
+                          </p>
+                        </div>
+
+                        {/* Interactive Likes & Comments Bar */}
+                        <div className="flex gap-4 border-t border-slate-100 pt-3 mt-1 text-[11px] font-black text-slate-455">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleToggleLike(evt._id); }}
+                            className={`flex items-center gap-1 bg-transparent border-none cursor-pointer hover:text-red-550 transition-colors ${
+                              isLikedByUser(evt) ? 'text-red-550' : 'text-slate-450'
+                            }`}
+                          >
+                            <Heart className={`h-4 w-4 ${isLikedByUser(evt) ? 'fill-current text-red-550' : ''}`} />
+                            <span>{evt.likes ? evt.likes.length : 0} Likes</span>
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); openEventCommentsModal(evt); }}
+                            className="flex items-center gap-1 bg-transparent border-none cursor-pointer hover:text-[#027244] text-slate-455 transition-colors"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                            <span>{evt.comments ? evt.comments.length : 0} Comments</span>
+                          </button>
+                          {evt.businessId && (
+                            <div className="ml-auto">
+                              <Link 
+                                to={`/businesses/${evt.businessId._id || evt.businessId}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-[#027244] hover:text-[#005934] hover:underline flex items-center gap-1 leading-none font-bold"
+                              >
+                                <User className="h-3.5 w-3.5" />
+                                <span>View Profile</span>
+                              </Link>
+                            </div>
                           )}
                         </div>
 
-                        {/* Title */}
-                        <h3 className="font-extrabold text-base text-[#001c41] leading-snug">
-                          {evt.title}
-                        </h3>
-
-                        {/* Venue locality */}
-                        <a 
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(evt.venue + ', Udumalpet')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-0.5 hover:text-emerald-500 transition-colors cursor-pointer group"
-                          onClick={(e) => e.stopPropagation()}
-                          title="View Venue on Google Maps"
-                        >
-                          <MapPin className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-500 shrink-0" />
-                          <span className="group-hover:underline">{evt.venue}</span>
-                        </a>
-
-                        <p className="text-xs text-slate-450 leading-relaxed font-medium mt-1 pr-4">
-                          {evt.description}
-                        </p>
                       </div>
 
-                      {/* Interactive Likes & Comments Bar */}
-                      <div className="flex gap-4 border-t border-slate-100 pt-3 mt-1 text-[11px] font-black text-slate-455">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleToggleLike(evt._id); }}
-                          className={`flex items-center gap-1 bg-transparent border-none cursor-pointer hover:text-red-550 transition-colors ${
-                            isLikedByUser(evt) ? 'text-red-550' : 'text-slate-450'
-                          }`}
-                        >
-                          <Heart className={`h-4 w-4 ${isLikedByUser(evt) ? 'fill-current text-red-550' : ''}`} />
-                          <span>{evt.likes ? evt.likes.length : 0} Likes</span>
-                        </button>
+                      {/* Middle-Right Specs Section */}
+                      <div className="w-full md:w-64 shrink-0 flex flex-col justify-center gap-3.5 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 text-xs font-semibold text-slate-650 text-left">
+                        
+                        <div className="flex items-start gap-2.5">
+                          <Calendar className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 font-sans">
+                              {eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {isMultiDay && ` - ${new Date(evt.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
+                              {evt.time}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-2.5">
+                          <User className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800">{evt.organizer}</span>
+                            <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
+                              Event Host
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-start gap-2.5">
+                          <Phone className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800">{evt.phone}</span>
+                            <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
+                              Call for queries
+                            </span>
+                          </div>
+                        </div>
+
+                      </div>
+
+                      {/* Right Action Section */}
+                      <div className="w-full md:w-36 shrink-0 flex flex-col items-stretch md:items-end justify-center gap-3 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
+                        
                         <button 
                           onClick={(e) => { e.stopPropagation(); openEventCommentsModal(evt); }}
-                          className="flex items-center gap-1 bg-transparent border-none cursor-pointer hover:text-[#027244] text-slate-455 transition-colors"
+                          className="w-full border border-emerald-600 hover:bg-emerald-50 text-[#027244] font-extrabold text-xs py-2 px-4 rounded-xl transition-all text-center cursor-pointer shadow-xs"
                         >
-                          <MessageSquare className="h-4 w-4" />
-                          <span>{evt.comments ? evt.comments.length : 0} Comments</span>
+                          View Details
                         </button>
-                        {evt.businessId && (
-                          <div className="ml-auto">
-                            <Link 
-                              to={`/businesses/${evt.businessId._id || evt.businessId}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-[#027244] hover:text-[#005934] hover:underline flex items-center gap-1 leading-none font-bold"
-                            >
-                              <User className="h-3.5 w-3.5" />
-                              <span>View Profile</span>
-                            </Link>
-                          </div>
-                        )}
-                      </div>
 
-                    </div>
+                        <button 
+                           onClick={(e) => { e.stopPropagation(); handleToggleLike(evt._id); }}
+                           className={`self-center md:self-end p-2 border hover:bg-slate-50 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                             isLikedByUser(evt) ? 'text-[#027244] border-emerald-200 bg-emerald-50/50' : 'text-slate-400 border-slate-200'
+                           }`}
+                         >
+                           <Bookmark className={`h-4.5 w-4.5 ${isLikedByUser(evt) ? 'fill-current' : ''}`} />
+                         </button>
 
-                    {/* Middle-Right Specs Section */}
-                    <div className="w-full md:w-64 shrink-0 flex flex-col justify-center gap-3.5 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 text-xs font-semibold text-slate-650 text-left">
-                      
-                      <div className="flex items-start gap-2.5">
-                        <Calendar className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-800 font-sans">
-                            {eventDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            {isMultiDay && ` - ${new Date(evt.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
-                            {evt.time}
-                          </span>
-                        </div>
-                      </div>
+                       </div>
 
-                      <div className="flex items-start gap-2.5">
-                        <User className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-800">{evt.organizer}</span>
-                          <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
-                            Event Host
-                          </span>
-                        </div>
-                      </div>
+                     </div>
+                   );
+                 })}
+               </div>
+             )}
 
-                      <div className="flex items-start gap-2.5">
-                        <Phone className="h-4.5 w-4.5 text-[#027244] shrink-0 mt-0.5" />
-                        <div className="flex flex-col">
-                          <span className="font-bold text-slate-800">{evt.phone}</span>
-                          <span className="text-[10px] text-slate-400 font-medium leading-normal mt-0.5">
-                            Call for queries
-                          </span>
-                        </div>
-                      </div>
+             {/* Pagination Component */}
+             {totalEventPages > 1 && (
+               <div className="flex justify-center items-center gap-1.5 mt-10 select-none">
+                 {/* Previous Button */}
+                 <button
+                   disabled={currentPage === 1}
+                   onClick={() => {
+                     setCurrentPage(prev => Math.max(1, prev - 1));
+                     window.scrollTo({ top: 300, behavior: 'smooth' });
+                   }}
+                   className="px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                 >
+                   Prev
+                 </button>
 
-                    </div>
+                 {/* Page Number Buttons */}
+                 {getPageNumbers().map((page, idx) => {
+                   if (page === '...') {
+                     return (
+                       <span key={`ellipsis-${idx}`} className="text-slate-400 px-1.5 text-xs select-none">
+                         ...
+                       </span>
+                     );
+                   }
+                   const isActive = page === currentPage;
+                   return (
+                     <button
+                       key={`page-${page}`}
+                       onClick={() => {
+                         setCurrentPage(page);
+                         window.scrollTo({ top: 300, behavior: 'smooth' });
+                       }}
+                       className={`h-9 w-9 rounded-lg font-bold text-xs flex items-center justify-center transition-all cursor-pointer ${
+                         isActive
+                           ? 'bg-[#027244] text-white font-extrabold shadow'
+                           : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                       }`}
+                     >
+                       {page}
+                     </button>
+                   );
+                 })}
 
-                    {/* Right Action Section */}
-                    <div className="w-full md:w-36 shrink-0 flex flex-col items-stretch md:items-end justify-center gap-3 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
-                      
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); openEventCommentsModal(evt); }}
-                        className="w-full border border-emerald-600 hover:bg-emerald-50 text-[#027244] font-extrabold text-xs py-2 px-4 rounded-xl transition-all text-center cursor-pointer shadow-xs"
-                      >
-                        View Details
-                      </button>
+                 {/* Next Button */}
+                 <button
+                   disabled={currentPage === totalEventPages}
+                   onClick={() => {
+                     setCurrentPage(prev => Math.min(totalEventPages, prev + 1));
+                     window.scrollTo({ top: 300, behavior: 'smooth' });
+                   }}
+                   className="px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                 >
+                   Next
+                 </button>
+               </div>
+             )}
 
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleToggleLike(evt._id); }}
-                        className={`self-center md:self-end p-2 border hover:bg-slate-50 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
-                          isLikedByUser(evt) ? 'text-[#027244] border-emerald-200 bg-emerald-50/50' : 'text-slate-400 border-slate-200'
-                        }`}
-                      >
-                        <Bookmark className={`h-4.5 w-4.5 ${isLikedByUser(evt) ? 'fill-current' : ''}`} />
-                      </button>
+           </div>
 
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* View More Button */}
-          {!loading && filteredEvents.length > visibleCount && (
-            <button 
-              onClick={() => setVisibleCount(prev => prev + 3)}
-              className="py-3 px-8 self-center border border-slate-200 hover:bg-slate-100 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer mt-2"
-            >
-              View More Events
-            </button>
-          )}
-
-        </div>
-
-        {/* Right Sidebar Widgets */}
-        <aside className="lg:col-span-1 flex flex-col gap-6 text-left">
+           <aside className="lg:col-span-1 flex flex-col gap-6 text-left">
           
           {/* List Your Event Card (₹99 or Free) */}
           <div className="bg-white border border-slate-100 shadow-sm rounded-3xl p-6 flex flex-col gap-4">

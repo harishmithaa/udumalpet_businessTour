@@ -232,6 +232,10 @@ const BusinessSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  requestedParentCategory: {
+    type: String,
+    trim: true,
+  },
   categoryStatus: {
     type: String,
     enum: ['Normal', 'Pending Review'],

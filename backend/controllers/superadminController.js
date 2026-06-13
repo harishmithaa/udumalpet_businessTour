@@ -1365,6 +1365,9 @@ const resolveCategoryReview = async (req, res, next) => {
       business.categoryId = cat._id;
       business.category = cat.categoryName;
       business.customCategoryName = null;
+      if (cat.parentCategory) {
+        business.requestedParentCategory = cat.parentCategory;
+      }
       business.categoryStatus = 'Normal';
       await business.save();
 

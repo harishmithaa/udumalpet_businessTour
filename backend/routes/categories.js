@@ -38,7 +38,7 @@ router.get('/:slug', async (req, res, next) => {
 // @access  Private/Admin
 router.post('/', protect, admin, async (req, res, next) => {
   try {
-    const { categoryName, icon, image, description } = req.body;
+    const { categoryName, icon, image, description, parentCategory } = req.body;
     if (!categoryName) {
       return sendError(res, 400, 'Category name is required');
     }
@@ -48,7 +48,13 @@ router.post('/', protect, admin, async (req, res, next) => {
       return sendError(res, 400, 'Category with this name already exists');
     }
 
-    const category = await Category.create({ categoryName, icon, image, description });
+    const category = await Category.create({ 
+      categoryName, 
+      icon, 
+      image, 
+      description,
+      parentCategory: parentCategory || 'Others'
+    });
     return sendSuccess(res, 201, 'Category classification created successfully', category);
   } catch (err) {
     next(err);
@@ -60,7 +66,7 @@ router.post('/', protect, admin, async (req, res, next) => {
 // @access  Private/Admin
 router.put('/:id', protect, admin, async (req, res, next) => {
   try {
-    const { categoryName, icon, image, description } = req.body;
+    const { categoryName, icon, image, description, parentCategory } = req.body;
     
     const category = await Category.findById(req.params.id);
     if (!category) {
@@ -71,6 +77,7 @@ router.put('/:id', protect, admin, async (req, res, next) => {
     if (icon !== undefined) category.icon = icon;
     if (image !== undefined) category.image = image;
     if (description !== undefined) category.description = description;
+    if (parentCategory !== undefined) category.parentCategory = parentCategory;
 
     await category.save();
     return sendSuccess(res, 200, 'Category classification updated successfully', category);

@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, Users, Car, GraduationCap, Tv, Utensils, 
   HeartPulse, Home as HomeIcon, Building, ShoppingBag, Factory, Compass, 
   Wrench, Sprout, CreditCard, Dumbbell, Briefcase, Mail, Info, Clock,
-  Activity, Leaf, Coins, Camera, Plane, Landmark, Store
+  Activity, Leaf, Coins, Camera, Plane, Landmark, Store, X
 } from 'lucide-react';
 import AboutUsView from '../../components/AboutUsView';
 
@@ -16,7 +16,7 @@ const lucideIcons = {
   ChevronDown, ChevronUp, Users, Car, GraduationCap, Tv, Utensils, 
   HeartPulse, HomeIcon, Building, ShoppingBag, Factory, Compass, 
   Wrench, Sprout, CreditCard, Dumbbell, Briefcase, Mail, Info, Clock,
-  Activity, Leaf, Coins, Camera, Plane, Landmark, Store
+  Activity, Leaf, Coins, Camera, Plane, Landmark, Store, X
 };
 
 const renderCategoryIcon = (iconName, className = "h-4.5 w-4.5") => {
@@ -265,8 +265,10 @@ function BusinessesList() {
   const [businesses, setBusinesses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [viewMode, setViewMode] = useState('list'); // list | grid
+  const [viewMode, setViewMode] = useState(typeof window !== 'undefined' && window.innerWidth < 768 ? 'grid' : 'list'); // list | grid
   const [sortBy, setSortBy] = useState('Most Relevant');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [explorePage, setExplorePage] = useState(1);
   const [categoryCounts, setCategoryCounts] = useState({});
   const [categoriesSearchQuery, setCategoriesSearchQuery] = useState('');
   const [allBusinesses, setAllBusinesses] = useState([]);
@@ -275,6 +277,206 @@ function BusinessesList() {
   const [showTop7Only, setShowTop7Only] = useState(false);
   const [dbCategories, setDbCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  const renderFilterContent = (isMobile = false) => {
+    return (
+      <>
+        <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+          <span className="font-extrabold text-sm text-[#001c41] flex items-center gap-1.5 font-sans">
+            <Filter className="h-4.5 w-4.5 text-[#027244]" /> Filter Businesses
+          </span>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                handleResetFilters();
+                if (isMobile) setShowMobileFilters(false);
+              }}
+              className="text-xs font-bold text-[#027244] hover:underline cursor-pointer bg-transparent border-none"
+            >
+              Reset All
+            </button>
+            {isMobile && (
+              <button 
+                onClick={() => setShowMobileFilters(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 bg-slate-50 hover:bg-slate-100 rounded-full cursor-pointer ml-1 flex items-center justify-center h-6 w-6 border-none"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category Checkboxes */}
+        <div className="flex flex-col gap-2.5 border-b border-slate-100 pb-5">
+          <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider text-left">Category</h4>
+          
+          {/* Live Search Category Box */}
+          <div className="relative mt-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search category" 
+              value={categorySearchText}
+              onChange={(e) => setCategorySearchText(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#027244]"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 mt-2 max-h-56 overflow-y-auto pr-1">
+            {/* All Categories Checkbox */}
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none text-left">
+              <input
+                type="checkbox"
+                checked={selectedCategory === 'All Categories'}
+                onChange={(e) => handleCategoryCheckbox('All Categories', e.target.checked)}
+                className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
+              />
+              <span>All Categories</span>
+            </label>
+
+            {filteredCategories.map((c) => (
+              <label key={c} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none text-left">
+                <input
+                  type="checkbox"
+                  checked={!!checkedCategories[c]}
+                  onChange={(e) => handleCategoryCheckbox(c, e.target.checked)}
+                  className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
+                />
+                <span>{c}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Location Area Checkboxes */}
+        <div className="flex flex-col gap-2.5 border-b border-slate-100 pb-5">
+          <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider text-left">Location</h4>
+          
+          {/* Live Search Location Box */}
+          <div className="relative mt-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Search location" 
+              value={localitySearchText}
+              onChange={(e) => setLocalitySearchText(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#027244]"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 mt-2">
+            {/* Udumalpet checkbox acting as parent/all */}
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none text-left">
+              <input
+                type="checkbox"
+                checked={selectedLocality === 'All Localities'}
+                onChange={(e) => handleLocalityCheckbox('Udumalpet', e.target.checked)}
+                className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
+              />
+              <span>Udumalpet</span>
+            </label>
+
+            {displayedLocalities.map((l) => (
+              <label key={l} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none text-left">
+                <input
+                  type="checkbox"
+                  checked={!!checkedLocalities[l]}
+                  onChange={(e) => handleLocalityCheckbox(l, e.target.checked)}
+                  className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
+                />
+                <span>{l}</span>
+              </label>
+            ))}
+
+            {filteredLocalities.length > 5 && (
+              <button 
+                onClick={() => setShowAllLocalities(!showAllLocalities)}
+                className="text-[#027244] hover:text-[#005934] font-bold text-xs flex items-center gap-0.5 mt-1 cursor-pointer bg-transparent border-none text-left"
+              >
+                {showAllLocalities ? (
+                  <>Show Less <ChevronUp className="h-3.5 w-3.5" /></>
+                ) : (
+                  <>Show More <ChevronDown className="h-3.5 w-3.5" /></>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Ratings Filters Checkboxes */}
+        <div className="flex flex-col gap-2.5 border-b border-slate-100 pb-5">
+          <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider text-left">Rating</h4>
+          <div className="flex flex-col gap-2.5 mt-1">
+            {[4, 3, 2, 1].map((r) => (
+              <label key={r} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none text-left">
+                <input 
+                  type="checkbox"
+                  checked={selectedRating === r}
+                  onChange={() => {
+                    const nextRating = selectedRating === r ? null : r;
+                    setSelectedRating(nextRating);
+                    triggerQueryUpdate(undefined, undefined, undefined, undefined, nextRating);
+                  }}
+                  className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
+                />
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={`h-3 w-3 ${i < r ? 'fill-current' : 'text-slate-200'}`} />
+                  ))}
+                </div>
+                <span>({r} & above)</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Business verified/premium visibility toggle */}
+        <div className="flex flex-col gap-2.5 pb-4">
+          <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider text-left">Business Type</h4>
+          <div className="flex flex-col gap-2.5 mt-1">
+            <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none text-left">
+              <input
+                type="checkbox"
+                checked={verifiedFilter}
+                onChange={(e) => {
+                  const nextVerified = e.target.checked;
+                  setVerifiedFilter(nextVerified);
+                  triggerQueryUpdate(undefined, undefined, nextVerified, undefined, undefined);
+                }}
+                className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
+              />
+              <span>Verified Businesses</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none text-left">
+              <input
+                type="checkbox"
+                checked={premiumFilter}
+                onChange={(e) => {
+                  const nextPremium = e.target.checked;
+                  setPremiumFilter(nextPremium);
+                  triggerQueryUpdate(undefined, undefined, undefined, nextPremium, undefined);
+                }}
+                className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
+              />
+              <span>Premium Businesses</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Apply Filters Green Button */}
+        <button 
+          onClick={() => {
+            fetchBusinesses();
+            if (isMobile) setShowMobileFilters(false);
+          }}
+          className="w-full bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-md shrink-0 cursor-pointer text-center border-none"
+        >
+          Apply Filters
+        </button>
+      </>
+    );
+  };
 
   // Contact form state variables
   const [contactName, setContactName] = useState('');
@@ -362,8 +564,7 @@ function BusinessesList() {
   };
 
   const handleHotCategoryClick = async (categoryName, parentCatName) => {
-    const parent = parentCatName || getParentCategory(categoryName);
-    navigate(`/businesses?focus=categories&category=${encodeURIComponent(parent)}&subcategory=${encodeURIComponent(categoryName)}`);
+    navigate(`/businesses?category=${encodeURIComponent(categoryName)}`);
     
     // Background view increment
     try {
@@ -392,6 +593,7 @@ function BusinessesList() {
       setSelectedCategoryInExplore(null);
       setSelectedSubcategoryInExplore(null);
     }
+    setExplorePage(1);
   }, [searchParams]);
 
   useEffect(() => {
@@ -445,21 +647,87 @@ function BusinessesList() {
     setCategoryCounts(counts);
   }, [allBusinesses, dbCategories]);
 
+  // 1. Fetch businesses on searchParams change
   useEffect(() => {
-    // Populate checked category if passed in url params
-    const cat = searchParams.get('category');
-    if (cat) setCheckedCategories({ [cat]: true });
-
-    // Populate checked locality if passed in url params
-    const loc = searchParams.get('locality');
-    if (loc) setCheckedLocalities({ [loc]: true });
-
     fetchBusinesses();
   }, [searchParams]);
+
+  // 2. Synchronize checked filter states from searchParams on load, param update, or dbCategories load
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat) {
+      if (cat === 'All Categories') {
+        setCheckedCategories({});
+        setSelectedCategory('All Categories');
+      } else {
+        const cats = cat.split(',');
+        const catObj = {};
+        cats.forEach(c => {
+          if (c) {
+            // Check if it's a parent category in dynamicAvailableCategories
+            if (dynamicAvailableCategories.some(availCat => availCat.toLowerCase() === c.toLowerCase())) {
+              const matchedParent = dynamicAvailableCategories.find(availCat => availCat.toLowerCase() === c.toLowerCase());
+              catObj[matchedParent] = true;
+            } else {
+              // It is a subcategory, find its parent and check the parent box
+              const parent = getParentCategory(c);
+              if (parent && parent !== 'Others') {
+                const matchedParent = dynamicAvailableCategories.find(availCat => availCat.toLowerCase() === parent.toLowerCase()) || parent;
+                catObj[matchedParent] = true;
+              }
+            }
+          }
+        });
+        setCheckedCategories(catObj);
+        setSelectedCategory(cats[0]);
+      }
+    } else {
+      setCheckedCategories({});
+      setSelectedCategory('All Categories');
+    }
+
+    const loc = searchParams.get('locality');
+    if (loc) {
+      if (loc === 'All Localities') {
+        setCheckedLocalities({});
+        setSelectedLocality('All Localities');
+      } else {
+        const locs = loc.split(',');
+        const locObj = {};
+        locs.forEach(l => { 
+          if (l) {
+            // Case-insensitive search inside dynamicLocalities
+            const matchedLoc = dynamicLocalities.find(availLoc => availLoc.toLowerCase() === l.toLowerCase()) || l;
+            locObj[matchedLoc] = true; 
+          }
+        });
+        setCheckedLocalities(locObj);
+        setSelectedLocality(locs[0]);
+      }
+    } else {
+      setCheckedLocalities({});
+      setSelectedLocality('All Localities');
+    }
+
+    // Synchronize rating, verified, and type from searchParams
+    const verifiedParam = searchParams.get('verified');
+    setVerifiedFilter(verifiedParam === 'true');
+
+    const premiumParam = searchParams.get('type');
+    setPremiumFilter(premiumParam === 'Premium');
+
+    const ratingParam = searchParams.get('rating');
+    if (ratingParam) {
+      setSelectedRating(parseFloat(ratingParam));
+    } else {
+      setSelectedRating(null);
+    }
+  }, [searchParams, dbCategories, allBusinesses]);
 
   const fetchBusinesses = async () => {
     setLoading(true);
     setError('');
+    setCurrentPage(1);
     try {
       // Build API query string
       let url = 'http://localhost:5000/api/businesses?';
@@ -473,19 +741,20 @@ function BusinessesList() {
       const loc = searchParams.get('locality');
       if (loc && loc !== 'All Localities') url += `locality=${encodeURIComponent(loc)}&`;
 
-      if (verifiedFilter) url += 'verified=true&';
-      if (premiumFilter) url += 'type=Premium&';
+      const verifiedParam = searchParams.get('verified');
+      if (verifiedParam === 'true') url += 'verified=true&';
+
+      const premiumParam = searchParams.get('type');
+      if (premiumParam === 'Premium') url += 'type=Premium&';
+
+      const ratingParam = searchParams.get('rating');
+      if (ratingParam) url += `rating=${encodeURIComponent(ratingParam)}&`;
 
       const res = await fetch(url);
       const data = await res.json();
       
       if (data.success) {
         let results = data.data;
-
-        // Apply rating filter manually on client side if checked
-        if (selectedRating) {
-          results = results.filter(b => b.googleRating >= selectedRating);
-        }
 
         // Apply sorting manually based on selection
         if (sortBy === 'Highest Rating') {
@@ -508,25 +777,42 @@ function BusinessesList() {
       }
       const cat = searchParams.get('category');
       if (cat && cat !== 'All Categories') {
-        const subcategories = parentCategoryMapping[cat];
-        if (subcategories) {
-          results = results.filter(b => b.category === cat || subcategories.some(sub => sub.toLowerCase() === (b.category || '').toLowerCase()));
-        } else {
-          results = results.filter(b => b.category === cat);
-        }
+        const catList = cat.split(',');
+        results = results.filter(b => {
+          return catList.some(singleCat => {
+            const subcategories = parentCategoryMapping[singleCat];
+            if (subcategories) {
+              return b.category === singleCat || subcategories.some(sub => sub.toLowerCase() === (b.category || '').toLowerCase());
+            } else {
+              return b.category === singleCat;
+            }
+          });
+        });
       }
       const loc = searchParams.get('locality');
       if (loc && loc !== 'All Localities') {
-        results = results.filter(b => b.locality === loc);
+        const locList = loc.split(',');
+        results = results.filter(b => {
+          return locList.some(singleLoc => {
+            return (b.locality || '').toLowerCase().includes(singleLoc.toLowerCase()) || b.pincode === singleLoc;
+          });
+        });
       }
-      if (verifiedFilter) {
+
+      const verifiedParam = searchParams.get('verified');
+      if (verifiedParam === 'true') {
         results = results.filter(b => b.isAddressVerified || (b.googlePlaceId && b.googlePlaceId !== '') || (b.googleBusinessLink && b.googleBusinessLink !== '') || b.googleLinked);
       }
-      if (premiumFilter) {
+
+      const premiumParam = searchParams.get('type');
+      if (premiumParam === 'Premium') {
         results = results.filter(b => b.isPremium);
       }
-      if (selectedRating) {
-        results = results.filter(b => b.googleRating >= selectedRating);
+
+      const ratingParam = searchParams.get('rating');
+      if (ratingParam) {
+        const ratingVal = parseFloat(ratingParam);
+        results = results.filter(b => b.googleRating >= ratingVal);
       }
       
       // Sort manually
@@ -557,16 +843,40 @@ function BusinessesList() {
     triggerQueryUpdate();
   };
 
-  const triggerQueryUpdate = (newCat, newLoc) => {
+  const triggerQueryUpdate = (newCat, newLoc, newVerified, newPremium, newRating) => {
     let url = `/businesses?q=${encodeURIComponent(searchTerm)}`;
     
     // category filter
-    const cat = newCat !== undefined ? newCat : selectedCategory;
-    if (cat && cat !== 'All Categories') url += `&category=${encodeURIComponent(cat)}`;
+    let cat = '';
+    if (newCat !== undefined) {
+      cat = newCat === 'All Categories' ? '' : newCat;
+    } else {
+      const activeCats = Object.keys(checkedCategories).filter(k => checkedCategories[k]);
+      cat = activeCats.join(',');
+    }
+    if (cat) url += `&category=${encodeURIComponent(cat)}`;
     
     // locality filter
-    const loc = newLoc !== undefined ? newLoc : selectedLocality;
-    if (loc && loc !== 'All Localities') url += `&locality=${encodeURIComponent(loc)}`;
+    let loc = '';
+    if (newLoc !== undefined) {
+      loc = newLoc === 'All Localities' || newLoc === 'Udumalpet' ? '' : newLoc;
+    } else {
+      const activeLocs = Object.keys(checkedLocalities).filter(k => checkedLocalities[k]);
+      loc = activeLocs.join(',');
+    }
+    if (loc) url += `&locality=${encodeURIComponent(loc)}`;
+
+    // verified filter
+    const ver = newVerified !== undefined ? newVerified : verifiedFilter;
+    if (ver) url += `&verified=true`;
+
+    // premium filter
+    const prem = newPremium !== undefined ? newPremium : premiumFilter;
+    if (prem) url += `&type=Premium`;
+
+    // rating filter
+    const rat = newRating !== undefined ? newRating : selectedRating;
+    if (rat) url += `&rating=${rat}`;
 
     navigate(url);
   };
@@ -593,10 +903,11 @@ function BusinessesList() {
     } else {
       const updated = { ...checkedCategories, [cat]: checked };
       setCheckedCategories(updated);
-      const active = Object.keys(updated).find(key => updated[key] && key !== 'All Categories');
-      if (active) {
-        setSelectedCategory(active);
-        triggerQueryUpdate(active, undefined);
+      const activeCats = Object.keys(updated).filter(key => updated[key] && key !== 'All Categories');
+      if (activeCats.length > 0) {
+        const catStr = activeCats.join(',');
+        setSelectedCategory(activeCats[0]);
+        triggerQueryUpdate(catStr, undefined);
       } else {
         setSelectedCategory('All Categories');
         triggerQueryUpdate('All Categories', undefined);
@@ -614,10 +925,11 @@ function BusinessesList() {
     } else {
       const updated = { ...checkedLocalities, [loc]: checked };
       setCheckedLocalities(updated);
-      const active = Object.keys(updated).find(key => updated[key] && key !== 'Udumalpet');
-      if (active) {
-        setSelectedLocality(active);
-        triggerQueryUpdate(undefined, active);
+      const activeLocs = Object.keys(updated).filter(key => updated[key] && key !== 'Udumalpet');
+      if (activeLocs.length > 0) {
+        const locStr = activeLocs.join(',');
+        setSelectedLocality(activeLocs[0]);
+        triggerQueryUpdate(undefined, locStr);
       } else {
         setSelectedLocality('All Localities');
         triggerQueryUpdate(undefined, 'All Localities');
@@ -694,13 +1006,62 @@ function BusinessesList() {
     c.toLowerCase().includes(categorySearchText.toLowerCase())
   );
   
-  const filteredLocalities = availableLocalities.filter(l => 
+  // Collect all unique localities dynamically from approved listings
+  const dynamicLocalities = (() => {
+    const unique = [...availableLocalities];
+    allBusinesses.forEach(biz => {
+      if (biz.locality) {
+        const trimmed = biz.locality.trim();
+        if (trimmed && !unique.some(l => l.toLowerCase() === trimmed.toLowerCase())) {
+          unique.push(trimmed);
+        }
+      }
+    });
+    return unique;
+  })();
+
+  const filteredLocalities = dynamicLocalities.filter(l => 
     l.toLowerCase().includes(localitySearchText.toLowerCase())
   );
 
   const displayedLocalities = showAllLocalities 
     ? filteredLocalities 
     : filteredLocalities.slice(0, 5);
+
+  // Pagination helpers
+  const itemsPerPage = 6;
+  const totalPages = Math.ceil(businesses.length / itemsPerPage);
+  const displayedBusinesses = businesses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      if (currentPage <= 3) {
+        end = 4;
+      }
+      if (currentPage >= totalPages - 2) {
+        start = totalPages - 3;
+      }
+      if (start > 2) {
+        pages.push('...');
+      }
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      if (end < totalPages - 1) {
+        pages.push('...');
+      }
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   const focusParam = searchParams.get('focus');
   const isCategoriesView = focusParam === 'categories';
@@ -1024,20 +1385,45 @@ function BusinessesList() {
           .map(cat => cat.categoryName.toLowerCase())
       : [];
 
-    const filteredExploreBusinesses = allBusinesses.filter(biz => {
-      const bizCat = biz.category?.toLowerCase();
-      if (selectedSubcategoryInExplore && selectedSubcategoryInExplore !== 'All') {
-        return bizCat === selectedSubcategoryInExplore.toLowerCase();
+    const exploreItemsPerPage = 6;
+    const totalExplorePages = Math.ceil(filteredExploreBusinesses.length / exploreItemsPerPage);
+    const displayedExploreBusinesses = filteredExploreBusinesses.slice((explorePage - 1) * exploreItemsPerPage, explorePage * exploreItemsPerPage);
+
+    const getExplorePageNumbers = () => {
+      const pages = [];
+      if (totalExplorePages <= 7) {
+        for (let i = 1; i <= totalExplorePages; i++) {
+          pages.push(i);
+        }
       } else {
-        return bizCat === selectedCategoryInExplore?.toLowerCase() || exploreSubcatNames.includes(bizCat);
+        pages.push(1);
+        let start = Math.max(2, explorePage - 1);
+        let end = Math.min(totalExplorePages - 1, explorePage + 1);
+        if (explorePage <= 3) {
+          end = 4;
+        }
+        if (explorePage >= totalExplorePages - 2) {
+          start = totalExplorePages - 3;
+        }
+        if (start > 2) {
+          pages.push('...');
+        }
+        for (let i = start; i <= end; i++) {
+          pages.push(i);
+        }
+        if (end < totalExplorePages - 1) {
+          pages.push('...');
+        }
+        pages.push(totalExplorePages);
       }
-    });
+      return pages;
+    };
 
     return (
       <div className="w-full flex flex-col items-center bg-[#F8FAFC]">
         {/* Header Banner */}
         <section 
-          className="w-full relative min-h-[260px] bg-slate-950 text-white py-10 px-4 md:px-8 border-b border-slate-800 bg-cover bg-center"
+          className="w-full relative min-h-[200px] md:min-h-[260px] bg-slate-950 text-white py-6 md:py-10 px-4 md:px-8 border-b border-slate-800 bg-cover bg-center"
           style={{ backgroundImage: "linear-gradient(to bottom, rgba(0, 28, 65, 0.8), rgba(0, 28, 65, 0.95)), url('/thirumoorthy_hills.png')" }}
         >
           <div className="relative max-w-7xl mx-auto flex flex-col items-center z-10 text-left">
@@ -1098,24 +1484,24 @@ function BusinessesList() {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 text-left">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4.5 text-left">
                     {searchResults.map((cat) => {
                       const count = allBusinesses.filter(b => b.category?.toLowerCase() === cat.categoryName.toLowerCase()).length;
                       return (
                         <div 
                           key={cat._id}
                           onClick={() => handleCategoryClick(cat.categoryName)}
-                          className="card-premium group rounded-3xl p-6 cursor-pointer flex flex-col justify-between h-36 relative overflow-hidden bg-white border border-slate-200/65 hover:border-[#027244]"
+                          className="card-premium group rounded-3xl p-4 sm:p-6 cursor-pointer flex flex-col justify-between h-32 sm:h-36 relative overflow-hidden bg-white border border-slate-200/65 hover:border-[#027244]"
                         >
                           <div className="absolute -right-6 -bottom-6 w-16 h-16 bg-slate-50 rounded-full group-hover:bg-emerald-50/40 transition-colors duration-500 pointer-events-none" />
                           <div className="h-10 w-10 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 shadow-2xs transition-transform duration-500 group-hover:scale-110">
                             {renderCategoryIcon(cat.icon, "h-4.5 w-4.5 text-[#027244]")}
                           </div>
                           <div className="flex flex-col z-10 mt-3">
-                            <span className="font-medium text-[#001c41] text-[17px] leading-snug group-hover:text-[#027244] transition-colors duration-300 truncate">
+                            <span className="font-medium text-[#001c41] text-sm sm:text-[17px] leading-snug group-hover:text-[#027244] transition-colors duration-300 truncate">
                               {cat.categoryName}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-extrabold mt-1 uppercase tracking-wide leading-none">
+                            <span className="text-[9px] sm:text-[10px] text-slate-400 font-extrabold mt-1 uppercase tracking-wide leading-none">
                               {count} Business{count !== 1 ? 'es' : ''}
                             </span>
                           </div>
@@ -1138,24 +1524,24 @@ function BusinessesList() {
                       <span className="text-[10.5px] text-slate-400 font-bold">Select a parent category to view subcategories</span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 text-left animate-fadeIn">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4.5 text-left animate-fadeIn">
                       {dynamicCategoryDetails.map((cat, idx) => {
                         const count = categoryCounts[cat.name] || 0;
                         return (
                           <div 
                             key={idx}
                             onClick={() => navigate(`/businesses?focus=categories&category=${encodeURIComponent(cat.name)}`)}
-                            className="card-premium group rounded-3xl p-6 cursor-pointer flex flex-col justify-between h-36 relative overflow-hidden bg-white border border-slate-200/65 hover:border-[#027244] transition-all"
+                            className="card-premium group rounded-3xl p-4 sm:p-6 cursor-pointer flex flex-col justify-between h-32 sm:h-36 relative overflow-hidden bg-white border border-slate-200/65 hover:border-[#027244] transition-all"
                           >
                             <div className="absolute -right-6 -bottom-6 w-16 h-16 bg-slate-50 rounded-full group-hover:bg-emerald-50/40 transition-colors duration-500 pointer-events-none" />
-                            <div className={`h-10 w-10 rounded-full ${cat.bg} flex items-center justify-center shrink-0 shadow-2xs transition-transform duration-500 group-hover:scale-110`}>
+                            <div className={`h-9 w-9 sm:h-10 sm:w-10 rounded-full ${cat.bg} flex items-center justify-center shrink-0 shadow-2xs transition-transform duration-500 group-hover:scale-110`}>
                               {cat.icon}
                             </div>
                             <div className="flex flex-col z-10 mt-3">
-                              <span className="font-medium text-[#001c41] text-[17px] leading-snug group-hover:text-[#027244] transition-colors duration-300 truncate">
+                              <span className="font-medium text-[#001c41] text-sm sm:text-[17px] leading-snug group-hover:text-[#027244] transition-colors duration-300 truncate">
                                 {cat.name}
                               </span>
-                              <span className="text-[10px] text-slate-455 font-extrabold mt-1 uppercase tracking-wide leading-none flex items-center gap-1">
+                              <span className="text-[9px] sm:text-[10px] text-slate-455 font-extrabold mt-1 uppercase tracking-wide leading-none flex items-center gap-1">
                                 <span>{count} Listings</span>
                                 <span>•</span>
                                 <span className="text-emerald-600 font-bold hover:underline">Explore →</span>
@@ -1189,30 +1575,30 @@ function BusinessesList() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-left animate-fadeIn">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-4 text-left animate-fadeIn">
                       {/* "All" parent category card first */}
                       {(() => {
                         const totalCount = categoryCounts[selectedCategoryInExplore] || 0;
                         const parentIconStr = parentIconStringMap[selectedCategoryInExplore] || 'Store';
                         return (
                           <div 
-                            onClick={() => navigate(`/businesses?focus=categories&category=${encodeURIComponent(selectedCategoryInExplore)}&subcategory=All`)}
-                            className="bg-white border border-slate-200/60 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-emerald-100 hover:bg-emerald-50/30 transition-all duration-300 group"
+                            onClick={() => navigate(`/businesses?category=${encodeURIComponent(selectedCategoryInExplore)}`)}
+                            className="bg-white border border-slate-200/60 rounded-2xl p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:border-emerald-100 hover:bg-emerald-50/30 transition-all duration-300 group"
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="h-9 w-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 text-[#027244] group-hover:scale-110 transition-transform duration-300">
-                                {renderCategoryIcon(parentIconStr, "h-4.5 w-4.5 text-[#027244]")}
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 text-[#027244] group-hover:scale-110 transition-transform duration-300">
+                                {renderCategoryIcon(parentIconStr, "h-4 w-4 text-[#027244]")}
                               </div>
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[17px] font-medium text-slate-700 group-hover:text-[#027244] transition-colors truncate">
+                                <span className="text-sm sm:text-[17px] font-medium text-slate-700 group-hover:text-[#027244] transition-colors truncate">
                                   All {selectedCategoryInExplore}
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5 leading-none">
+                                <span className="text-[8px] sm:text-[9px] text-slate-400 font-semibold mt-0.5 leading-none">
                                   {totalCount} active listing{totalCount !== 1 ? 's' : ''}
                                 </span>
                               </div>
                             </div>
-                            <span className="text-[9px] font-extrabold text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded shrink-0">
+                            <span className="text-[8px] sm:text-[9px] font-extrabold text-slate-500 bg-slate-50 border border-slate-200 px-1 sm:px-1.5 py-0.5 rounded shrink-0">
                               All
                             </span>
                           </div>
@@ -1225,23 +1611,23 @@ function BusinessesList() {
                         return (
                           <div 
                             key={cat._id}
-                            onClick={() => navigate(`/businesses?focus=categories&category=${encodeURIComponent(selectedCategoryInExplore)}&subcategory=${encodeURIComponent(cat.categoryName)}`)}
-                            className="bg-white border border-slate-200/60 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-emerald-100 hover:bg-emerald-50/30 transition-all duration-300 group"
+                            onClick={() => navigate(`/businesses?category=${encodeURIComponent(cat.categoryName)}`)}
+                            className="bg-white border border-slate-200/60 rounded-2xl p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:border-emerald-100 hover:bg-emerald-50/30 transition-all duration-300 group"
                           >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="h-9 w-9 rounded-lg bg-emerald-50 border border-emerald-100/50 flex items-center justify-center shrink-0 text-[#027244] group-hover:scale-110 transition-transform duration-300">
-                                {renderCategoryIcon(cat.icon, "h-4.5 w-4.5 text-[#027244]")}
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-emerald-50 border border-emerald-100/50 flex items-center justify-center shrink-0 text-[#027244] group-hover:scale-110 transition-transform duration-300">
+                                {renderCategoryIcon(cat.icon, "h-4 w-4 text-[#027244]")}
                               </div>
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[17px] font-medium text-slate-700 group-hover:text-[#027244] transition-colors truncate">
+                                <span className="text-sm sm:text-[17px] font-medium text-slate-700 group-hover:text-[#027244] transition-colors truncate">
                                   {cat.categoryName}
                                 </span>
-                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5 leading-none">
+                                <span className="text-[8px] sm:text-[9px] text-slate-400 font-semibold mt-0.5 leading-none">
                                   {count} active listing{count !== 1 ? 's' : ''}
                                 </span>
                               </div>
                             </div>
-                            <span className="text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded shrink-0">
+                            <span className="text-[8px] sm:text-[9px] font-extrabold text-amber-600 bg-amber-50 border border-amber-100 px-1 sm:px-1.5 py-0.5 rounded shrink-0">
                               👁 {cat.views || 0}
                             </span>
                           </div>
@@ -1281,7 +1667,7 @@ function BusinessesList() {
                       </div>
                     ) : (
                       <div className="flex flex-col gap-5">
-                        {filteredExploreBusinesses.map((biz) => {
+                        {displayedExploreBusinesses.map((biz) => {
                           const isExpired = biz.subscriptionStatus === 'expired';
                           const isSubscribed = biz.subscriptionStatus === 'active';
                           return (
@@ -1370,7 +1756,7 @@ function BusinessesList() {
                                   {Array.isArray(biz.highlights) && (
                                     <div className="flex flex-wrap items-center gap-4 mt-2">
                                       {biz.highlights.map((h, i) => (
-                                        <div key={i} className="flex items-center gap-1 text-[11px] text-[#027244] font-semibold">
+                                        <div key={i} className="flex items-center gap-1 text-xs text-[#027244] font-semibold">
                                           <span className="h-4 w-4 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center text-[9px] font-extrabold shrink-0">✓</span>
                                           <span>{h}</span>
                                         </div>
@@ -1396,7 +1782,7 @@ function BusinessesList() {
                                       <span>WhatsApp</span>
                                     </button>
                                   ) : (
-                                    <span className="py-2.5 w-full bg-slate-100 text-slate-400 border border-slate-200 font-extrabold text-[10px] rounded-xl flex items-center justify-center select-none text-center leading-none">
+                                    <span className="py-2.5 w-full bg-slate-100 text-slate-400 border border-slate-200 font-extrabold text-xs rounded-xl flex items-center justify-center select-none text-center leading-none">
                                       WhatsApp Locked
                                     </span>
                                   )}
@@ -1420,6 +1806,63 @@ function BusinessesList() {
                             </div>
                           );
                         })}
+
+                        {/* Pagination Component */}
+                        {totalExplorePages > 1 && (
+                          <div className="flex justify-center items-center gap-1.5 mt-10 select-none">
+                            {/* Previous Button */}
+                            <button
+                              disabled={explorePage === 1}
+                              onClick={() => {
+                                setExplorePage(prev => Math.max(1, prev - 1));
+                                window.scrollTo({ top: 300, behavior: 'smooth' });
+                              }}
+                              className={`px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
+                            >
+                              Prev
+                            </button>
+
+                            {/* Page Number Buttons */}
+                            {getExplorePageNumbers().map((page, idx) => {
+                              if (page === '...') {
+                                return (
+                                  <span key={`ellipsis-${idx}`} className="text-slate-400 px-1.5 text-xs select-none">
+                                    ...
+                                  </span>
+                                );
+                              }
+                              const isActive = page === explorePage;
+                              return (
+                                <button
+                                  key={`page-${page}`}
+                                  onClick={() => {
+                                    setExplorePage(page);
+                                    window.scrollTo({ top: 300, behavior: 'smooth' });
+                                  }}
+                                  className={`h-9 w-9 rounded-lg font-bold text-xs flex items-center justify-center transition-all cursor-pointer ${
+                                    isActive
+                                      ? 'bg-[#027244] text-white font-extrabold shadow'
+                                      : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                                  }`}
+                                >
+                                  {page}
+                                </button>
+                              );
+                            })}
+
+                            {/* Next Button */}
+                            <button
+                              disabled={explorePage === totalExplorePages}
+                              onClick={() => {
+                                setExplorePage(prev => Math.min(totalExplorePages, prev + 1));
+                                window.scrollTo({ top: 300, behavior: 'smooth' });
+                              }}
+                              className={`px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
@@ -1486,7 +1929,7 @@ function BusinessesList() {
     <div className="w-full flex flex-col items-center bg-[#F8FAFC]">
       {/* Search Header Banner */}
       <section 
-        className="w-full relative min-h-[260px] bg-slate-950 text-white py-10 px-4 md:px-8 border-b border-slate-800 bg-cover bg-center"
+        className="w-full relative min-h-[200px] md:min-h-[260px] bg-slate-950 text-white py-6 md:py-10 px-4 md:px-8 border-b border-slate-800 bg-cover bg-center"
         style={{ backgroundImage: "linear-gradient(to bottom, rgba(0, 28, 65, 0.8), rgba(0, 28, 65, 0.95)), url('/thirumoorthy_hills.png')" }}
       >
         <div className="relative max-w-7xl mx-auto flex flex-col items-center z-10">
@@ -1517,7 +1960,7 @@ function BusinessesList() {
               />
             </div>
 
-            <div className="md:w-48 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
+            <div className="w-full md:w-48 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
               <MapPin className="h-4.5 w-4.5 text-slate-400 shrink-0" />
               <input
                 type="text"
@@ -1531,12 +1974,12 @@ function BusinessesList() {
               />
             </div>
 
-            <div className="md:w-48 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
+            <div className="w-full md:w-48 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100 relative">
               <Grid className="h-4.5 w-4.5 text-slate-400 shrink-0" />
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                className="w-full bg-transparent text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
               >
                 <option>All Categories</option>
                 {dynamicAvailableCategories.map(c => (
@@ -1545,7 +1988,7 @@ function BusinessesList() {
               </select>
             </div>
 
-            <button type="submit" className="bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-8 rounded-xl transition-all shadow-md shrink-0 cursor-pointer">
+            <button type="submit" className="w-full md:w-auto bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-8 rounded-xl transition-all shadow-md shrink-0 cursor-pointer border-none">
               Search
             </button>
           </form>
@@ -1555,169 +1998,44 @@ function BusinessesList() {
       {/* Main Two-column Content Grid */}
       <section className="max-w-7xl w-full px-4 md:px-8 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* Left Sidebar Filters */}
-        <aside className="lg:col-span-1 bg-white border border-slate-200/80 shadow-md rounded-3xl p-6 flex flex-col gap-6 h-max">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-            <span className="font-extrabold text-sm text-[#001c41] flex items-center gap-1.5">
-              <Filter className="h-4.5 w-4.5 text-[#027244]" /> Filter Businesses
-            </span>
-            <button onClick={handleResetFilters} className="text-[10px] font-bold text-[#027244] hover:underline cursor-pointer">
-              Reset All
-            </button>
-          </div>
-
-          {/* Category Checkboxes */}
-          <div className="flex flex-col gap-2.5 border-b border-slate-100 pb-5">
-            <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider">Category</h4>
-            
-            {/* Live Search Category Box */}
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search category" 
-                value={categorySearchText}
-                onChange={(e) => setCategorySearchText(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#027244]"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2 mt-2 max-h-56 overflow-y-auto pr-1">
-              {/* All Categories Checkbox */}
-              <label className="flex items-center gap-2 text-[17px] font-medium text-slate-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={selectedCategory === 'All Categories'}
-                  onChange={(e) => handleCategoryCheckbox('All Categories', e.target.checked)}
-                  className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
-                />
-                <span>All Categories</span>
-              </label>
-
-              {filteredCategories.map((c) => (
-                <label key={c} className="flex items-center gap-2 text-[17px] font-medium text-slate-600 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={!!checkedCategories[c]}
-                    onChange={(e) => handleCategoryCheckbox(c, e.target.checked)}
-                    className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
-                  />
-                  <span>{c}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Location Area Checkboxes */}
-          <div className="flex flex-col gap-2.5 border-b border-slate-100 pb-5">
-            <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider">Location</h4>
-            
-            {/* Live Search Location Box */}
-            <div className="relative mt-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search location" 
-                value={localitySearchText}
-                onChange={(e) => setLocalitySearchText(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#027244]"
-              />
-            </div>
-
-            <div className="flex flex-col gap-2 mt-2">
-              {/* Udumalpet checkbox acting as parent/all */}
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={selectedLocality === 'All Localities'}
-                  onChange={(e) => handleLocalityCheckbox('Udumalpet', e.target.checked)}
-                  className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
-                />
-                <span>Udumalpet</span>
-              </label>
-
-              {displayedLocalities.map((l) => (
-                <label key={l} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={!!checkedLocalities[l]}
-                    onChange={(e) => handleLocalityCheckbox(l, e.target.checked)}
-                    className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
-                  />
-                  <span>{l}</span>
-                </label>
-              ))}
-
-              {filteredLocalities.length > 5 && (
-                <button 
-                  onClick={() => setShowAllLocalities(!showAllLocalities)}
-                  className="text-[#027244] hover:text-[#005934] font-extrabold text-[10px] flex items-center gap-0.5 mt-1 cursor-pointer bg-transparent border-none text-left"
-                >
-                  {showAllLocalities ? (
-                    <>Show Less <ChevronUp className="h-3.5 w-3.5" /></>
-                  ) : (
-                    <>Show More <ChevronDown className="h-3.5 w-3.5" /></>
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Ratings Filters Checkboxes */}
-          <div className="flex flex-col gap-2.5 border-b border-slate-100 pb-5">
-            <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider">Rating</h4>
-            <div className="flex flex-col gap-2.5 mt-1">
-              {[4, 3, 2, 1].map((r) => (
-                <label key={r} className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                  <input 
-                    type="checkbox"
-                    checked={selectedRating === r}
-                    onChange={() => setSelectedRating(selectedRating === r ? null : r)}
-                    className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
-                  />
-                  <div className="flex text-amber-400">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={`h-3 w-3 ${i < r ? 'fill-current' : 'text-slate-200'}`} />
-                    ))}
-                  </div>
-                  <span>({r} & above)</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Business verified/premium visibility toggle */}
-          <div className="flex flex-col gap-2.5 pb-4">
-            <h4 className="font-extrabold text-xs text-[#001c41] uppercase tracking-wider">Business Type</h4>
-            <div className="flex flex-col gap-2.5 mt-1">
-              <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={verifiedFilter}
-                  onChange={(e) => { setVerifiedFilter(e.target.checked); triggerQueryUpdate(); }}
-                  className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
-                />
-                <span>Verified Businesses</span>
-              </label>
-              <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={premiumFilter}
-                  onChange={(e) => { setPremiumFilter(e.target.checked); triggerQueryUpdate(); }}
-                  className="h-4 w-4 text-[#027244] border-slate-300 rounded focus:ring-[#027244]"
-                />
-                <span>Premium Businesses</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Apply Filters Green Button */}
+        {/* Mobile Filter Toggle Button */}
+        <div className="lg:hidden flex items-center justify-between gap-4 w-full bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm mb-1.5 text-left col-span-1">
           <button 
-            onClick={() => fetchBusinesses()}
-            className="w-full bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-md shrink-0 cursor-pointer text-center"
+            onClick={() => setShowMobileFilters(true)}
+            className="flex-1 py-2.5 px-4 bg-slate-50 border border-slate-250 text-slate-700 hover:text-slate-800 font-extrabold text-xs rounded-xl transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
           >
-            Apply Filters
+            <Filter className="h-4 w-4 text-[#027244]" />
+            <span>Filter Businesses</span>
           </button>
+          <button 
+            onClick={() => {
+              handleResetFilters();
+              setShowMobileFilters(false);
+            }}
+            className="text-xs font-bold text-[#027244] hover:underline cursor-pointer px-2"
+          >
+            Reset
+          </button>
+        </div>
+
+        {/* Mobile Filters Slide-out Drawer */}
+        {showMobileFilters && (
+          <div className="fixed inset-0 z-50 lg:hidden flex">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity duration-300"
+              onClick={() => setShowMobileFilters(false)}
+            />
+            {/* Drawer container */}
+            <aside className="relative flex flex-col gap-6 w-80 max-w-[85vw] h-full bg-white p-6 shadow-2xl overflow-y-auto animate-slideRight text-left z-50">
+              {renderFilterContent(true)}
+            </aside>
+          </div>
+        )}
+
+        {/* Desktop Left Sidebar Filters */}
+        <aside className="hidden lg:flex lg:col-span-1 bg-white border border-slate-200/80 shadow-md rounded-3xl p-6 flex-col gap-6 h-max text-left">
+          {renderFilterContent(false)}
         </aside>
 
         {/* Right Main Results Grid */}
@@ -1733,7 +2051,7 @@ function BusinessesList() {
                 <select
                   value={sortBy}
                   onChange={(e) => { setSortBy(e.target.value); triggerQueryUpdate(); }}
-                  className="py-1 px-2 border border-slate-300 bg-white rounded cursor-pointer font-bold focus:outline-none"
+                  className="py-1 px-2 border border-slate-300 bg-white rounded cursor-pointer font-semibold focus:outline-none"
                 >
                   <option>Most Relevant</option>
                   <option>Highest Rating</option>
@@ -1781,8 +2099,8 @@ function BusinessesList() {
 
           {/* Cards rendering List / Grid */}
           {!loading && businesses.length > 0 && (
-            <div className={viewMode === 'list' ? 'flex flex-col gap-5' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}>
-              {businesses.map((biz) => {
+            <div className={viewMode === 'list' ? 'flex flex-col gap-5' : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4.5 sm:gap-6'}>
+              {displayedBusinesses.map((biz) => {
                 const isExpired = biz.subscriptionStatus === 'expired';
                 const isSubscribed = biz.subscriptionStatus === 'active';
                 
@@ -1790,13 +2108,13 @@ function BusinessesList() {
                   <div
                     key={biz._id}
                     className={`relative card-premium group rounded-3xl overflow-hidden flex cursor-pointer ${
-                      viewMode === 'list' ? 'flex-col md:flex-row' : 'flex-col min-h-[460px]'
+                      viewMode === 'list' ? 'flex-col md:flex-row' : 'flex-col min-h-[350px] sm:min-h-[460px]'
                     }`}
                   >
                     {/* Cover image (Blurred if subscription is expired!) */}
                     <div
                       className={`shrink-0 overflow-hidden relative ${
-                        viewMode === 'list' ? 'h-48 md:w-64 rounded-l-[23px]' : 'h-56 w-full rounded-t-[23px]'
+                        viewMode === 'list' ? 'h-48 md:w-64 rounded-l-[23px]' : 'h-36 sm:h-56 w-full rounded-t-[23px]'
                       }`}
                     >
                       <div 
@@ -1810,21 +2128,21 @@ function BusinessesList() {
                       />
                       {/* Badge (Verified / Premium / Google Linked) */}
                       {!isExpired && (
-                        <div className="absolute top-3 left-3 flex flex-wrap gap-1 z-10">
+                        <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1 z-10">
                           {biz.isPremium && (
-                            <div className="bg-white border border-amber-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
-                              <Sparkles className="h-3.5 w-3.5 text-amber-500 fill-current" />
-                              <span className="text-[9px] font-black text-amber-600 uppercase tracking-wider">Premium</span>
+                            <div className="bg-white border border-amber-100 px-1.5 py-0.5 rounded-lg shadow-xs flex items-center gap-0.5">
+                              <Sparkles className="h-3 w-3 text-amber-500 fill-current" />
+                              <span className="text-[8px] sm:text-[9px] font-black text-amber-600 uppercase tracking-wider">Premium</span>
                             </div>
                           )}
                           
                           {(biz.isAddressVerified || (biz.googlePlaceId && biz.googlePlaceId !== '') || (biz.googleBusinessLink && biz.googleBusinessLink !== '') || biz.googleLinked) && (
-                            <div className="bg-white border border-emerald-100 px-2 py-0.5 rounded-lg shadow-xs flex items-center gap-1">
-                               <svg className="h-3.5 w-3.5 text-[#027244] shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <div className="bg-white border border-emerald-100 px-1.5 py-0.5 rounded-lg shadow-xs flex items-center gap-0.5">
+                               <svg className="h-3 w-3 text-[#027244] shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                  <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.8 17 5 19 5a1 1 0 0 1 1 1z" fill="currentColor" />
                                  <path d="m9 12 2 2 4-4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                </svg>
-                              <span className="text-[9px] font-black text-[#027244] uppercase tracking-wider font-sans">UDT Verified</span>
+                              <span className="text-[8px] sm:text-[9px] font-black text-[#027244] uppercase tracking-wider font-sans">UDT Verified</span>
                             </div>
                           )}
                         </div>
@@ -1833,7 +2151,7 @@ function BusinessesList() {
                       {/* Subscription expired lock overlay */}
                       {isExpired && (
                         <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center text-center p-2 text-white z-10">
-                          <span className="bg-red-650 text-[9px] font-extrabold uppercase px-2 py-1 rounded shadow">
+                          <span className="bg-red-650 text-[8px] sm:text-[9px] font-extrabold uppercase px-2 py-1 rounded shadow">
                             Subscription Expired
                           </span>
                         </div>
@@ -1842,16 +2160,16 @@ function BusinessesList() {
 
                     {/* Content Body */}
                     <div 
-                      className="p-6 flex-1 flex flex-col md:flex-row justify-between gap-5"
+                      className="p-4 sm:p-6 flex-1 flex flex-col md:flex-row justify-between gap-3 sm:gap-5"
                       style={{
                         filter: !isSubscribed ? 'blur-[3.5px] select-none pointer-events-none' : 'none'
                       }}
                     >
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-1.5 text-left">
                         {/* Title */}
                         <Link
                           to={`/businesses/${biz._id}`}
-                          className="font-black text-[19px] text-[#001c41] hover:text-[#027244] transition-colors leading-tight"
+                          className="font-black text-sm sm:text-[19px] text-[#001c41] hover:text-[#027244] transition-colors leading-tight"
                         >
                           {biz.name}
                         </Link>
@@ -1861,11 +2179,11 @@ function BusinessesList() {
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(biz.address ? `${biz.name}, ${biz.address}` : `${biz.name}, ${biz.locality || ''}, Udumalpet`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs font-semibold text-slate-500 mt-0.5 hover:text-[#027244] transition-colors cursor-pointer group"
+                          className="flex items-center gap-1 text-[10.5px] sm:text-xs font-semibold text-slate-500 mt-0.5 hover:text-[#027244] transition-colors cursor-pointer group"
                           onClick={(e) => e.stopPropagation()}
                           title="View on Google Maps"
                         >
-                          <MapPin className="h-4 w-4 text-slate-400 group-hover:text-[#027244] shrink-0" />
+                          <MapPin className="h-3.5 w-3.5 text-slate-400 group-hover:text-[#027244] shrink-0" />
                           <span className="group-hover:underline">{biz.locality}, Udumalpet</span>
                         </a>
 
@@ -1873,29 +2191,28 @@ function BusinessesList() {
                         <div 
                           onClick={(e) => {
                             e.stopPropagation();
-                            const parent = getParentCategory(biz.category);
-                            navigate(`/businesses?focus=categories&category=${encodeURIComponent(parent)}`);
+                            navigate(`/businesses?category=${encodeURIComponent(biz.category)}`);
                           }}
-                          className="flex items-center gap-1.5 text-xs text-slate-455 font-bold mt-0.5 hover:text-[#027244] hover:underline cursor-pointer transition-colors duration-200 select-none group/badge w-fit"
+                          className="flex items-center gap-1.5 text-[10.5px] sm:text-xs text-slate-455 font-semibold mt-0.5 hover:text-[#027244] hover:underline cursor-pointer transition-colors duration-200 select-none group/badge w-fit"
                         >
-                          <Folder className="h-3.5 w-3.5 text-[#027244] shrink-0 transition-transform group-hover/badge:scale-110" />
+                          <Folder className="h-3 w-3 text-[#027244] shrink-0 transition-transform group-hover/badge:scale-110" />
                           <span>{biz.category}</span>
                         </div>
 
                         {/* Rating */}
-                        <div className="flex items-center gap-1.5 mt-0.5 text-slate-600 text-xs">
+                        <div className="flex items-center gap-1.5 mt-0.5 text-slate-600 text-[10.5px] sm:text-xs">
                           <div className="flex text-amber-400 shrink-0">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`h-3 w-3 ${i < Math.floor(biz.googleRating || 0) ? 'fill-current' : 'text-slate-200'}`} />
+                              <Star key={i} className={`h-2.5 w-2.5 sm:h-3 sm:w-3 ${i < Math.floor(biz.googleRating || 0) ? 'fill-current' : 'text-slate-200'}`} />
                             ))}
                           </div>
                           <span className="font-extrabold">{(biz.googleRating || 0).toFixed(1)}</span>
-                          <span className="text-[10px] text-slate-450 font-bold">({biz.googleReviewsCount || 0})</span>
+                          <span className="text-[9.5px] sm:text-xs text-slate-455 font-semibold">({biz.googleReviewsCount || 0})</span>
                         </div>
 
                         {/* Highlights Chips */}
                         {Array.isArray(biz.highlights) && (
-                          <div className="flex flex-wrap items-center gap-4 mt-2">
+                          <div className="hidden sm:flex flex-wrap items-center gap-4 mt-2">
                             {biz.highlights.map((h, i) => (
                               <div key={i} className="flex items-center gap-1 text-[11px] text-[#027244] font-semibold">
                                 <span className="h-4 w-4 bg-emerald-50 rounded-full border border-emerald-100 flex items-center justify-center text-[9px] font-extrabold shrink-0">✓</span>
@@ -1907,13 +2224,13 @@ function BusinessesList() {
                       </div>
 
                       {/* Right Panel Actions */}
-                      <div className="flex flex-col justify-center gap-2 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6 shrink-0 md:w-36">
+                      <div className="flex flex-col justify-center gap-1.5 sm:gap-2 border-t md:border-t-0 md:border-l border-slate-100 pt-3 sm:pt-4 md:pt-0 md:pl-6 shrink-0 md:w-36">
                         {/* Call button */}
                         <button
                           onClick={() => handleCall(biz.phone, biz.name, biz._id)}
-                          className="py-2.5 w-full border border-[#027244] hover:bg-emerald-50 text-[#027244] font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                          className="py-2 sm:py-2.5 w-full border border-[#027244] hover:bg-emerald-50 text-[#027244] font-extrabold text-[10.5px] sm:text-xs rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-colors cursor-pointer"
                         >
-                          <PhoneCall className="h-3.5 w-3.5" />
+                          <PhoneCall className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           <span>Call</span>
                         </button>
                         
@@ -1921,19 +2238,19 @@ function BusinessesList() {
                         {!isExpired ? (
                           <button
                             onClick={() => handleWhatsApp(biz.whatsapp, biz.name, biz._id)}
-                            className="py-2.5 w-full bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                            className="py-2 sm:py-2.5 w-full bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-[10.5px] sm:text-xs rounded-xl flex items-center justify-center gap-1 sm:gap-1.5 transition-all shadow-sm cursor-pointer"
                           >
                             <span>WhatsApp</span>
                           </button>
                         ) : (
-                          <span className="py-2.5 w-full bg-slate-100 text-slate-400 border border-slate-200 font-extrabold text-[10px] rounded-xl flex items-center justify-center select-none text-center leading-none">
+                          <span className="py-2 sm:py-2.5 w-full bg-slate-100 text-slate-400 border border-slate-200 font-extrabold text-[9px] sm:text-[10px] rounded-xl flex items-center justify-center select-none text-center leading-none">
                             WhatsApp Locked
                           </span>
                         )}
 
                         <Link
                           to={`/businesses/${biz._id}`}
-                          className="py-2.5 w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-555 font-extrabold text-xs rounded-xl flex items-center justify-center transition-colors text-center"
+                          className="py-2 sm:py-2.5 w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-slate-555 font-extrabold text-[10.5px] sm:text-xs rounded-xl flex items-center justify-center transition-colors text-center"
                         >
                           View Details
                         </Link>
@@ -1953,17 +2270,62 @@ function BusinessesList() {
             </div>
           )}
 
-          {/* Pagination Component exactly like mockup */}
-          <div className="flex justify-center items-center gap-1.5 mt-10 select-none">
-            <button className="h-9 w-9 rounded-lg bg-[#027244] text-white font-extrabold text-xs flex items-center justify-center shadow">1</button>
-            <button className="h-9 w-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors">2</button>
-            <button className="h-9 w-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors">3</button>
-            <button className="h-9 w-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors">4</button>
-            <button className="h-9 w-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors">5</button>
-            <span className="text-slate-400 px-1 text-xs">...</span>
-            <button className="h-9 w-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors">21</button>
-            <button className="px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors">Next</button>
-          </div>
+          {/* Pagination Component */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-1.5 mt-10 select-none">
+              {/* Previous Button */}
+              <button
+                disabled={currentPage === 1}
+                onClick={() => {
+                  setCurrentPage(prev => Math.max(1, prev - 1));
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }}
+                className={`px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                Prev
+              </button>
+
+              {/* Page Number Buttons */}
+              {getPageNumbers().map((page, idx) => {
+                if (page === '...') {
+                  return (
+                    <span key={`ellipsis-${idx}`} className="text-slate-400 px-1.5 text-xs select-none">
+                      ...
+                    </span>
+                  );
+                }
+                const isActive = page === currentPage;
+                return (
+                  <button
+                    key={`page-${page}`}
+                    onClick={() => {
+                      setCurrentPage(page);
+                      window.scrollTo({ top: 300, behavior: 'smooth' });
+                    }}
+                    className={`h-9 w-9 rounded-lg font-bold text-xs flex items-center justify-center transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-[#027244] text-white font-extrabold shadow'
+                        : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-600'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+
+              {/* Next Button */}
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => {
+                  setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                  window.scrollTo({ top: 300, behavior: 'smooth' });
+                }}
+                className={`px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold text-xs flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed`}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </main>
       </section>
 

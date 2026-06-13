@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, MapPin, Grid, Shield, Heart, Phone, Users, Star, ArrowRight, Check, ShieldCheck,
@@ -74,6 +74,8 @@ export default function Home() {
   const [categoryTerm, setCategoryTerm] = useState('All Categories');
   const [featuredBusinesses, setFeaturedBusinesses] = useState(mockFeatured);
   const [activeFaq, setActiveFaq] = useState(null);
+  const faqScrollRef = useRef(null);
+  const testimonialScrollRef = useRef(null);
 
   // Testimonials state
   const fallbackTestimonials = [
@@ -348,7 +350,7 @@ export default function Home() {
           name,
           count: counts[name] || 0,
           icon: iconMap[name] || <LayoutGrid className="h-7 w-7 text-slate-500" />,
-          path: `/businesses?focus=categories&category=${encodeURIComponent(name)}`
+          path: `/businesses?category=${encodeURIComponent(name)}`
         }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 7);
@@ -375,7 +377,15 @@ export default function Home() {
         const res = await fetch('http://localhost:5000/api/testimonials');
         const data = await res.json();
         if (data.success && data.data.length > 0) {
-          setTestimonials(data.data);
+          const merged = [...data.data];
+          if (merged.length < 3) {
+            fallbackTestimonials.forEach(fb => {
+              if (merged.length < 3 && !merged.some(t => t.authorName === fb.authorName)) {
+                merged.push(fb);
+              }
+            });
+          }
+          setTestimonials(merged);
         }
       } catch (err) {
         console.warn('Backend server offline, using fallback testimonials.');
@@ -430,6 +440,18 @@ export default function Home() {
   const handleNextTestimonial = () => {
     if (testimonials.length === 0) return;
     setTestimonialIdx(prev => (prev === testimonials.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleScrollFaqs = (direction) => {
+    if (!faqScrollRef.current) return;
+    const scrollAmount = direction === 'left' ? -350 : 350;
+    faqScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  };
+
+  const handleScrollTestimonials = (direction) => {
+    if (!testimonialScrollRef.current) return;
+    const scrollAmount = direction === 'left' ? -360 : 360;
+    testimonialScrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
   };
 
   const handleTestimonialSubmit = async (e) => {
@@ -575,7 +597,7 @@ export default function Home() {
     <div className="w-full flex flex-col items-center bg-[#F8FAFC]">
       
       {/* 1. Hero Section (Pixel Perfect Layout with User Uploaded Thirumoorthy Hills BG) */}
-      <section className="w-full relative min-h-[620px] bg-[#F8FAFC] flex items-center justify-center pt-6 pb-28 px-4 md:px-8 overflow-hidden z-0">
+      <section className="w-full relative min-h-[500px] sm:min-h-[620px] bg-[#F8FAFC] flex items-center justify-center pt-4 pb-14 sm:pt-6 sm:pb-28 px-4 md:px-8 overflow-hidden z-0">
         
         {/* Background Image wrapper to prevent scaling blur on ultra-wide screens */}
         <div className="absolute inset-0 max-w-[1440px] mx-auto w-full h-full z-0 overflow-hidden">
@@ -600,7 +622,7 @@ export default function Home() {
               <span className="text-[#027244]">Udumalpet</span>
             </h1>
             
-            <p className="mt-5 text-sm md:text-base text-slate-500 font-semibold max-w-xl leading-relaxed">
+            <p className="mt-5 text-[15px] md:text-[17px] text-slate-500 font-medium max-w-xl leading-relaxed">
               A trusted local platform to discover, connect and grow with verified businesses in and around Udumalpet.
             </p>
 
@@ -635,7 +657,7 @@ export default function Home() {
             </button>
 
             {/* Rich horizontal search bar */}
-            <form onSubmit={handleSearchSubmit} className="mt-8 w-full bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2 flex flex-col md:flex-row gap-2 max-w-3xl">
+            <form onSubmit={handleSearchSubmit} className="mt-4 md:mt-8 w-full bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2 flex flex-col md:flex-row gap-2 max-w-3xl">
               <div className="flex-1 flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
                 <Search className="h-4.5 w-4.5 text-slate-400 shrink-0" />
                 <input
@@ -743,9 +765,9 @@ export default function Home() {
               <div className="h-11 w-11 rounded-full bg-[#E6F4EA] text-[#027244] flex items-center justify-center shrink-0 select-none">
                 {indicator.icon}
               </div>
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-0.5 text-left">
                 <span className="font-extrabold text-[#001c41] text-xs md:text-sm leading-tight">{indicator.title}</span>
-                <span className="text-[10px] md:text-[11px] text-slate-400 font-semibold leading-normal mt-0.5">{indicator.desc}</span>
+                <span className="text-[12px] md:text-[13px] text-slate-500 font-medium leading-normal mt-0.5">{indicator.desc}</span>
               </div>
             </div>
           ))}
@@ -757,24 +779,24 @@ export default function Home() {
         <div className="flex justify-between items-end border-b border-slate-200/80 pb-3">
           <div>
             <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">Top Categories</h2>
-            <p className="text-xs text-slate-400 font-semibold mt-1">Explore local businesses by specific industry</p>
+            <p className="text-sm text-slate-500 font-medium mt-1">Explore local businesses by specific industry</p>
           </div>
           <Link to="/businesses?focus=categories" className="text-xs font-bold text-[#027244] hover:text-[#005934] flex items-center gap-1">
             View All Categories <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-5">
+        <div className="flex overflow-x-auto gap-4 pb-4 scrollbar-none snap-x snap-mandatory sm:grid sm:grid-cols-4 lg:grid-cols-8">
           {categoriesList.map((cat) => (
             <Link 
               key={cat.name} 
               to={cat.path}
-              className="card-premium group rounded-2xl py-6 px-4 flex flex-col items-center justify-center gap-4 text-center cursor-pointer"
+              className="card-premium group rounded-2xl py-4.5 px-3 sm:py-6 sm:px-4 flex flex-col items-center justify-center gap-2.5 sm:gap-4 text-center cursor-pointer w-[calc(50%-8px)] min-w-[135px] shrink-0 snap-start sm:w-auto sm:shrink-0 md:shrink"
             >
-              <div className="h-12 w-12 rounded-xl flex items-center justify-center text-2xl select-none transition-transform duration-500 ease-out-expo group-hover:scale-110">
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center text-xl sm:text-2xl select-none transition-transform duration-500 ease-out-expo group-hover:scale-110 [&>svg]:h-5.5 [&>svg]:w-5.5 sm:[&>svg]:h-7 sm:[&>svg]:w-7">
                 {cat.icon}
               </div>
-              <span className="text-[17px] font-medium text-slate-700 transition-colors duration-300 group-hover:text-[#027244]">{cat.name}</span>
+              <span className="text-xs sm:text-[17px] font-medium text-slate-700 transition-colors duration-300 group-hover:text-[#027244] line-clamp-1">{cat.name}</span>
             </Link>
           ))}
         </div>
@@ -785,7 +807,7 @@ export default function Home() {
         <div className="flex justify-between items-end border-b border-slate-200/80 pb-3">
           <div>
             <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">Featured Businesses</h2>
-            <p className="text-xs text-slate-400 font-semibold mt-1">Direct from our premium verified sponsors</p>
+            <p className="text-sm text-slate-500 font-medium mt-1">Direct from our premium verified sponsors</p>
           </div>
           <Link to="/businesses?type=Premium" className="text-xs font-bold text-[#027244] hover:text-[#005934] flex items-center gap-1">
             View All Businesses <ArrowRight className="h-3.5 w-3.5" />
@@ -800,13 +822,13 @@ export default function Home() {
           <ChevronRight className="h-4 w-4" />
         </button>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex overflow-x-auto gap-5 pb-4 scrollbar-none snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-4">
           {featuredBusinesses.map((biz) => {
             const isSubscribed = biz.subscriptionStatus === 'active';
             return (
               <div 
                 key={biz._id} 
-                className="card-premium group rounded-2xl overflow-hidden flex flex-col cursor-pointer relative"
+                className="card-premium group rounded-2xl overflow-hidden flex flex-col cursor-pointer relative w-[calc(50%-10px)] min-w-[145px] shrink-0 snap-start sm:w-auto sm:shrink"
                 onClick={() => navigate(`/businesses/${biz._id}`)}
               >
                 <div className="h-44 w-full overflow-hidden relative rounded-t-[15px]">
@@ -893,20 +915,20 @@ export default function Home() {
       </section>
 
       {/* 5. Statistics Sections Band (Exact theme color match) */}
-      <section className="w-full bg-[#001c41] text-white py-14 px-4 border-y border-[#001430]">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-10 text-center">
+      <section className="w-full bg-[#001c41] text-white py-8 sm:py-14 px-4 border-y border-[#001430]">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10 text-center">
           {[
             { value: '500+', label: 'Businesses Listed', icon: <Users2 className="h-5 w-5 text-emerald-400" /> },
             { value: '50+', label: 'Categories Covered', icon: <LayoutGrid className="h-5 w-5 text-emerald-400" /> },
             { value: '10K+', label: 'Happy Customers', icon: <Smile className="h-5 w-5 text-emerald-400" /> },
             { value: '100%', label: 'Local Support & Trust', icon: <Heart className="h-5 w-5 text-emerald-400" fill="currentColor" /> }
           ].map((stat, idx) => (
-            <div key={idx} className="flex flex-col items-center gap-1">
-              <div className="h-9 w-9 rounded-full bg-slate-900/60 flex items-center justify-center mb-1 border border-slate-800 shadow">
+            <div key={idx} className="flex flex-col items-center gap-0.5 sm:gap-1">
+              <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-900/60 flex items-center justify-center mb-1 border border-slate-800 shadow [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5">
                 {stat.icon}
               </div>
-              <span className="text-3xl font-extrabold text-white tracking-tight">{stat.value}</span>
-              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{stat.label}</span>
+              <span className="text-xl sm:text-3xl font-extrabold text-white tracking-tight">{stat.value}</span>
+              <span className="text-[9.5px] sm:text-[12px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5 sm:mt-1">{stat.label}</span>
             </div>
           ))}
         </div>
@@ -916,10 +938,10 @@ export default function Home() {
       <section id="how-it-works" className="max-w-7xl w-full px-4 md:px-8 py-16 flex flex-col items-center gap-12">
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">How It Works</h2>
-          <p className="text-xs text-slate-400 font-semibold mt-2">Connecting local buyers with verified businesses in four easy steps</p>
+          <p className="text-sm text-slate-500 font-medium mt-2">Connecting local buyers with verified businesses in four easy steps</p>
         </div>
 
-        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+        <div className="w-full flex overflow-x-auto gap-4 pb-4 scrollbar-none snap-x snap-mandatory md:grid md:grid-cols-4 md:gap-8 relative">
           {[
             { 
               num: 1, 
@@ -969,17 +991,17 @@ export default function Home() {
               ) 
             }
           ].map((step, idx) => (
-            <div key={step.num} className={`bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all relative flex flex-col items-center text-center gap-4 ${idx < 3 ? 'step-connector' : ''}`}>
+            <div key={step.num} className={`bg-white border border-slate-200/80 p-5 md:p-6 rounded-3xl shadow-sm hover:shadow-md transition-all relative flex flex-col items-center text-center gap-3.5 md:gap-4 ${idx < 3 ? 'step-connector' : ''} w-[240px] shrink-0 snap-start md:w-auto md:shrink`}>
               {/* Number Badge */}
-              <div className="h-8 w-8 rounded-full bg-[#027244] text-white font-extrabold flex items-center justify-center text-xs shadow z-10 border border-[#027244]">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-[#027244] text-white font-extrabold flex items-center justify-center text-xs shadow z-10 border border-[#027244]">
                 {step.num}
               </div>
               {/* Vector line icon */}
-              <div className="h-14 w-14 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 flex items-center justify-center shadow-sm mt-1 z-10">
+              <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 flex items-center justify-center shadow-sm mt-1 z-10">
                 {step.icon}
               </div>
-              <h4 className="font-extrabold text-[#001c41] text-sm leading-none mt-1 z-10">{step.title}</h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed font-semibold max-w-[200px] z-10">{step.desc}</p>
+              <h4 className="font-extrabold text-[#001c41] text-xs md:text-sm leading-none mt-1 z-10">{step.title}</h4>
+              <p className="text-[11px] md:text-[13px] text-slate-500 leading-relaxed font-medium max-w-[190px] md:max-w-[200px] z-10">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -988,74 +1010,77 @@ export default function Home() {
 
 
       {/* 8. What People Say Section */}
-      <section className="w-full bg-white py-16 px-4 border-t border-slate-200/50">
-        <div className="max-w-4xl mx-auto flex flex-col items-center gap-10">
-          <div className="text-center max-w-md">
-            <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">What People Say</h2>
-            <p className="text-xs text-slate-400 font-semibold mt-1">Real experiences shared by our core community member creators</p>
-          </div>
-
-          {testimonials.length > 0 && testimonials[testimonialIdx] && (
-            <div className="w-full card-premium group rounded-3xl p-8 flex flex-col items-center text-center gap-5 relative bg-slate-50">
-              
-              {/* Review stars */}
-              <div className="flex items-center text-amber-400">
-                {[...Array(testimonials[testimonialIdx]?.rating || 5)].map((_, i) => (
-                  <Star key={i} className="h-4.5 w-4.5 fill-current" />
-                ))}
-                {[...Array(5 - (testimonials[testimonialIdx]?.rating || 5))].map((_, i) => (
-                  <Star key={i + 10} className="h-4.5 w-4.5 text-slate-200" />
-                ))}
-              </div>
-              
-              <p className="text-slate-600 font-semibold italic text-sm md:text-base leading-relaxed max-w-xl">
-                "{testimonials[testimonialIdx]?.text || ''}"
-              </p>
-
-              <div className="flex items-center gap-3 mt-1">
-                <div className="h-10 w-10 rounded-full border border-slate-200 bg-[#E6F2ED] text-[#027244] font-black text-xs flex items-center justify-center select-none shadow-xs uppercase">
-                  {(testimonials[testimonialIdx]?.authorName || '').slice(0, 2)}
-                </div>
-                <div className="text-left flex flex-col gap-0.5">
-                  <span className="font-extrabold text-xs text-slate-800 leading-none">{testimonials[testimonialIdx]?.authorName || ''}</span>
-                  <span className="text-[9px] font-bold text-[#027244] uppercase tracking-widest mt-1 bg-emerald-50 border border-emerald-100 rounded-sm px-1.5 py-0.5 leading-none inline-block">
-                    {testimonials[testimonialIdx]?.role || 'Business Owner'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Slider arrows */}
-              <button 
-                onClick={handlePrevTestimonial}
-                aria-label="Previous testimonial"
-                className="h-8 w-8 border border-slate-200 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center absolute left-3 top-1/2 -translate-y-1/2 shadow text-slate-400 z-10 hover:text-[#027244] cursor-pointer transition-colors"
+      <section className="w-full bg-slate-50/50 py-16 px-4 border-t border-slate-200/50 relative">
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-10 relative">
+          
+          <div className="w-full flex justify-between items-end">
+            <div className="text-left">
+              <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">What People Say</h2>
+              <p className="text-sm text-slate-500 font-medium mt-1">Real experiences shared by our core community member creators</p>
+            </div>
+            
+            {/* Scroll Navigation Arrows */}
+            <div className="flex gap-2 select-none">
+              <button
+                onClick={() => handleScrollTestimonials('left')}
+                aria-label="Scroll left"
+                className="h-8 w-8 border border-slate-200 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center shadow-xs text-slate-400 hover:text-[#027244] cursor-pointer transition-colors"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button 
-                onClick={handleNextTestimonial}
-                aria-label="Next testimonial"
-                className="h-8 w-8 border border-slate-200 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center absolute right-3 top-1/2 -translate-y-1/2 shadow text-slate-400 z-10 hover:text-[#027244] cursor-pointer transition-colors"
+              <button
+                onClick={() => handleScrollTestimonials('right')}
+                aria-label="Scroll right"
+                className="h-8 w-8 border border-slate-200 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center shadow-xs text-slate-400 hover:text-[#027244] cursor-pointer transition-colors"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-          )}
-          
-          {/* Slider Pagination dots */}
-          <div className="flex justify-center gap-1.5 mt-2 select-none">
-            {testimonials.map((_, idx) => (
-              <span 
-                key={idx}
-                onClick={() => setTestimonialIdx(idx)}
-                className={`h-2 w-2 rounded-full cursor-pointer transition-all ${idx === testimonialIdx ? 'bg-[#027244] w-4' : 'bg-slate-200 hover:bg-slate-300'}`} 
-              />
+          </div>
+
+          <div 
+            ref={testimonialScrollRef}
+            className="w-full flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-fadeIn"
+          >
+            {testimonials.map((t, idx) => (
+              <div 
+                key={t._id || idx}
+                className="min-w-[240px] sm:min-w-[340px] max-w-[340px] bg-white border border-slate-200/80 rounded-3xl p-4 sm:p-6.5 flex flex-col justify-between gap-3 sm:gap-5 shrink-0 snap-start shadow-2xs hover:shadow-xs transition-all relative"
+              >
+                <div className="flex flex-col gap-2.5 sm:gap-4">
+                  {/* Review stars */}
+                  <div className="flex items-center text-amber-400">
+                    {[...Array(t.rating || 5)].map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
+                    ))}
+                    {[...Array(5 - (t.rating || 5))].map((_, i) => (
+                      <Star key={i + 10} className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-200" />
+                    ))}
+                  </div>
+                  
+                  <p className="text-slate-600 font-semibold italic text-[11px] sm:text-xs leading-relaxed">
+                    "{t.text || ''}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-3 mt-1 border-t border-slate-100/70 pt-2.5 sm:pt-3.5">
+                  <div className="h-7.5 w-7.5 sm:h-9 sm:w-9 rounded-full border border-slate-200 bg-[#E6F2ED] text-[#027244] font-black text-[9px] sm:text-[10px] flex items-center justify-center select-none shadow-2xs uppercase">
+                    {(t.authorName || '').slice(0, 2)}
+                  </div>
+                  <div className="text-left flex flex-col gap-0.5">
+                    <span className="font-extrabold text-[10px] sm:text-[11px] text-slate-800 leading-none">{t.authorName || ''}</span>
+                    <span className="text-[7.5px] sm:text-[8.5px] font-bold text-[#027244] uppercase tracking-wider bg-emerald-50 border border-emerald-100 rounded-sm px-1.5 py-0.5 leading-none inline-block mt-0.5">
+                      {t.role || 'Business Owner'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
 
           {/* Ask business owners, event managers, blog writers to share their thoughts */}
           <div className="flex flex-col items-center gap-3.5 mt-4">
-            <span className="text-xs text-slate-500 font-bold">Are you a Business Owner, Event Manager, or Blog Writer using UBT?</span>
+            <span className="text-sm text-slate-500 font-medium">Are you a Business Owner, Event Manager, or Blog Writer using UBT?</span>
             <button
               onClick={handleShareThoughtsClick}
               className="bg-[#027244] hover:bg-[#005934] text-white font-extrabold text-xs py-3 px-8 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center gap-1.5 cursor-pointer"
@@ -1070,10 +1095,10 @@ export default function Home() {
       <section id="how-it-works-business" className="max-w-7xl w-full px-4 md:px-8 py-16 flex flex-col items-center gap-12 border-t border-slate-200/50">
         <div className="text-center max-w-md">
           <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">Steps to Register</h2>
-          <p className="text-xs text-slate-400 font-semibold mt-2">Follow these simple steps to list and verify your business on Udumalpet Business Tour</p>
+          <p className="text-sm text-slate-500 font-medium mt-2">Follow these simple steps to list and verify your business on Udumalpet Business Tour</p>
         </div>
 
-        <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+        <div className="w-full flex overflow-x-auto gap-4 pb-4 scrollbar-none snap-x snap-mandatory md:grid md:grid-cols-4 md:gap-8 relative">
           {[
             { 
               num: 1, 
@@ -1124,30 +1149,65 @@ export default function Home() {
               ) 
             }
           ].map((step, idx) => (
-            <div key={step.num} className={`bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all relative flex flex-col items-center text-center gap-4 ${idx < 3 ? 'step-connector' : ''}`}>
+            <div key={step.num} className={`bg-white border border-slate-200/80 p-5 md:p-6 rounded-3xl shadow-sm hover:shadow-md transition-all relative flex flex-col items-center text-center gap-3.5 md:gap-4 ${idx < 3 ? 'step-connector' : ''} w-[240px] shrink-0 snap-start md:w-auto md:shrink`}>
               {/* Number Badge */}
-              <div className="h-8 w-8 rounded-full bg-[#027244] text-white font-extrabold flex items-center justify-center text-xs shadow z-10 border border-[#027244]">
+              <div className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-[#027244] text-white font-extrabold flex items-center justify-center text-xs shadow z-10 border border-[#027244]">
                 {step.num}
               </div>
               {/* Vector line icon */}
-              <div className="h-14 w-14 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 flex items-center justify-center shadow-sm mt-1 z-10">
+              <div className="h-12 w-12 md:h-14 md:w-14 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 flex items-center justify-center shadow-sm mt-1 z-10">
                 {step.icon}
               </div>
-              <h4 className="font-extrabold text-[#001c41] text-sm leading-none mt-1 z-10">{step.title}</h4>
-              <p className="text-[11px] text-slate-400 leading-relaxed font-semibold max-w-[200px] z-10">{step.desc}</p>
+              <h4 className="font-extrabold text-[#001c41] text-xs md:text-sm leading-none mt-1 z-10">{step.title}</h4>
+              <p className="text-[11px] md:text-[13px] text-slate-500 leading-relaxed font-medium max-w-[190px] md:max-w-[200px] z-10">{step.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* 8. FAQ Section */}
-      <section id="faq" className="max-w-4xl w-full px-4 md:px-8 py-16 flex flex-col items-center gap-10">
-        <div className="text-center max-w-md">
-          <h2 className="text-2xl font-extrabold text-[#001c41] tracking-tight">Frequently Asked Questions</h2>
-          <p className="text-xs text-slate-400 font-semibold mt-2">Find quick answers to common queries about Udumalpet Business Tour</p>
+      <section id="faq" className="max-w-6xl w-full px-4 md:px-8 py-16 flex flex-col gap-12 border-t border-slate-200/50">
+        
+        {/* Header Block: Image left to FAQ heading + Scroll Navigation Arrows */}
+        <div className="w-full flex flex-col md:flex-row items-center justify-between gap-6 md:gap-10">
+          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 text-center md:text-left">
+            <div className="flex-shrink-0 select-none">
+              <img 
+                src="/faq_illustration.png" 
+                alt="FAQ Illustration" 
+                className="max-h-[100px] md:max-h-[140px] w-auto object-contain"
+              />
+            </div>
+            <div className="max-w-xl">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-[#001c41] tracking-tight">Frequently Asked Questions</h2>
+              <p className="text-sm text-slate-500 font-medium mt-2">Find quick answers to common queries about Udumalpet Business Tour</p>
+            </div>
+          </div>
+          
+          {/* Scroll Navigation Arrows */}
+          <div className="flex gap-2 select-none shrink-0">
+            <button
+              onClick={() => handleScrollFaqs('left')}
+              aria-label="Scroll FAQs left"
+              className="h-8 w-8 border border-slate-200 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center shadow-xs text-slate-400 hover:text-[#027244] cursor-pointer transition-colors"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handleScrollFaqs('right')}
+              aria-label="Scroll FAQs right"
+              className="h-8 w-8 border border-slate-200 bg-white hover:bg-slate-50 rounded-full flex items-center justify-center shadow-xs text-slate-400 hover:text-[#027244] cursor-pointer transition-colors"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
-        <div className="w-full flex flex-col gap-3 text-left">
+        {/* FAQs horizontally scrollable wrapper */}
+        <div 
+          ref={faqScrollRef}
+          className="w-full flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-fadeIn"
+        >
           {[
             {
               q: 'How do I register and list my business on UBT?',
@@ -1170,24 +1230,33 @@ export default function Home() {
               a: 'Yes! Anyone registered on UBT can post guiding articles/blogs about tourist attractions or hidden culinary spots in Udumalpet. You can also write star reviews and comments directly on any verified merchant profile.'
             }
           ].map((faq, idx) => (
-            <div key={idx} className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs transition-all duration-300">
-              <button
-                onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
-                className="w-full px-6 py-4.5 flex justify-between items-center text-xs font-black text-slate-700 hover:text-[#027244] cursor-pointer text-left focus:outline-none"
-              >
-                <span>{faq.q}</span>
-                <span className={`text-base font-bold transition-transform duration-305 ${activeFaq === idx ? 'rotate-180 text-[#027244]' : 'text-slate-400'}`}>
-                  ▼
-                </span>
-              </button>
+            <div 
+              key={idx} 
+              onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+              className="w-full md:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 snap-start bg-white border border-slate-200/80 rounded-3xl p-6 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-start select-none cursor-pointer"
+            >
+              <div className="flex justify-between items-start gap-2 w-full">
+                <div className="flex gap-2">
+                  <span className="h-5.5 w-5.5 rounded-full bg-emerald-50 text-[#027244] font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5 border border-emerald-100">
+                    Q
+                  </span>
+                  <h3 className="font-extrabold text-[14px] text-slate-800 leading-snug">
+                    {faq.q}
+                  </h3>
+                </div>
+                <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transition-transform duration-305 mt-1 ${activeFaq === idx ? 'rotate-90 text-[#027244]' : ''}`} />
+              </div>
               <div 
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  activeFaq === idx ? 'max-h-40 border-t border-slate-100' : 'max-h-0'
-                }`}
+                className={`overflow-hidden transition-all duration-300 ${activeFaq === idx ? 'max-h-[220px] opacity-100 mt-3 border-t border-slate-100 pt-3' : 'max-h-0 opacity-0'}`}
               >
-                <p className="px-6 py-4 text-[11px] text-slate-550 leading-relaxed font-semibold">
-                  {faq.a}
-                </p>
+                <div className="flex gap-2">
+                  <span className="h-5.5 w-5.5 rounded-full bg-slate-50 text-slate-400 font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5 border border-slate-100">
+                    A
+                  </span>
+                  <p className="text-[13px] text-slate-500 leading-relaxed font-medium">
+                    {faq.a}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
