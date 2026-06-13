@@ -31,6 +31,7 @@ router.post('/subscribe', async (req, res) => {
 
     if (sheetUrl) {
       try {
+        console.log('Sending sync request to Google Sheets Web App...');
         const response = await fetch(sheetUrl, {
           method: 'POST',
           headers: {
@@ -39,11 +40,23 @@ router.post('/subscribe', async (req, res) => {
           body: JSON.stringify({ name, mobile, area }),
         });
 
-        const result = await response.json();
-        if (result && (result.success || result.status === 'success')) {
+        const textBody = await response.text();
+        console.log('Google Sheets Web App HTTP Status:', response.status);
+        console.log('Google Sheets Web App Raw Body:', textBody);
+
+        let result = null;
+        try {
+          result = JSON.parse(textBody);
+        } catch (e) {
+          console.error('Failed to parse Google Sheets response as JSON');
+        }
+
+        if (result && (result.success || result.status === 'success' || result.message === 'Row appended successfully!')) {
           sheetSynced = true;
+          console.log('Google Sheet sync successful!');
         } else {
           sheetError = 'Response reported failure';
+          console.error('Google Sheet sync reported failure:', result);
         }
       } catch (err) {
         console.error('Google Sheet syncing failed:', err.message);
